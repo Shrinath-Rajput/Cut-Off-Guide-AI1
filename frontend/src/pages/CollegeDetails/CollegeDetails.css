@@ -1,0 +1,752 @@
+.college-details-page {
+  display: grid;
+  gap: 2.5rem;
+  width: min(100%, 1280px);
+  margin: 0 auto;
+}
+
+.college-hero {
+  position: relative;
+  width: 100%;
+  min-height: 320px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 28px;
+  overflow: hidden;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(20, 33, 61, 0.08) 0%, rgba(20, 33, 61, 0.55) 100%);
+}
+
+.college-profile-shell {
+  position: relative;
+  margin-top: -120px;
+  z-index: 2;
+  display: grid;
+  gap: 2rem;
+}
+
+.college-profile-card {
+  background: #ffffff;
+  border: 1px solid #e2bfb0;
+  border-radius: 32px;
+  padding: 2rem;
+  box-shadow: 0 20px 60px rgba(17, 17, 17, 0.08);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 2rem;
+}
+
+.college-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.college-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.8rem 1rem;
+  border-radius: 999px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #5a4136;
+  background: #f4f3f0;
+}
+
+.college-profile-card h1 {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: clamp(2.5rem, 3vw, 3.3rem);
+  line-height: 1.02;
+  color: #1a1c1a;
+}
+
+.college-meta-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.college-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: #5a4136;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.98rem;
+}
+
+.college-meta-item .material-symbols-outlined {
+  font-size: 1.05rem;
+  color: #a04100;
+}
+
+.college-profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.college-action-btn {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 1rem 1.4rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 0.96rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.college-action-btn:hover {
+  transform: translateY(-1px);
+}
+
+.college-action-btn.outline {
+  background: #ffffff;
+  color: #5a4136;
+  border-color: rgba(226, 191, 176, 0.9);
+}
+
+.college-action-btn.primary {
+  background: #a04100;
+  color: #ffffff;
+  border-color: #a04100;
+}
+
+.college-tabs-shell {
+  overflow-x: auto;
+}
+
+.college-tabs {
+  display: flex;
+  gap: 1rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #e2bfb0;
+}
+
+.college-tab {
+  border: 0;
+  background: transparent;
+  color: #5a4136;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 1rem 0;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.college-tab:hover {
+  color: #a04100;
+}
+
+.college-tab.active {
+  color: #a04100;
+  border-color: #a04100;
+}
+
+.college-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-card {
+  position: relative;
+  background: #f4f3f0;
+  border: 1px solid transparent;
+  border-radius: 28px;
+  padding: 1.5rem;
+  overflow: hidden;
+  min-height: 170px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  border-color: #e2bfb0;
+  box-shadow: 0 18px 40px rgba(17, 17, 17, 0.08);
+}
+
+.stat-icon-background {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  opacity: 0.1;
+}
+
+.stat-icon-background .material-symbols-outlined {
+  font-size: 5rem;
+}
+
+.stat-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.stat-label {
+  color: #5a4136;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  color: #a04100;
+  font-family: 'Newsreader', serif;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.stat-detail {
+  color: #5a4136;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+}
+
+.college-main-layout {
+  display: grid;
+  grid-template-columns: 2.1fr 1fr;
+  gap: 2rem;
+}
+
+.college-main-column {
+  display: grid;
+  gap: 2rem;
+}
+
+.section-heading-row,
+.cutoff-chart-card,
+.courses-section {
+  background: #ffffff;
+  border: 1px solid #f1ebe6;
+  border-radius: 28px;
+  padding: 1.75rem;
+  box-shadow: 0 18px 40px rgba(17, 17, 17, 0.05);
+}
+
+.section-heading-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.section-heading-row h2 {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: 1.9rem;
+  color: #1a1c1a;
+}
+
+.section-heading-row p {
+  margin: 0.5rem 0 0;
+  color: #5a4136;
+  font-family: 'Inter', sans-serif;
+}
+
+.text-link {
+  border: 0;
+  background: transparent;
+  color: #a04100;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cutoff-chart-card {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.chart-toolbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.chart-toggle-group {
+  display: inline-flex;
+  gap: 0.75rem;
+}
+
+.toggle-pill {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 0.75rem 1rem;
+  color: #5a4136;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.toggle-pill.active {
+  background: #f4f3f0;
+  color: #1a1c1a;
+  border-color: #e2bfb0;
+}
+
+.chart-legend {
+  display: inline-flex;
+  gap: 1rem;
+  color: #5a4136;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+}
+
+.legend-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.legend-dot.general {
+  background: #ff6b00;
+}
+
+.legend-dot.reserved {
+  background: #525e7d;
+}
+
+.cutoff-chart-visual {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: end;
+  min-height: 280px;
+}
+
+.chart-column {
+  display: grid;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.chart-bars {
+  display: grid;
+  gap: 0.5rem;
+  align-items: end;
+  height: 100%;
+}
+
+.chart-bars.projected .chart-bar {
+  opacity: 0.75;
+  border-top: 2px dashed rgba(160, 65, 0, 0.4);
+}
+
+.chart-bar {
+  width: 100%;
+  border-radius: 999px;
+}
+
+.chart-bar.primary {
+  background: #ff6b00;
+}
+
+.chart-bar.secondary {
+  background: #525e7d;
+}
+
+.chart-label {
+  font-family: 'Inter', sans-serif;
+  color: #5a4136;
+  text-align: center;
+}
+
+.projected-label {
+  display: block;
+  margin-top: -0.5rem;
+  text-align: center;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.75rem;
+  color: #a04100;
+}
+
+.courses-section {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.section-header-row h2 {
+  margin-bottom: 0;
+}
+
+.courses-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.course-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  border: 1px solid #f1ebe6;
+  border-radius: 28px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.course-accent {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+}
+
+.course-accent--primary {
+  background: #ff6b00;
+}
+
+.course-accent--secondary {
+  background: #525e7d;
+}
+
+.course-accent--neutral {
+  background: #e2bfb0;
+}
+
+.course-card-body {
+  display: grid;
+  gap: 1rem;
+  padding: 1.75rem 1.75rem 1.75rem 2.25rem;
+}
+
+.course-card h3 {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: 1.25rem;
+  color: #1a1c1a;
+}
+
+.course-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.course-tags span {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.6rem 0.85rem;
+  border-radius: 999px;
+  background: #f4f3f0;
+  color: #5a4136;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.86rem;
+}
+
+.difficulty-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 1.5rem;
+}
+
+.difficulty-label,
+.difficulty-value {
+  color: #5a4136;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.9rem;
+}
+
+.difficulty-bar {
+  width: 100%;
+  height: 0.75rem;
+  border-radius: 999px;
+  background: #f4f3f0;
+  overflow: hidden;
+}
+
+.difficulty-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #ff6b00;
+}
+
+.course-actions {
+  display: grid;
+  gap: 0.75rem;
+  align-self: flex-end;
+  justify-content: end;
+  padding: 1.5rem;
+}
+
+.course-action {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.95rem 1.25rem;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.course-action.outline {
+  background: #ffffff;
+  color: #a04100;
+  border-color: #a04100;
+}
+
+.course-action.primary {
+  background: #a04100;
+  color: #ffffff;
+}
+
+.view-all-courses {
+  border: 0;
+  background: transparent;
+  color: #a04100;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.college-sidebar {
+  display: grid;
+  gap: 1.5rem;
+  position: sticky;
+  top: 3rem;
+}
+
+.sidebar-card {
+  background: #ffffff;
+  border: 1px solid #f1ebe6;
+  border-radius: 28px;
+  padding: 1.75rem;
+  box-shadow: 0 18px 40px rgba(17, 17, 17, 0.05);
+}
+
+.ai-insight-card {
+  background: #ffdbcc;
+  border-color: #ffdbcc;
+  color: #1a1c1a;
+}
+
+.sidebar-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.sidebar-card-header .material-symbols-outlined {
+  font-size: 1.4rem;
+  color: #a04100;
+}
+
+.ai-insight-card h3,
+.dates-card h3,
+.tour-card h3 {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: 1.25rem;
+  color: #1a1c1a;
+}
+
+.ai-insight-card p,
+.tour-card p {
+  margin: 0 0 1.5rem;
+  color: #5a4136;
+  line-height: 1.75;
+}
+
+.sidebar-button {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.95rem 1.2rem;
+  background: #ffffff;
+  color: #a04100;
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.sidebar-button.outline {
+  background: transparent;
+  border-color: #a04100;
+}
+
+.dates-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+.dates-card li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px dashed #e2bfb0;
+  padding-bottom: 1rem;
+}
+
+.dates-card li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.dates-card span {
+  display: block;
+}
+
+.dates-card small {
+  display: block;
+  color: #5a4136;
+  margin-top: 0.35rem;
+}
+
+.dates-card strong {
+  color: #a04100;
+  font-family: 'Inter', sans-serif;
+}
+
+.tour-card {
+  text-align: center;
+}
+
+.tour-icon-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  background: #f4f3f0;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 1rem;
+}
+
+.tour-icon-wrap .material-symbols-outlined {
+  font-size: 2rem;
+  color: #525e7d;
+}
+
+.tour-card p {
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 1100px) {
+  .college-main-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar-card {
+    position: static;
+    top: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .college-profile-shell {
+    margin-top: -90px;
+  }
+
+  .college-profile-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .college-meta-row {
+    grid-template-columns: 1fr;
+  }
+
+  .college-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .college-tabs {
+    gap: 0.75rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .college-stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chart-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cutoff-chart-visual {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .course-card {
+    grid-template-columns: 1fr;
+  }
+
+  .course-actions {
+    justify-content: stretch;
+    padding: 0;
+  }
+
+  .course-actions button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .college-hero {
+    min-height: 220px;
+  }
+
+  .college-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .college-action-btn,
+  .sidebar-button {
+    border-radius: 22px;
+  }
+
+  .chart-legend {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .cutoff-chart-visual {
+    min-height: 220px;
+  }
+
+  .college-tabs {
+    gap: 0.5rem;
+  }
+}

@@ -1,0 +1,20 @@
+
+# Environment files
+.env
+backend/.env
+frontend/.env
+
+# Python cache
+__pycache__/
+*.pyc
+
+@"
+backend/venv/
+.venv/
+venv/
+frontend/node_modules/
+backend/__pycache__/
+**/__pycache__/
+.env
+*.log
+"@ | Out-File -Encoding utf8 .gitignore

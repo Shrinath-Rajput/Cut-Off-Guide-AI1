@@ -1,0 +1,124 @@
+{
+  "total_files_processed": 86,
+  "total_records_inserted": 413548,
+  "total_duplicates_skipped": 2860,
+  "total_files_failed": 0,
+  "collection_stats": {
+    "cutoffguidedata_(1).json": {
+      "files_processed": 1,
+      "records_inserted": 15,
+      "duplicates_skipped": 0
+    },
+    "cutoffguidedata_(2).json": {
+      "files_processed": 1,
+      "records_inserted": 15,
+      "duplicates_skipped": 0
+    },
+    "cutoffguidedata.json": {
+      "files_processed": 1,
+      "records_inserted": 15,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_all_links.json": {
+      "files_processed": 1,
+      "records_inserted": 12,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_jee_advanced.json": {
+      "files_processed": 1,
+      "records_inserted": 0,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_jee_main.json": {
+      "files_processed": 1,
+      "records_inserted": 2,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_mah_b.bbabcabms_cet.json": {
+      "files_processed": 1,
+      "records_inserted": 8,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_mah_mbamms_cet.json": {
+      "files_processed": 1,
+      "records_inserted": 16,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_mah_mca_cet.json": {
+      "files_processed": 1,
+      "records_inserted": 18,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_mem.tech_cet.json": {
+      "files_processed": 1,
+      "records_inserted": 6,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_mh_bhmct_cet.json": {
+      "files_processed": 1,
+      "records_inserted": 1,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_mh_cet_dse.json": {
+      "files_processed": 1,
+      "records_inserted": 0,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_mht_cet_engg.json": {
+      "files_processed": 1,
+      "records_inserted": 14,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_mht_cet_pharmacy.json": {
+      "files_processed": 1,
+      "records_inserted": 15,
+      "duplicates_skipped": 0
+    },
+    "cutoffguide_neet_ug.json": {
+      "files_processed": 1,
+      "records_inserted": 4,
+      "duplicates_skipped": 3
+    },
+    "cutoffguide_pivots.json": {
+      "files_processed": 1,
+      "records_inserted": 0,
+      "duplicates_skipped": 0
+    },
+    "bba": {
+      "files_processed": 6,
+      "records_inserted": 960,
+      "duplicates_skipped": 0
+    },
+    "bpharma": {
+      "files_processed": 9,
+      "records_inserted": 51022,
+      "duplicates_skipped": 2492
+    },
+    "colleges_clean_data": {
+      "files_processed": 2,
+      "records_inserted": 274,
+      "duplicates_skipped": 274
+    },
+    "mba": {
+      "files_processed": 19,
+      "records_inserted": 48615,
+      "duplicates_skipped": 91
+    },
+    "mca": {
+      "files_processed": 18,
+      "records_inserted": 16208,
+      "duplicates_skipped": 0
+    },
+    "mht_cet_enggineering": {
+      "files_processed": 14,
+      "records_inserted": 296321,
+      "duplicates_skipped": 0
+    },
+    "research": {
+      "files_processed": 2,
+      "records_inserted": 7,
+      "duplicates_skipped": 0
+    }
+  },
+  "failed_files": []
+}

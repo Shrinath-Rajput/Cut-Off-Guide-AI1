@@ -1,0 +1,628 @@
+/* ============================================================
+   STITCH DESIGN PROFILE PAGE CSS
+   ============================================================ */
+
+/* Color Palette - Stitch Theme */
+:root {
+  --stitch-primary: #a04100;
+  --stitch-primary-container: #ff6b00;
+  --stitch-primary-fixed: #ffdbcc;
+  --stitch-secondary: #525e7d;
+  --stitch-secondary-fixed: #d9e2ff;
+  --stitch-tertiary-fixed: #e4e0f2;
+  --stitch-background: #faf9f6;
+  --stitch-surface: #ffffff;
+  --stitch-surface-dim: #f4f3f0;
+  --stitch-surface-container-high: #e9e8e5;
+  --stitch-error: #ba1a1a;
+  --stitch-error-container: #ffdad6;
+  --stitch-text: #1a1c1a;
+  --stitch-text-secondary: #5a4136;
+  --stitch-border: #e2bfb0;
+  --stitch-outline-variant: #e2bfb0;
+}
+
+/* Typography */
+html {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+}
+
+h1, h2, h3 {
+  font-family: 'Newsreader', serif;
+  font-weight: 600;
+}
+
+/* Main Page Container */
+.profile-page {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+@media (min-width: 768px) {
+  .profile-page {
+    padding: 2.5rem 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .profile-page {
+    padding: 3rem 2.5rem;
+  }
+}
+
+/* ============================================================
+   PAGE HEADER
+   ============================================================ */
+
+.profile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.profile-title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--stitch-text);
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .profile-title {
+    font-size: 2.5rem;
+  }
+}
+
+.profile-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .profile-actions {
+    width: 100%;
+  }
+}
+
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+
+.btn {
+  padding: 0.75rem 1.5rem;
+  border-radius: 18px;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  flex: 1;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+@media (min-width: 768px) {
+  .btn {
+    flex: 0 1 auto;
+  }
+}
+
+.btn-primary {
+  background: var(--stitch-primary);
+  color: white;
+  border: 1px solid var(--stitch-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #8a3700;
+  border-color: #8a3700;
+  box-shadow: 0 4px 12px rgba(160, 65, 0, 0.15);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--stitch-secondary);
+  border: 1.5px solid var(--stitch-secondary);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #f5f5f5;
+  box-shadow: 0 2px 8px rgba(82, 94, 125, 0.08);
+}
+
+.btn-secondary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn-danger {
+  background: var(--stitch-error);
+  color: white;
+  border: 1px solid var(--stitch-error);
+  min-width: auto;
+  width: auto;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #991414;
+  border-color: #991414;
+  box-shadow: 0 4px 12px rgba(186, 26, 26, 0.15);
+}
+
+.btn-danger:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   TOAST NOTIFICATION
+   ============================================================ */
+
+.profile-toast {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 18px;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: #ecf8ef;
+  color: #2e5c36;
+  font-weight: 600;
+  font-size: 0.9rem;
+  animation: slideInDown 0.3s ease;
+}
+
+@keyframes slideInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   MAIN GRID LAYOUT
+   ============================================================ */
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 1024px) {
+  .profile-grid {
+    grid-template-columns: 1fr 2fr;
+    gap: 2.5rem;
+  }
+}
+
+.profile-left-column,
+.profile-right-column {
+  display: grid;
+  gap: 1.5rem;
+}
+
+/* ============================================================
+   PROFILE CARDS
+   ============================================================ */
+
+.profile-card {
+  background: var(--stitch-surface);
+  border: 1px solid var(--stitch-outline-variant);
+  border-radius: 20px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+@media (min-width: 768px) {
+  .profile-card {
+    padding: 2rem;
+    border-radius: 24px;
+  }
+}
+
+.profile-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================================
+   PROFILE AVATAR CARD
+   ============================================================ */
+
+.profile-avatar-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.avatar-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .avatar-container {
+    width: 140px;
+    height: 140px;
+    margin-bottom: 1.75rem;
+  }
+}
+
+.profile-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 5px solid var(--stitch-surface);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.avatar-edit-btn {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--stitch-primary);
+  color: white;
+  border: 3px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.avatar-edit-btn:hover {
+  background: #8a3700;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  transform: scale(1.05);
+}
+
+.avatar-edit-btn span {
+  font-size: 1.2rem;
+}
+
+.avatar-name {
+  margin: 0 0 0.4rem;
+  font-size: 1.5rem;
+  color: var(--stitch-text);
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .avatar-name {
+    font-size: 1.75rem;
+  }
+}
+
+.avatar-email {
+  margin: 0 0 1.25rem;
+  font-size: 0.95rem;
+  color: var(--stitch-text-secondary);
+}
+
+.badges-container {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.badge {
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge-premium {
+  background: var(--stitch-tertiary-fixed);
+  color: #3f3a50;
+}
+
+.badge-engineering {
+  background: var(--stitch-secondary-fixed);
+  color: var(--stitch-text);
+}
+
+/* ============================================================
+   PROFILE COMPLETENESS CARD
+   ============================================================ */
+
+.profile-completeness-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.completeness-label {
+  margin: 0 0 1rem;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--stitch-text-secondary);
+  font-weight: 600;
+}
+
+.completeness-score {
+  margin: 0 0 0.75rem;
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--stitch-text);
+  line-height: 1;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: var(--stitch-surface-container-high);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--stitch-primary);
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.completeness-note {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--stitch-text-secondary);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   SECTION HEADER
+   ============================================================ */
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--stitch-primary-fixed);
+  color: var(--stitch-primary);
+  font-size: 1.5rem;
+}
+
+.section-title {
+  margin: 0;
+  font-size: 1.25rem;
+  color: var(--stitch-text);
+  line-height: 1.2;
+}
+
+@media (min-width: 768px) {
+  .section-title {
+    font-size: 1.5rem;
+  }
+}
+
+.section-divider {
+  height: 1px;
+  background: var(--stitch-outline-variant);
+  border: none;
+  margin-bottom: 1.5rem;
+}
+
+/* ============================================================
+   FORM GRID & FIELDS
+   ============================================================ */
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .form-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.75rem;
+  }
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-field label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--stitch-text-secondary);
+  text-transform: uppercase;
+}
+
+.form-input,
+select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--stitch-outline-variant);
+  border-radius: 14px;
+  background: var(--stitch-surface-dim);
+  color: var(--stitch-text);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  transition: all 0.2s ease;
+  appearance: none;
+  background-image: url('data:image/svg+xml;charset=UTF-8,%3csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"%3e%3cpolyline points="6 9 12 15 18 9"%3e%3c/polyline%3e%3c/svg%3e');
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1.2em 1.2em;
+  padding-right: 2.5rem;
+}
+
+.form-input:not(select) {
+  background-image: none;
+  padding-right: 1rem;
+}
+
+.form-input:focus,
+select:focus {
+  outline: none;
+  border-color: var(--stitch-primary);
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(160, 65, 0, 0.1);
+}
+
+.form-input[readonly] {
+  background: #f7f3ef;
+  color: var(--stitch-text-secondary);
+  cursor: not-allowed;
+}
+
+select:disabled {
+  background-color: #f7f3ef;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.form-input::placeholder {
+  color: #a8a4a0;
+}
+
+/* ============================================================
+   SECURITY SECTION
+   ============================================================ */
+
+.security-card .section-title {
+  color: var(--stitch-error);
+}
+
+.security-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: rgba(186, 26, 26, 0.08);
+  border: 1.5px solid var(--stitch-error-container);
+  border-radius: 18px;
+  margin-top: 1rem;
+}
+
+@media (min-width: 768px) {
+  .security-panel {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: 1.75rem;
+  }
+}
+
+.security-content {
+  flex: 1;
+}
+
+.security-heading {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--stitch-text);
+}
+
+.security-description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--stitch-text-secondary);
+  line-height: 1.5;
+}
+
+/* ============================================================
+   RESPONSIVE DESIGN
+   ============================================================ */
+
+@media (max-width: 768px) {
+  .profile-page {
+    padding: 1rem;
+  }
+
+  .profile-header {
+    gap: 1rem;
+  }
+
+  .profile-title {
+    font-size: 1.75rem;
+  }
+
+  .profile-actions {
+    width: 100%;
+  }
+
+  .btn {
+    flex: 1;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .security-panel {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .btn-danger {
+    width: 100%;
+  }
+}
