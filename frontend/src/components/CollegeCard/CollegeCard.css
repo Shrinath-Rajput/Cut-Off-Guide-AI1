@@ -1,0 +1,107 @@
+.college-card {
+  display: grid;
+  grid-template-rows: 180px 1fr auto;
+  gap: 1rem;
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  box-shadow: 0 18px 42px rgba(17, 17, 17, 0.06);
+  overflow: hidden;
+}
+
+.college-banner {
+  position: relative;
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.22), rgba(255, 255, 255, 0.02)),
+    linear-gradient(180deg, #fdedd8 0%, #fff7ee 100%);
+}
+
+.college-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.2), transparent 40%);
+}
+
+.college-badge {
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  padding: 0.5rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.14);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.college-card-body {
+  padding: 1.3rem 1.4rem 0;
+}
+
+.college-card-body h3 {
+  margin: 0 0 0.55rem;
+  font-size: 1.2rem;
+  color: var(--text);
+}
+
+.college-location {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.college-meta {
+  display: grid;
+  gap: 0.55rem;
+  margin: 1rem 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.college-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.college-stats div {
+  padding: 0.9rem 1rem;
+  border-radius: 20px;
+  background: var(--background-soft);
+}
+
+.college-stats strong {
+  display: block;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.college-stats span {
+  color: var(--text-secondary);
+  font-size: 0.88rem;
+}
+
+.college-card-actions {
+  padding: 1rem 1.4rem 1.4rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.college-card-tools {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.link-button {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}

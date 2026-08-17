@@ -1,0 +1,42 @@
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.25rem;
+  align-items: flex-start;
+  margin-bottom: 2rem;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: clamp(1.75rem, 2.5vw, 2.6rem);
+  line-height: 1.05;
+  color: var(--text);
+}
+
+.section-header p {
+  margin: 0;
+  color: var(--text-secondary);
+  max-width: 45rem;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.section-badge {
+  display: inline-flex;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  background: rgba(249, 115, 22, 0.12);
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .section-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
