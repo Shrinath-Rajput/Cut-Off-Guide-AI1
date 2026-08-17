@@ -1,9 +1,0 @@
-
-# Environment files
-.env
-backend/.env
-frontend/.env
-
-# Python cache
-__pycache__/
-*.pyc
