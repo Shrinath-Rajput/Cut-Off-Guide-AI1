@@ -22,6 +22,10 @@ async def save_college_image(upload: UploadFile) -> str:
     return _save_locally(image_bytes, upload.filename or "college-image")
 
 
+async def save_ui_image(upload: UploadFile) -> str:
+    return await save_college_image(upload)
+
+
 def _save_to_cloudinary(image_bytes: bytes) -> str:
     if not all((settings.CLOUDINARY_CLOUD_NAME, settings.CLOUDINARY_API_KEY, settings.CLOUDINARY_API_SECRET)):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Cloudinary storage is not configured")
