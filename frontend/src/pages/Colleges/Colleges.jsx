@@ -5,6 +5,7 @@ import Footer from '../../components/Footer/Footer';
 import './Colleges.css';
 
 import { getColleges } from '../../services/api';
+import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
 
 const stateOptions = ['California', 'New York', 'Massachusetts'];
 const courseOptions = ['Computer Science', 'Engineering', 'Business'];
@@ -282,7 +283,7 @@ const Colleges = () => {
                 collegeItems.map((college) => (
                   <article key={college.id} className="college-card">
                     <div className="card-image">
-                      <img src={college.image} alt={college.name} />
+                      <img src={collegeImage(college.image)} alt={college.name} onError={handleCollegeImageError} />
                       <div className="card-badge">#{college.rank} National Rank</div>
                       <button
                         type="button"

@@ -13,7 +13,7 @@ class CollegeBase(BaseModel):
     cutoff: str
     type: str
     state: str
-    image: str
+    image: Optional[str] = None
     acceptanceRate: Optional[str] = None
     averagePackage: Optional[str] = None
     highestPackage: Optional[str] = None

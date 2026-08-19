@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -22,24 +23,22 @@ class Settings(BaseSettings):
 
     OTP_TTL_SECONDS: int = int(os.getenv("OTP_TTL_SECONDS", "300"))
 
-    CORS_ORIGINS: str = (
-        "http://localhost:5173,"
-        "http://localhost:5174,"
-        "http://localhost:5175,"
-        "http://localhost:5176,"
-        "http://localhost:3000,"
-        "http://127.0.0.1:5173,"
-        "http://127.0.0.1:5174,"
-        "http://127.0.0.1:5175,"
-        "http://127.0.0.1:5176,"
-        "http://127.0.0.1:3000"
-    )
+    IMAGE_STORAGE_PROVIDER: str = (os.getenv("IMAGE_STORAGE_PROVIDER", "local") or "local").strip().lower()
+    API_PUBLIC_URL: str = (os.getenv("API_PUBLIC_URL", "http://127.0.0.1:8000") or "http://127.0.0.1:8000").rstrip("/")
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", str(Path(__file__).resolve().parents[2] / "uploads"))
+    CLOUDINARY_CLOUD_NAME: str = os.getenv("CLOUDINARY_CLOUD_NAME", "")
+    CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY", "")
+    CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
+    
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://localhost:3000",
+        "http://127.0.0.1:5173"
+    ]
 
     class Config:
         env_file = ".env"
         extra = "ignore"
 
 settings = Settings()
-
-if isinstance(settings.CORS_ORIGINS, str):
-    settings.CORS_ORIGINS = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]

@@ -18,6 +18,7 @@ import Assistant from '../pages/Assistant/Assistant';
 import Saved from '../pages/Saved/Saved';
 import History from '../pages/History/History';
 import GoogleCallback from '../pages/GoogleCallback/GoogleCallback';
+import AdminImages from '../pages/AdminImages/AdminImages';
 import ProtectedRoute from './ProtectedRoute';
 import { OnboardingProvider } from '../context/OnboardingContext';
 import { useAuth } from '../context/AuthContext';
@@ -77,6 +78,14 @@ const AppRoutes = () => {
           }
         />
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
+        <Route
+          path="/admin/images"
+          element={
+            <ProtectedRoute>
+              {currentUser?.role === 'ADMIN' ? <AdminImages /> : <Navigate to="/home" replace />}
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<Navigate to="/welcome" replace />} />
       </Routes>
     </BrowserRouter>

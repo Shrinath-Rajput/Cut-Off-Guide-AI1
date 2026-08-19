@@ -1,18 +1,10 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
   headers: {
     'Content-Type': 'application/json',
   },
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
 });
 
 export const sendOtp = async (payload) => {
@@ -46,24 +38,8 @@ export const getColleges = async (params = {}) => {
 };
 
 export const searchCutoffs = async (payload) => {
-  const { data } = await api.post('/api/cutoffs/search', payload);
-  return data;
-};
-
-// Saved Colleges
-export const getSavedColleges = async () => {
-  const { data } = await api.get('/api/saved');
-  return data;
-};
-
-export const saveCollege = async (payload) => {
-  const { data } = await api.post('/api/saved', payload);
-  return data;
-};
-
-export const removeSavedCollege = async (id) => {
-  const { data } = await api.delete(`/api/saved/${id}`);
-  return data;
+  const response = await api.post('/api/cutoffs/search', payload);
+  return response.data;
 };
 
 export const getCollegeById = async (id) => {
@@ -71,12 +47,21 @@ export const getCollegeById = async (id) => {
   return response.data;
 };
 
-export const getProfile = async () => {
-  const response = await api.get('/api/profile');
+export const getAdminColleges = async () => {
+  const response = await api.get('/api/admin/colleges', {
+    headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
+  });
   return response.data;
 };
 
-export const updateProfile = async (payload) => {
-  const response = await api.put('/api/profile', payload);
+export const uploadCollegeImage = async (collegeId, file) => {
+  const formData = new FormData();
+  formData.append('image', file);
+  const response = await api.post(`/api/admin/colleges/${collegeId}/image`, formData, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return response.data;
 };
