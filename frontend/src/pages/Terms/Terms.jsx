@@ -300,7 +300,7 @@ const Terms = () => {
                 <div className="terms-contact-card">
                   <span className="material-symbols-outlined terms-contact-icon">mail</span>
                   <h4>Email Support</h4>
-                  <p>legal@cutoffguide.ai</p>
+                  <p>hr@fouriseindia.com</p>
                 </div>
                 <div className="terms-contact-card">
                   <span className="material-symbols-outlined terms-contact-icon">chat</span>

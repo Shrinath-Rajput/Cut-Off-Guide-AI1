@@ -36,13 +36,13 @@ const Footer = () => {
             <div className="contact-row">
               <span className="contact-label">Phone</span>
               <a href="tel:9527605805" className="contact-value">
-                9527605805 / 7020759254
+                9527605805
               </a>
             </div>
             <div className="contact-row">
               <span className="contact-label">Office</span>
               <span className="contact-value">
-                A-305, City Vista, Downtown Road, Ashoka Nagar, Kharadi, Pune 411014
+                Office No: A-305, City Vista, Downtown Road, Ashoka Nagar, Kharadi
               </span>
             </div>
           </div>

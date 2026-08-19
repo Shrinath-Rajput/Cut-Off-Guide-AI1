@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import Button from '../../components/Button/Button';
+import { useAuth } from '../../context/AuthContext';
 import './Contact.css';
 
 const faqItems = [
@@ -22,9 +23,20 @@ const faqItems = [
 ];
 
 const Contact = () => {
+  const { currentUser } = useAuth();
   const [form, setForm] = useState({ name: '', email: '', subject: 'General Inquiry', message: '' });
   const [success, setSuccess] = useState(false);
   const [openFaq, setOpenFaq] = useState(0);
+
+  useEffect(() => {
+    if (currentUser) {
+      setForm((prev) => ({
+        ...prev,
+        name: currentUser.name || prev.name,
+        email: currentUser.email || prev.email,
+      }));
+    }
+  }, [currentUser]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -33,9 +45,17 @@ const Contact = () => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
+    
+    // TODO: Connect this to a real backend handler!
+    // Currently, there is NO backend email service (e.g. SendGrid, Nodemailer, Resend) wired up.
+    // The payload { name, email, subject, message } needs to be sent TO hr@fouriseindia.com,
+    // with the user's name/email as the sender/reply-to details in the email body.
+    
     setSuccess(true);
-    setTimeout(() => setSuccess(false), 4500);
-    setForm({ name: '', email: '', subject: 'General Inquiry', message: '' });
+    setTimeout(() => {
+      setSuccess(false);
+      setForm({ name: currentUser?.name || '', email: currentUser?.email || '', subject: 'General Inquiry', message: '' });
+    }, 4500);
   };
 
   const faqElements = useMemo(
@@ -80,8 +100,7 @@ const Contact = () => {
               </div>
               <div>
                 <p className="contact-item-title">Email Us</p>
-                <p className="contact-item-text">support@cutoffguide.ai</p>
-                <p className="contact-item-text">admissions@cutoffguide.ai</p>
+                <p className="contact-item-text">hr@fouriseindia.com</p>
               </div>
             </div>
 
@@ -91,8 +110,8 @@ const Contact = () => {
               </div>
               <div>
                 <p className="contact-item-title">Call Us</p>
-                <p className="contact-item-text">+1 (800) 123-4567</p>
-                <p className="contact-item-subtext">Mon-Fri, 9am - 6pm EST</p>
+                <p className="contact-item-text">9527605805</p>
+                <p className="contact-item-subtext">Mon-Fri, 9am - 6pm IST</p>
               </div>
             </div>
 
@@ -102,9 +121,9 @@ const Contact = () => {
               </div>
               <div>
                 <p className="contact-item-title">Headquarters</p>
-                <p className="contact-item-text">123 Innovation Drive</p>
-                <p className="contact-item-text">Suite 400</p>
-                <p className="contact-item-text">Cambridge, MA 02142</p>
+                <p className="contact-item-text">Office No: A-305, City Vista,</p>
+                <p className="contact-item-text">Downtown Road, Ashoka Nagar,</p>
+                <p className="contact-item-text">Kharadi</p>
               </div>
             </div>
           </section>
@@ -112,12 +131,15 @@ const Contact = () => {
           <section className="contact-panel contact-form-panel">
             <div className="panel-header">
               <h2>Send a Message</h2>
+              <p className="contact-helper-text">
+                Your message will be sent to our support team. We'll reply to the email address you provide below.
+              </p>
             </div>
 
             <form className="contact-form" onSubmit={handleSubmit}>
               <div className="contact-form-grid">
                 <label>
-                  Full Name
+                  Full Name <span className="sender-note">(Your sender name)</span>
                   <input
                     name="name"
                     value={form.name}
@@ -127,7 +149,7 @@ const Contact = () => {
                   />
                 </label>
                 <label>
-                  Email Address
+                  Email Address <span className="sender-note">(Where we should reply)</span>
                   <input
                     name="email"
                     type="email"
@@ -161,7 +183,11 @@ const Contact = () => {
                 />
               </label>
 
-              {success && <div className="contact-success">Message sent successfully!</div>}
+              {success && (
+                <div className="contact-success">
+                  Message sent to hr@fouriseindia.com. We'll get back to you at {form.email} within 1-2 business days.
+                </div>
+              )}
 
               <Button variant="primary" type="submit">
                 Send Message
