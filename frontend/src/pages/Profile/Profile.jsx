@@ -62,7 +62,7 @@ const Profile = () => {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/welcome');
+    window.location.href = '/welcome';
   };
 
   return (

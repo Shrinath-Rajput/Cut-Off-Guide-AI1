@@ -15,6 +15,8 @@ const Login = () => {
 
   const [phone, setPhone] = useState('');
   const [phoneError, setPhoneError] = useState('');
+  const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isGoogleSigning, setIsGoogleSigning] = useState(false);
 
@@ -74,9 +76,25 @@ const Login = () => {
     return true;
   };
 
+  const handleEmailChange = (event) => {
+    setEmailError('');
+    setEmail(event.target.value);
+  };
+
+  const validateEmail = () => {
+    const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!EMAIL_REGEX.test(email.trim())) {
+      setEmailError('Enter a valid email address');
+      return false;
+    }
+    return true;
+  };
+
   const handleSendOTP = async (event) => {
     event.preventDefault();
-    if (!validatePhone()) return;
+    const isPhoneValid = validatePhone();
+    const isEmailValid = validateEmail();
+    if (!isPhoneValid || !isEmailValid) return;
 
     setIsSending(true);
     const phoneNumber = `+91${phone}`;
@@ -84,7 +102,7 @@ const Login = () => {
     try {
       const response = await sendOtp({
         name: `User-${phone}`,
-        email: `${phone}@placeholder.local`,
+        email: email.trim(),
         phone: phoneNumber,
       });
 
@@ -96,7 +114,7 @@ const Login = () => {
         'auth_pending_user',
         JSON.stringify({
           name: `User-${phone}`,
-          email: `${phone}@placeholder.local`,
+          email: email.trim(),
         })
       );
       sessionStorage.setItem('auth_pending_phone', phoneNumber);
@@ -179,7 +197,7 @@ const Login = () => {
         phone: storedPhone || `+91${phone}`,
         otp: otpValue,
         name: parsedStoredUser?.name || `User-${phone}`,
-        email: parsedStoredUser?.email || `${phone}@placeholder.local`,
+        email: parsedStoredUser?.email || email.trim(),
         sessionId: storedSessionId,
       });
 
@@ -216,7 +234,7 @@ const Login = () => {
     try {
       const response = await sendOtp({
         name: parsedStoredUser?.name || `User-${phone}`,
-        email: parsedStoredUser?.email || `${phone}@placeholder.local`,
+        email: parsedStoredUser?.email || email.trim(),
         phone: storedPhone || `+91${phone}`,
       });
 
@@ -388,6 +406,24 @@ const Login = () => {
                     />
                   </div>
                   {phoneError && <p className="stitch-field-error">{phoneError}</p>}
+                </div>
+
+                <div className="stitch-field" style={{ marginTop: '1rem' }}>
+                  <label className="stitch-field-label" htmlFor="stitch-email">
+                    Email Address
+                  </label>
+                  <input
+                    id="stitch-email"
+                    name="email"
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={email}
+                    onChange={handleEmailChange}
+                    className={`stitch-phone-input ${emailError ? 'stitch-input-error' : ''}`}
+                    style={{ width: '100%', padding: '0.85rem 1rem', borderRadius: '18px', border: '1px solid rgba(226, 191, 176, 0.95)' }}
+                    required
+                  />
+                  {emailError && <p className="stitch-field-error">{emailError}</p>}
                 </div>
 
                 <button

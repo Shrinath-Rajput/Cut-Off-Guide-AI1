@@ -8,13 +8,20 @@ const buildInitialProfile = (currentUser) => ({
   fullName: currentUser?.name || '',
   email: currentUser?.email || '',
   category: '',
+  pwdCrossCategory: false,
+  phone: '',
+  domicile: '',
   academic: {
+    exam: '',
     examScore: '',
+    careerOption: '',
     preferredBranch: '',
   },
   preferences: {
     preferredLocation: '',
-    budgetRange: '',
+    budgetRange: '0-10',
+    collegeType: '',
+    hostelRequired: false,
   },
 });
 
@@ -50,6 +57,9 @@ export const OnboardingProvider = ({ children, currentUser }) => {
       fullName: payload.fullName ?? prev.fullName,
       email: payload.email ?? prev.email,
       category: payload.category ?? prev.category,
+      pwdCrossCategory: payload.pwdCrossCategory ?? prev.pwdCrossCategory,
+      phone: payload.phone ?? prev.phone,
+      domicile: payload.domicile ?? prev.domicile,
     }));
   };
 

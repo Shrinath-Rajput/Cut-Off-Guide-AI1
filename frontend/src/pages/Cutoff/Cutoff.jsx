@@ -1,37 +1,41 @@
-import { useState, useEffect } from 'react';
-import { searchCutoffs, getProfile } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import { useState } from 'react';
+import { searchCutoffs } from '../../services/api';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import SectionHeader from '../../components/SectionHeader/SectionHeader';
 import Button from '../../components/Button/Button';
+import { EXAM_CONFIG, validateAcademicScore } from '../../utils/validation';
 import './Cutoff.css';
 
 const Cutoff = () => {
-  const { isAuthenticated } = useAuth();
-  const [form, setForm] = useState({ percentile: '', category: '', gender: '', university: '', course: '', location: '', round: '' });
+  const [form, setForm] = useState({ exam: '', score: '', category: '', gender: '', university: '', course: '', location: '', round: '' });
+  const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      getProfile().then(profile => {
-        setForm(prev => ({
-          ...prev,
-          percentile: profile.percentile || profile.examScore || prev.percentile,
-          category: profile.category || prev.category,
-          course: profile.preferredBranch || prev.course,
-          location: profile.preferredLocation || prev.location
-        }));
-      }).catch(err => console.error("Failed to fetch profile for prediction prepopulation", err));
-    }
-  }, [isAuthenticated]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    
+    if (name === 'exam') {
+      setForm((prev) => ({ ...prev, exam: value, score: '', course: '' }));
+      setError(null);
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+      if (name === 'score') {
+        setError(null);
+      }
+    }
+  };
+
+  const handleScoreBlur = () => {
+    if (form.exam && form.score) {
+      const validationError = validateAcademicScore(form.exam, form.score);
+      setError(validationError);
+    }
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (error) return;
+    
     try {
       const data = await searchCutoffs(form);
       setResult(data);
@@ -39,6 +43,8 @@ const Cutoff = () => {
       console.error('Failed to search cutoffs:', error);
     }
   };
+
+  const selectedExamConfig = EXAM_CONFIG[form.exam];
 
   return (
     <MainLayout>
@@ -48,16 +54,46 @@ const Cutoff = () => {
         <form className="cutoff-form" onSubmit={handleSubmit}>
           <div className="cutoff-grid">
             <label>
-              MHT-CET percentile
-              <input name="percentile" value={form.percentile} onChange={handleChange} placeholder="95.5" />
+              Select Exam
+              <select name="exam" value={form.exam} onChange={handleChange}>
+                <option value="" disabled>Select an exam</option>
+                {Object.keys(EXAM_CONFIG).map((examOption) => (
+                  <option key={examOption} value={examOption}>{examOption}</option>
+                ))}
+              </select>
             </label>
+            
+            <label>
+              {selectedExamConfig ? selectedExamConfig.label : 'Score / Percentile'}
+              <input 
+                name="score" 
+                value={form.score} 
+                onChange={handleChange} 
+                onBlur={handleScoreBlur}
+                placeholder={selectedExamConfig ? `e.g. ${selectedExamConfig.type === 'percentile' ? '95.5' : '150'}` : 'Select an exam first'} 
+                disabled={!form.exam}
+                className={error ? 'input-error' : ''}
+              />
+              {error && <span className="field-error">{error}</span>}
+            </label>
+
             <label>
               Category
               <select name="category" value={form.category} onChange={handleChange}>
                 <option value="">Select category</option>
-                <option>Open</option>
+                <option>Open/General</option>
                 <option>OBC</option>
-                <option>SC/ST</option>
+                <option>SC</option>
+                <option>ST</option>
+                <option>EWS</option>
+                <option>PWD (Persons with Disability)</option>
+                <option>Defence/Ex-Servicemen</option>
+                <option>Minority</option>
+                <option>Kashmiri Migrant</option>
+                <option>NT-B</option>
+                <option>NT-C</option>
+                <option>NT-D</option>
+                <option>SBC</option>
               </select>
             </label>
             <label>
@@ -71,15 +107,25 @@ const Cutoff = () => {
             </label>
             <label>
               Home University
-              <input name="university" value={form.university} onChange={handleChange} placeholder="Mumbai University" />
+              <input name="university" value={form.university} onChange={handleChange} placeholder="e.g., Mumbai University" />
             </label>
             <label>
               Preferred course
-              <input name="course" value={form.course} onChange={handleChange} placeholder="Computer Engineering" />
+              <select 
+                name="course" 
+                value={form.course} 
+                onChange={handleChange}
+                disabled={!form.exam}
+              >
+                <option value="" disabled>{form.exam ? 'Select a course' : 'Select an exam first'}</option>
+                {selectedExamConfig?.courses?.map((courseOption) => (
+                  <option key={courseOption} value={courseOption}>{courseOption}</option>
+                ))}
+              </select>
             </label>
             <label>
               Preferred location
-              <input name="location" value={form.location} onChange={handleChange} placeholder="Pune" />
+              <input name="location" value={form.location} onChange={handleChange} placeholder="e.g., Pune" />
             </label>
             <label>
               CAP round
@@ -90,7 +136,7 @@ const Cutoff = () => {
               </select>
             </label>
           </div>
-          <Button variant="primary" type="submit">Predict</Button>
+          <Button variant="primary" type="submit" disabled={!!error || !form.exam || !form.score}>Predict</Button>
         </form>
 
         <div className="cutoff-result">

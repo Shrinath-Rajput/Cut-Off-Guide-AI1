@@ -319,3 +319,136 @@
     line-height: 40px;
   }
 }
+
+.chip-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.chip {
+  padding: 8px 16px;
+  border-radius: 9999px;
+  border: 1px solid var(--stitch-outline-variant);
+  background-color: var(--stitch-surface-container-lowest);
+  color: var(--stitch-on-surface);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 200ms ease;
+}
+
+.chip:hover {
+  background-color: var(--stitch-surface-container-high);
+}
+
+.chip-selected {
+  background-color: var(--stitch-primary-container);
+  color: var(--stitch-on-primary-container);
+  border-color: var(--stitch-primary);
+  font-weight: 500;
+}
+
+.range-slider {
+  width: 100%;
+  margin-top: 8px;
+  accent-color: var(--stitch-primary);
+}
+
+.field-error-text {
+  color: #d32f2f;
+  font-size: 12px;
+  margin-top: 4px;
+  font-family: 'Inter', sans-serif;
+}
+
+.field-input-error {
+  border-color: #d32f2f !important;
+}
+
+.category-text-error {
+  border-color: #d32f2f !important;
+  color: #d32f2f !important;
+}
+
+/* Summary Card */
+.summary-card {
+  background-color: var(--stitch-surface-container-lowest);
+  border-radius: 8px;
+  border: 1px solid var(--stitch-outline-variant);
+  padding: 24px;
+}
+
+.summary-intro {
+  margin-top: 0;
+  margin-bottom: 24px;
+  color: var(--stitch-on-surface-variant);
+  font-family: 'Inter', sans-serif;
+  line-height: 1.5;
+}
+
+.summary-section {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--stitch-outline-variant);
+}
+
+.summary-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.summary-header h3 {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: 20px;
+  color: var(--stitch-primary);
+}
+
+.edit-link {
+  background: none;
+  border: none;
+  color: var(--stitch-primary);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.edit-link:hover {
+  color: var(--stitch-primary-container);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 600px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.summary-item {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  color: var(--stitch-on-surface);
+}
+
+.summary-label {
+  font-weight: 600;
+  color: var(--stitch-on-surface-variant);
+}
