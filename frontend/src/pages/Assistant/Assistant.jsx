@@ -57,7 +57,7 @@ const Assistant = () => {
     }
   }, [messages, isTyping]);
 
-  const assistantApiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+  const assistantApiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
 
   const sendAssistantMessage = async (messageText) => {
     const response = await fetch(`${assistantApiBase}/api/assistant`, {
