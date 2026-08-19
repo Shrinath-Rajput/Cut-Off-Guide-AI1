@@ -10,10 +10,22 @@ from fastapi import HTTPException
 from app.core.config import settings
 
 OTP_TTL_SECONDS = int(settings.OTP_TTL_SECONDS) if hasattr(settings, 'OTP_TTL_SECONDS') else 300
+_active_otps = {}
+
+
+def normalize_phone(phone: str) -> str:
+    cleaned = "".join(c for c in str(phone) if c.isdigit())
+    if cleaned.startswith("91") and len(cleaned) == 12:
+        cleaned = cleaned[2:]
+    elif cleaned.startswith("0") and len(cleaned) == 11:
+        cleaned = cleaned[1:]
+    if len(cleaned) != 10:
+        raise HTTPException(status_code=400, detail="Please enter a valid 10-digit mobile number")
+    return cleaned
 
 
 def _mask_phone(phone: str) -> str:
-    digits = "".join(c for c in phone if c.isdigit())
+    digits = "".join(c for c in str(phone) if c.isdigit())
     if len(digits) >= 5:
         return "XXXXX" + digits[-5:]
     return "***"
@@ -50,52 +62,88 @@ async def _store_otp(phone: str, otp: int, db, session_id: str = None) -> str:
         "expires_at": expires_at,
         "verified": False
     }
+
+    _active_otps[session_id] = otp_doc
+
+    if settings.OTP_MODE.lower() == "development":
+        logging.info("[AUTH] OTP storage: DEVELOPMENT MEMORY (session_id: %s)", _mask_session(session_id))
+        return session_id
     
-    await db.otps.insert_one(otp_doc)
-    logging.info("[AUTH] OTP storage: SUCCESS (session_id: %s)", _mask_session(session_id))
+    if db is not None:
+        try:
+            await db.otps.insert_one(otp_doc)
+            logging.info("[AUTH] OTP storage: SUCCESS in DB (session_id: %s)", _mask_session(session_id))
+        except Exception as e:
+            logging.warning("[AUTH] DB insert failed (saved in memory): %s", e)
+            
     return session_id
 
 
 async def _consume_otp_session(session_id: str, phone: str, otp: str, db) -> bool:
-    query = {"phone": phone}
-    if session_id:
-        query["session_id"] = session_id
-        
-    otp_doc = await db.otps.find_one(query, sort=[("created_at", -1)])
-    
-    if not otp_doc:
-        return False
-        
-    if otp_doc.get("verified"):
-        return False
-        
-    now = datetime.now(timezone.utc)
-    expires_at = otp_doc.get("expires_at")
-    
-    if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-        
-    if now > expires_at:
-        return False
-        
-    if str(otp_doc.get("otp")) != str(otp):
-        return False
-        
-    await db.otps.update_one(
-        {"_id": otp_doc["_id"]},
-        {"$set": {"verified": True, "verified_at": now}}
-    )
-    return True
+    if session_id and session_id in _active_otps:
+        otp_doc = _active_otps[session_id]
+        if otp_doc["phone"] == phone and not otp_doc.get("verified"):
+            now = datetime.now(timezone.utc)
+            if now <= otp_doc["expires_at"] and str(otp_doc["otp"]) == str(otp):
+                otp_doc["verified"] = True
+                if db is not None:
+                    try:
+                        await db.otps.update_one(
+                            {"session_id": session_id},
+                            {"$set": {"verified": True, "verified_at": now}}
+                        )
+                    except Exception:
+                        pass
+                return True
+
+    if db is not None:
+        try:
+            query = {"phone": phone}
+            if session_id:
+                query["session_id"] = session_id
+                
+            otp_doc = await db.otps.find_one(query, sort=[("created_at", -1)])
+            
+            if otp_doc and not otp_doc.get("verified"):
+                now = datetime.now(timezone.utc)
+                expires_at = otp_doc.get("expires_at")
+                
+                if expires_at and expires_at.tzinfo is None:
+                    expires_at = expires_at.replace(tzinfo=timezone.utc)
+                    
+                if expires_at and now <= expires_at and str(otp_doc.get("otp")) == str(otp):
+                    await db.otps.update_one(
+                        {"_id": otp_doc["_id"]},
+                        {"$set": {"verified": True, "verified_at": now}}
+                    )
+                    return True
+        except Exception as e:
+            logging.warning("[AUTH] DB find failed: %s", e)
+
+    return False
 
 
-def _build_fast2sms_request(phone, message):
+def _build_fast2sms_request(phone: str, message: str, otp: int = None):
+    if settings.SMS_ROUTE.lower() == "otp":
+        params = {
+            "route": "otp",
+            "variables_values": str(otp) if otp is not None else "",
+            "numbers": phone,
+            "flash": int(settings.SMS_FLASH) if str(settings.SMS_FLASH).isdigit() else 0,
+        }
+        if settings.SMS_TEMPLATE_ID:
+            params["template_id"] = settings.SMS_TEMPLATE_ID
+        if settings.SMS_ENTITY_ID:
+            params["entity_id"] = settings.SMS_ENTITY_ID
+        return params
+
     params = {
         "numbers": phone,
         "message": message,
         "sender_id": settings.SMS_SENDER_ID,
         "route": settings.SMS_ROUTE,
         "language": settings.SMS_LANGUAGE,
-        "flash": settings.SMS_FLASH,
+        "flash": int(settings.SMS_FLASH) if str(settings.SMS_FLASH).isdigit() else 0,
     }
     if settings.SMS_TEMPLATE_ID:
         params["template_id"] = settings.SMS_TEMPLATE_ID
@@ -104,19 +152,23 @@ def _build_fast2sms_request(phone, message):
     return params
 
 
+def _extract_fast2sms_error(response_json) -> str:
+    if isinstance(response_json, dict):
+        msg = response_json.get("message")
+        if isinstance(msg, list):
+            return " ".join(str(item) for item in msg if item)
+        if isinstance(msg, str) and msg:
+            return msg
+    elif isinstance(response_json, str):
+        return response_json[:300]
+    return "Fast2SMS provider error"
+
+
 async def send_otp_sms(phone: str, db) -> dict:
+    normalized_phone = normalize_phone(phone)
     otp = random.randint(100000, 999999)
     logging.info("[AUTH] OTP generation: SUCCESS (6-digit, not logged)")
     
-    normalized_phone = phone.replace("+91", "").replace(" ", "").strip()
-    if not normalized_phone.isdigit() or len(normalized_phone) < 10:
-        raise HTTPException(status_code=400, detail="Invalid phone number format")
-
-    if normalized_phone.startswith("91") and len(normalized_phone) == 12:
-        pass
-    elif len(normalized_phone) == 10:
-        normalized_phone = f"91{normalized_phone}"
-        
     logging.info("[AUTH] SMS provider: %s", str(settings.SMS_PROVIDER).upper())
     logging.info("[AUTH] SMS destination (masked): %s", _mask_phone(normalized_phone))
     logging.info("[AUTH] SMS route: %s", settings.SMS_ROUTE)
@@ -130,15 +182,9 @@ async def send_otp_sms(phone: str, db) -> dict:
         logging.warning(
             "[AUTH] OTP MODE = DEVELOPMENT. SMS provider call is BYPASSED. No real SMS sent. OTP stored in DB only."
         )
-        session_id = await _store_otp(phone, otp, db)
+        session_id = await _store_otp(normalized_phone, otp, db)
         logging.info("[AUTH] Final send-otp decision: SUCCESS (MOCK / DEVELOPMENT MODE)")
         return {"session_id": session_id, "dev_otp": str(otp)}
-
-    if settings.OTP_MODE == "production":
-        if not settings.SMS_TEMPLATE_ID:
-            logging.warning("[AUTH] SMS template_id is NOT configured. Indian TRAI DLT rules require an approved template_id for transactional SMS. Delivery may fail.")
-        if not settings.SMS_ENTITY_ID:
-            logging.warning("[AUTH] SMS entity_id/pe_id is NOT configured. Indian TRAI DLT rules require a registered Principal Entity ID. Delivery may fail.")
 
     api_key = settings.FAST_TO_SMS_API_KEY
     if not api_key:
@@ -146,7 +192,7 @@ async def send_otp_sms(phone: str, db) -> dict:
         raise HTTPException(status_code=500, detail="SMS provider configuration is missing (FAST_TO_SMS_API_KEY)")
 
     message = f"Your verification OTP is {otp}. It is valid for 5 minutes."
-    request_params = _build_fast2sms_request(normalized_phone, message)
+    request_params = _build_fast2sms_request(normalized_phone, message, otp=otp)
     
     url = "https://www.fast2sms.com/dev/bulkV2"
     data = json.dumps(request_params).encode("utf-8")
@@ -159,7 +205,7 @@ async def send_otp_sms(phone: str, db) -> dict:
     logging.info("[AUTH] SMS API request: SENDING to Fast2SMS bulkV2 endpoint")
 
     try:
-        with urllib_request.urlopen(req, timeout=10) as response:
+        with urllib_request.urlopen(req, timeout=15) as response:
             response_text = response.read().decode("utf-8", "ignore")
             status_code = response.status
             try:
@@ -189,11 +235,11 @@ async def send_otp_sms(phone: str, db) -> dict:
                 raise HTTPException(status_code=500, detail="Failed to send SMS via provider (HTTP error)")
                 
             if not is_success:
-                error_msg = response_json.get("message", "Unknown Fast2SMS error") if isinstance(response_json, dict) else "Unknown Fast2SMS error"
+                error_msg = _extract_fast2sms_error(response_json)
                 logging.error("[AUTH] SMS provider REJECTED request: %s. OTP not stored.", error_msg)
-                raise HTTPException(status_code=500, detail=f"SMS API Error: {error_msg}")
+                raise HTTPException(status_code=400, detail=f"SMS API Error: {error_msg}")
 
-            session_id = await _store_otp(phone, otp, db)
+            session_id = await _store_otp(normalized_phone, otp, db)
             return_data = {"session_id": session_id}
             
             if isinstance(response_json, dict) and "request_id" in response_json:
@@ -216,13 +262,13 @@ async def send_otp_sms(phone: str, db) -> dict:
             else:
                 safe_err = str(err_json)[:500]
             logging.error("[AUTH] SMS provider error response (safe keys only): %s", safe_err)
-            err_msg = err_json.get("message", f"SMS provider error: {exc.code}")
+            err_msg = _extract_fast2sms_error(err_json)
         except Exception:
             err_msg = f"SMS provider error: {exc.code}"
             logging.error("[AUTH] SMS provider error body: %s", error_body[:500])
 
         logging.error("[AUTH] Final send-otp decision: FAILED")
-        raise HTTPException(status_code=500, detail=err_msg) from exc
+        raise HTTPException(status_code=exc.code if exc.code in (400, 401, 403, 404) else 500, detail=err_msg) from exc
 
     except HTTPException:
         raise
@@ -233,11 +279,12 @@ async def send_otp_sms(phone: str, db) -> dict:
 
 
 async def verify_otp_sms(phone: str, otp: str, session_id: str, db) -> bool:
-    logging.info("[AUTH] verify-otp called for phone (masked): %s", _mask_phone(phone))
+    normalized_phone = normalize_phone(phone)
+    logging.info("[AUTH] verify-otp called for phone (masked): %s", _mask_phone(normalized_phone))
     logging.info("[AUTH] verify-otp session_id provided: %s", "yes" if session_id else "no")
     logging.info("[AUTH] verify-otp OTP length: %s digits", len(str(otp)))
 
-    result = await _consume_otp_session(session_id=session_id, phone=phone, otp=otp, db=db)
+    result = await _consume_otp_session(session_id=session_id, phone=normalized_phone, otp=otp, db=db)
     if result:
         logging.info("[AUTH] OTP verification: SUCCESS (correct, not expired, now consumed)")
     else:

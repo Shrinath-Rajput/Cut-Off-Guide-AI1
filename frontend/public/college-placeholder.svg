@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" role="img" aria-labelledby="title desc">
+  <title id="title">College image unavailable</title>
+  <desc id="desc">A simple campus building placeholder</desc>
+  <rect width="1200" height="700" fill="#e9e1d8"/>
+  <rect y="500" width="1200" height="200" fill="#c9d1c5"/>
+  <path d="M260 500V300h680v200M210 300h780L600 160 210 300Z" fill="#a04100"/>
+  <path d="M350 330h70v170h-70zM500 330h70v170h-70zM650 330h70v170h-70zM800 330h70v170h-70z" fill="#fff8f1"/>
+  <path d="M540 500V390h120v110" fill="#5a4136"/>
+  <text x="600" y="605" text-anchor="middle" font-family="sans-serif" font-size="34" font-weight="700" fill="#5a4136">College image unavailable</text>
+</svg>

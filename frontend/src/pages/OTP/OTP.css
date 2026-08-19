@@ -63,6 +63,16 @@
   border: 1px solid #f0c7c7;
 }
 
+.otp-development-code {
+  padding: 0.65rem 0.9rem;
+  border: 1px dashed #a04100;
+  border-radius: 8px;
+  color: #7a3300;
+  background: #fff4eb;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
 .otp-meta {
   display: flex;
   justify-content: space-between;
