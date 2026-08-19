@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.core.database import connect_to_mongo, close_mongo_connection, get_db
 
-from app.routes import auth, users, admin, colleges, cutoffs
+from app.routes import auth, users, admin, colleges, cutoffs, profile, saved
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -28,9 +28,21 @@ app = FastAPI(
 )
 
 # CORS configuration
+allowed_origins = list(dict.fromkeys((settings.CORS_ORIGINS or []) + [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
+    "http://localhost:5176",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175",
+    "http://127.0.0.1:5176",
+    "http://127.0.0.1:3000",
+]))
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -41,6 +53,8 @@ app.include_router(users.router)
 app.include_router(admin.router)
 app.include_router(colleges.router)
 app.include_router(cutoffs.router)
+app.include_router(profile.router)
+app.include_router(saved.router)
 
 @app.get("/api/health", tags=["Health"])
 async def health_check():
@@ -49,4 +63,12 @@ async def health_check():
     return {
         "status": "ok",
         "database": db_status
+    }
+
+@app.get("/", tags=["Health"])
+async def root():
+    return {
+        "status": "ok",
+        "service": "CutoffGrid API",
+        "docs": "/docs"
     }

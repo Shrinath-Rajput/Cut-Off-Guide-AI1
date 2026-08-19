@@ -7,6 +7,14 @@ const api = axios.create({
   },
 });
 
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 export const sendOtp = async (payload) => {
   const response = await api.post('/api/auth/send-otp', payload);
   return response.data;
@@ -38,11 +46,37 @@ export const getColleges = async (params = {}) => {
 };
 
 export const searchCutoffs = async (payload) => {
-  const response = await api.post('/api/cutoffs/search', payload);
-  return response.data;
+  const { data } = await api.post('/api/cutoffs/search', payload);
+  return data;
+};
+
+// Saved Colleges
+export const getSavedColleges = async () => {
+  const { data } = await api.get('/api/saved');
+  return data;
+};
+
+export const saveCollege = async (payload) => {
+  const { data } = await api.post('/api/saved', payload);
+  return data;
+};
+
+export const removeSavedCollege = async (id) => {
+  const { data } = await api.delete(`/api/saved/${id}`);
+  return data;
 };
 
 export const getCollegeById = async (id) => {
   const response = await api.get(`/api/colleges/${id}`);
+  return response.data;
+};
+
+export const getProfile = async () => {
+  const response = await api.get('/api/profile');
+  return response.data;
+};
+
+export const updateProfile = async (payload) => {
+  const response = await api.put('/api/profile', payload);
   return response.data;
 };

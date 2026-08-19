@@ -1,29 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainLayout from '../../components/MainLayout/MainLayout';
+import { getCollegeById } from '../../services/api';
 import './CollegeDetails.css';
 import heroImage from '../../assets/images/clg.jpg';
-
-const collegeDetails = {
-  mit: {
-    name: 'Massachusetts Institute of Technology',
-    location: 'Cambridge, MA, United States',
-    rating: '4.9/5',
-    reviews: '2,450 Reviews',
-    ranking: '#1 QS World Ranking',
-    badges: ['Top 10 Global', 'Accredited'],
-    heroImage: heroImage,
-  },
-  stanford: {
-    name: 'Stanford University',
-    location: 'Stanford, CA, United States',
-    rating: '4.8/5',
-    reviews: '2,120 Reviews',
-    ranking: '#2 QS World Ranking',
-    badges: ['Top 10 Global', 'Accredited'],
-    heroImage: heroImage,
-  },
-};
 
 const stats = [
   {
@@ -94,12 +74,43 @@ const CollegeDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Overview');
-  const college = collegeDetails[id] || collegeDetails.mit;
+  const [college, setCollege] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCollege = async () => {
+      try {
+        const data = await getCollegeById(id);
+        setCollege(data);
+      } catch (error) {
+        console.error("Failed to fetch college details", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCollege();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <MainLayout>
+        <div style={{ padding: '100px', textAlign: 'center' }}>Loading college details...</div>
+      </MainLayout>
+    );
+  }
+
+  if (!college) {
+    return (
+      <MainLayout>
+        <div style={{ padding: '100px', textAlign: 'center' }}>College not found.</div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
       <main className="college-details-page">
-        <section className="college-hero" style={{ backgroundImage: `url(${college.heroImage})` }}>
+        <section className="college-hero" style={{ backgroundImage: `url(${college.image || heroImage})` }}>
           <div className="hero-overlay" />
         </section>
 
@@ -107,9 +118,8 @@ const CollegeDetails = () => {
           <div className="college-profile-card">
             <div>
               <div className="college-badges">
-                {college.badges.map((badge) => (
-                  <span key={badge} className="college-badge">{badge}</span>
-                ))}
+                {college.type && <span className="college-badge">{college.type}</span>}
+                {college.state && <span className="college-badge">{college.state}</span>}
               </div>
               <h1>{college.name}</h1>
               <div className="college-meta-row">
@@ -119,17 +129,32 @@ const CollegeDetails = () => {
                 </div>
                 <div className="college-meta-item">
                   <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <span>{college.rating} ({college.reviews})</span>
+                  <span>{college.rating || 'N/A'} {college.reviews ? `(${college.reviews})` : ''}</span>
                 </div>
                 <div className="college-meta-item">
                   <span className="material-symbols-outlined">workspace_premium</span>
-                  <span>{college.ranking}</span>
+                  <span>Rank #{college.rank}</span>
                 </div>
               </div>
             </div>
 
             <div className="college-profile-actions">
-              <button type="button" className="college-action-btn outline" onClick={() => navigate('/saved')}>
+              <button type="button" className="college-action-btn outline" onClick={async () => {
+                try {
+                  const { saveCollege } = await import('../../services/api');
+                  await saveCollege({
+                    college_id: college.id,
+                    name: college.name,
+                    location: college.location,
+                    rank: String(college.rank),
+                    rating: college.rating,
+                    image: college.image
+                  });
+                  alert('College saved successfully!');
+                } catch (error) {
+                  alert('College already saved or error occurred.');
+                }
+              }}>
                 <span className="material-symbols-outlined">bookmark_add</span>
                 Save
               </button>

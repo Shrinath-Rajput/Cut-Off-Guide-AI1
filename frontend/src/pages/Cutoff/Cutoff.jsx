@@ -1,13 +1,29 @@
-import { useState } from 'react';
-import { searchCutoffs } from '../../services/api';
+import { useState, useEffect } from 'react';
+import { searchCutoffs, getProfile } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import SectionHeader from '../../components/SectionHeader/SectionHeader';
 import Button from '../../components/Button/Button';
 import './Cutoff.css';
 
 const Cutoff = () => {
+  const { isAuthenticated } = useAuth();
   const [form, setForm] = useState({ percentile: '', category: '', gender: '', university: '', course: '', location: '', round: '' });
   const [result, setResult] = useState(null);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      getProfile().then(profile => {
+        setForm(prev => ({
+          ...prev,
+          percentile: profile.percentile || profile.examScore || prev.percentile,
+          category: profile.category || prev.category,
+          course: profile.preferredBranch || prev.course,
+          location: profile.preferredLocation || prev.location
+        }));
+      }).catch(err => console.error("Failed to fetch profile for prediction prepopulation", err));
+    }
+  }, [isAuthenticated]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;

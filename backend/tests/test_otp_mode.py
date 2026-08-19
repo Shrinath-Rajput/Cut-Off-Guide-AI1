@@ -81,6 +81,23 @@ class OtpModeTests(unittest.TestCase):
         self.assertEqual(payload["status"], "error")
         self.assertIn("Firebase", payload["message"])
 
+    def test_send_otp_preflight_allows_frontend_origin(self):
+        app = create_app()
+        client = app.test_client()
+
+        response = client.options(
+            "/api/auth/send-otp",
+            headers={
+                "Origin": "http://localhost:5176",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), "http://localhost:5176")
+        self.assertIn("POST", response.headers.get("Access-Control-Allow-Methods", ""))
+
 
 if __name__ == "__main__":
     unittest.main()
