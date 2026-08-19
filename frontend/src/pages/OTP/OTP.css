@@ -1,0 +1,109 @@
+.auth-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #fbf8f3 0%, #ffffff 100%);
+  padding: 2rem;
+}
+
+.otp-card {
+  width: min(100%, 520px);
+  padding: 2.5rem;
+  border-radius: 32px;
+  background: #ffffff;
+  box-shadow: 0 30px 80px rgba(20, 33, 61, 0.08);
+  display: grid;
+  gap: 1.75rem;
+}
+
+.otp-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 700;
+  color: #1a1c1a;
+  font-size: 1rem;
+}
+
+.otp-brand-icon {
+  font-size: 2.25rem;
+  color: #d17d38;
+}
+
+.otp-copy {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.otp-copy h1 {
+  margin: 0;
+  font-size: clamp(2rem, 2.75vw, 3rem);
+  line-height: 1.05;
+  color: #111316;
+}
+
+.otp-copy p {
+  margin: 0;
+  color: #5e4b40;
+  font-size: 1rem;
+  line-height: 1.8;
+}
+
+.otp-input-shell {
+  display: grid;
+  gap: 1rem;
+}
+
+.otp-error {
+  color: #b23535;
+  background: #f8e9e9;
+  padding: 1rem 1.25rem;
+  border-radius: 16px;
+  border: 1px solid #f0c7c7;
+}
+
+.otp-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  color: #5e4b40;
+  font-size: 0.95rem;
+}
+
+.otp-resend {
+  border: none;
+  background: transparent;
+  color: #b35a1c;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.otp-resend:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.otp-actions {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.otp-footer {
+  margin: 0;
+  text-align: center;
+  color: #9b8a7a;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 640px) {
+  .auth-shell {
+    padding: 1rem;
+  }
+
+  .otp-card {
+    padding: 1.75rem;
+  }
+}

@@ -1,0 +1,84 @@
+.page-shell {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(circle at top left, rgba(191, 134, 252, 0.24), transparent 26%),
+    radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.18), transparent 26%),
+    linear-gradient(135deg, #f7f3ff 0%, #ede9fe 55%, #e9d5ff 100%);
+}
+
+.page-shell::before,
+.page-shell::after {
+  content: '';
+  position: absolute;
+  width: 24rem;
+  height: 24rem;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.page-shell::before {
+  top: -4rem;
+  right: -5rem;
+  background: rgba(124, 58, 237, 0.22);
+}
+
+.page-shell::after {
+  bottom: -5rem;
+  left: -5rem;
+  background: rgba(191, 132, 252, 0.24);
+}
+
+.glass-panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 32rem);
+  padding: 2rem;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(124, 58, 237, 0.14);
+  box-shadow: 0 24px 80px rgba(124, 58, 237, 0.14);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  text-align: center;
+}
+
+.splash-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.splash-logo {
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  color: white;
+  background: linear-gradient(135deg, #7b2ff7 0%, #a855f7 100%);
+  box-shadow: 0 20px 50px rgba(123, 47, 247, 0.3);
+}
+
+.splash-card h1 {
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 800;
+  margin: 0;
+  color: #2e2157;
+}
+
+.splash-card p {
+  margin: 0;
+  color: #5b21b6;
+  font-size: 1rem;
+  max-width: 26rem;
+}

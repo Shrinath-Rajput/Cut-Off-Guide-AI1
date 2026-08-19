@@ -1,0 +1,357 @@
+.history-page {
+  width: min(100%, 1280px);
+  margin: 0 auto;
+  padding: 1.5rem 0 3rem;
+}
+
+.history-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(162, 65, 0, 0.12);
+}
+
+.history-hero-copy h1 {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: clamp(2.5rem, 4vw, 3.5rem);
+  color: var(--text);
+  line-height: 1.02;
+}
+
+.history-hero-copy p {
+  margin: 1rem 0 0;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  max-width: 42rem;
+  line-height: 1.85;
+}
+
+.history-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+}
+
+.history-filter-button,
+.pagination-button,
+.record-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(160, 65, 0, 0.16);
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--text);
+  padding: 0.9rem 1.2rem;
+  border-radius: 18px;
+  font-size: 0.95rem;
+  font-family: Inter, sans-serif;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.history-filter-button:hover,
+.pagination-button:hover,
+.record-action-button:hover {
+  background: var(--surface);
+  border-color: rgba(160, 65, 0, 0.28);
+}
+
+.history-summary-grid {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.history-card {
+  background: var(--surface);
+  border: 1px solid rgba(226, 191, 176, 0.75);
+  box-shadow: 0 18px 38px rgba(17, 17, 17, 0.06);
+  border-radius: 32px;
+  padding: 2rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.section-label {
+  margin: 0;
+  font-family: 'Newsreader', serif;
+  font-size: 1.35rem;
+  color: var(--text);
+}
+
+.history-range-select {
+  min-width: 11rem;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 191, 176, 0.85);
+  background: var(--background);
+  color: var(--text);
+  font-family: Inter, sans-serif;
+}
+
+.activity-chart {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: flex-end;
+  min-height: 220px;
+}
+
+.activity-bar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.activity-bar {
+  width: 100%;
+  max-width: 18px;
+  border-radius: 999px;
+  background: rgba(160, 65, 0, 0.18);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.activity-bar.highlight {
+  background: linear-gradient(180deg, #ff6b00, #a04100);
+}
+
+.activity-bar-item span {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+.stats-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.stat-row {
+  background: var(--surface-container-high);
+  border: 1px solid rgba(226, 191, 176, 0.65);
+  border-radius: 24px;
+  padding: 1.4rem 1.5rem;
+}
+
+.stat-title {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  margin: 0;
+  color: var(--text);
+  font-family: 'Newsreader', serif;
+  font-size: 2rem;
+}
+
+.records-card {
+  padding: 2rem;
+}
+
+.records-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.records-search {
+  position: relative;
+  min-width: 18rem;
+  width: 100%;
+  max-width: 25rem;
+}
+
+.records-search .material-symbols-outlined {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+}
+
+.records-search input {
+  width: 100%;
+  padding: 0.95rem 1rem 0.95rem 3rem;
+  border: 1px solid rgba(226, 191, 176, 0.85);
+  border-radius: 18px;
+  background: var(--background);
+  color: var(--text);
+  font-family: Inter, sans-serif;
+}
+
+.records-table-wrapper {
+  overflow-x: auto;
+}
+
+.records-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 960px;
+}
+
+.records-table thead {
+  background: rgba(226, 191, 176, 0.18);
+}
+
+.records-table th,
+.records-table td {
+  padding: 1.25rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(226, 191, 176, 0.45);
+  vertical-align: middle;
+}
+
+.records-table th {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.records-row td {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.record-exam-name {
+  color: var(--text);
+  font-weight: 700;
+  margin-bottom: 0.35rem;
+}
+
+.record-exam-target {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.record-category {
+  display: inline-flex;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.record-category.green {
+  background: #e6f5ee;
+  color: #0f5e37;
+}
+
+.record-category.amber {
+  background: #fff3e0;
+  color: #7b4b0c;
+}
+
+.record-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.record-status-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 999px;
+}
+
+.record-status-dot.green {
+  background: #22c55e;
+}
+
+.record-status-dot.amber {
+  background: #f59e0b;
+}
+
+.record-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.record-action-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.records-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(226, 191, 176, 0.65);
+}
+
+.pagination-controls {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.pagination-button {
+  min-width: 100px;
+}
+
+@media (max-width: 1100px) {
+  .history-summary-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .history-page {
+    padding: 1rem 0 2rem;
+  }
+
+  .history-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .history-hero-actions {
+    justify-content: stretch;
+  }
+
+  .history-filter-button,
+  .premium-button {
+    width: 100%;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .history-range-select,
+  .records-search {
+    width: 100%;
+  }
+
+  .records-table {
+    min-width: 100%;
+  }
+}
