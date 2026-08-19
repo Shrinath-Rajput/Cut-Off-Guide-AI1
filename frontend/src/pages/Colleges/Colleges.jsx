@@ -91,8 +91,30 @@ const Colleges = () => {
   };
   const dynamicDisplayedPages = getDisplayedPages();
 
-  const toggleBookmark = (id) => {
-    setBookmarked((prev) => ({ ...prev, [id]: !prev[id] }));
+  const toggleBookmark = async (college) => {
+    const id = college.id;
+    const isBookmarked = bookmarked[id];
+    setBookmarked((prev) => ({ ...prev, [id]: !isBookmarked }));
+    try {
+      if (isBookmarked) {
+        await import('../../services/api').then(m => m.removeSavedCollege(id));
+      } else {
+        await import('../../services/api').then(m => m.saveCollege({ 
+          college_id: id,
+          name: college.name,
+          location: college.location,
+          course: college.courses?.[0] || '',
+          cutoff: college.cutoff,
+          rank: String(college.rank),
+          rating: String(college.rating),
+          image: college.image
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to toggle bookmark', err);
+      // revert on failure
+      setBookmarked((prev) => ({ ...prev, [id]: isBookmarked }));
+    }
   };
 
   const toggleCompare = (id) => {
@@ -265,7 +287,7 @@ const Colleges = () => {
                       <button
                         type="button"
                         className="bookmark-button"
-                        onClick={() => toggleBookmark(college.id)}
+                        onClick={() => toggleBookmark(college)}
                         aria-label={bookmarked[college.id] ? 'Remove bookmark' : 'Bookmark college'}
                       >
                         <span className="material-symbols-outlined">

@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useOnboarding } from '../../context/OnboardingContext';
+import { useAuth } from '../../context/AuthContext';
+import { updateProfile } from '../../services/api';
 import './Onboarding.css';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -17,6 +19,7 @@ const Onboarding = () => {
     nextStep,
     goToStep,
   } = useOnboarding();
+  const { login } = useAuth();
 
   const steps = useMemo(() => ['Personal', 'Academic', 'Prefs', 'Predict'], []);
   const stepIcons = useMemo(
@@ -134,7 +137,8 @@ const Onboarding = () => {
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    console.log('handleContinue called, activeStep:', activeStep);
     if (activeStep === 1) {
       if (!validatePersonal()) {
         toast.error('Please complete all required fields');
@@ -176,8 +180,22 @@ const Onboarding = () => {
     }
 
     if (activeStep === 4) {
-      toast.success('Onboarding complete! Welcome to Cutoff Guide AI.');
-      navigate('/home');
+      try {
+        const updatedUser = await updateProfile({
+          name: studentProfile.fullName,
+          email: studentProfile.email,
+          category: studentProfile.category,
+          examScore: studentProfile.academic?.examScore,
+          preferredBranch: studentProfile.academic?.preferredBranch,
+          preferredLocation: studentProfile.preferences?.preferredLocation,
+          budgetRange: studentProfile.preferences?.budgetRange,
+        });
+        login(updatedUser, localStorage.getItem('auth_token'));
+        toast.success('Onboarding complete! Welcome to Cutoff Guide AI.');
+        navigate('/home');
+      } catch (error) {
+        toast.error('Failed to save profile. Please try again.');
+      }
     }
   };
 

@@ -300,6 +300,8 @@ def _sanitize_fast2sms_payload(payload):
 
 def register_routes(app):
     api = Blueprint("api", __name__, url_prefix="/api")
+    from flask_cors import CORS
+    CORS(api, supports_credentials=True)
 
     def create_or_update_user(payload):
         uid = (payload.get("uid") or "").strip()

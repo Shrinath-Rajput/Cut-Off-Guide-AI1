@@ -21,16 +21,25 @@ class Settings(BaseSettings):
     SMS_FLASH: str = (os.getenv("SMS_FLASH", "0") or "0").strip()
 
     OTP_TTL_SECONDS: int = int(os.getenv("OTP_TTL_SECONDS", "300"))
-    
-    CORS_ORIGINS: list[str] = [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173"
-    ]
+
+    CORS_ORIGINS: str = (
+        "http://localhost:5173,"
+        "http://localhost:5174,"
+        "http://localhost:5175,"
+        "http://localhost:5176,"
+        "http://localhost:3000,"
+        "http://127.0.0.1:5173,"
+        "http://127.0.0.1:5174,"
+        "http://127.0.0.1:5175,"
+        "http://127.0.0.1:5176,"
+        "http://127.0.0.1:3000"
+    )
 
     class Config:
         env_file = ".env"
         extra = "ignore"
 
 settings = Settings()
+
+if isinstance(settings.CORS_ORIGINS, str):
+    settings.CORS_ORIGINS = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]

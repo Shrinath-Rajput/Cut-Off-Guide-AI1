@@ -1,17 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getProfile, updateProfile } from '../../services/api';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import profileImage from '../../assets/hero.png';
 import './Profile.css';
 
 const initialProfile = {
-  name: 'Alex Carter',
-  email: 'alex.carter@example.com',
-  phone: '+1 (555) 123-4567',
-  dob: '2004-05-15',
+  name: '',
+  email: '',
+  phone: '',
+  dob: '',
   exam: 'JEE Main',
-  percentile: '98.5 Percentile',
+  percentile: '',
   category: 'General',
   domicile: 'Maharashtra',
 };
@@ -24,13 +25,23 @@ const Profile = () => {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (currentUser) {
-      setProfile((prev) => ({
-        ...prev,
-        name: currentUser.name || prev.name,
-        email: currentUser.email || prev.email,
-      }));
-    }
+    const fetchProfile = async () => {
+      try {
+        if (currentUser) {
+          const data = await getProfile();
+          setProfile((prev) => ({
+            ...prev,
+            ...data,
+            name: data.name || currentUser.name || prev.name,
+            email: data.email || currentUser.email || prev.email,
+            phone: data.phone || currentUser.phone || prev.phone,
+          }));
+        }
+      } catch (error) {
+        console.error("Failed to load profile", error);
+      }
+    };
+    fetchProfile();
   }, [currentUser]);
 
   const handleChange = (event) => {
@@ -38,10 +49,15 @@ const Profile = () => {
     setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = () => {
-    setSaved(true);
-    setEditing(false);
-    window.setTimeout(() => setSaved(false), 3200);
+  const handleSave = async () => {
+    try {
+      await updateProfile(profile);
+      setSaved(true);
+      setEditing(false);
+      window.setTimeout(() => setSaved(false), 3200);
+    } catch (error) {
+      console.error("Failed to save profile", error);
+    }
   };
 
   const handleLogout = async () => {

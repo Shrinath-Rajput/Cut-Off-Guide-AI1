@@ -5,6 +5,7 @@ import secrets
 
 from app.core.database import get_db
 from app.core.security import create_access_token
+from app.core.deps import get_current_user
 from app.schemas.user import UserLogin, UserCreate, UserResponse
 from app.services.auth_service import send_otp_sms, verify_otp_sms
 from bson import ObjectId
@@ -137,3 +138,10 @@ async def login(request: UserLogin):
 async def google_auth(request: UserLogin):
     db = get_db()
     return await create_or_update_user(request, db)
+
+@router.get("/me")
+async def get_current_user_info(current_user: dict = Depends(get_current_user)):
+    return {
+        "status": "success",
+        "user": current_user
+    }

@@ -1,46 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../../components/MainLayout/MainLayout';
+import { getSavedColleges, removeSavedCollege } from '../../services/api';
 import './Saved.css';
 import stanfordImage from '../../assets/images/clg.jpg';
 import mitImage from '../../assets/images/clg1.jpg';
 import cornellImage from '../../assets/images/clg2.jpg';
-
-const initialSavedColleges = [
-  {
-    id: 'stanford',
-    name: 'Stanford University',
-    location: 'Stanford, CA',
-    course: 'Computer Science (B.S.)',
-    cutoff: '98.5%ile',
-    savedOn: 'Oct 24, 2023',
-    rank: '#12',
-    rating: '4.8',
-    image: stanfordImage,
-  },
-  {
-    id: 'mit',
-    name: 'MIT',
-    location: 'Cambridge, MA',
-    course: 'Mechanical Eng.',
-    cutoff: '99.1%ile',
-    savedOn: 'Nov 02, 2023',
-    rank: '#3',
-    rating: '4.9',
-    image: mitImage,
-  },
-  {
-    id: 'cornell',
-    name: 'Cornell University',
-    location: 'Ithaca, NY',
-    course: 'Data Science',
-    cutoff: '96.8%ile',
-    savedOn: 'Nov 15, 2023',
-    rank: '#21',
-    rating: '4.5',
-    image: cornellImage,
-  },
-];
 
 const sortOptions = [
   { value: 'recent', label: 'Recently Saved' },
@@ -50,10 +15,16 @@ const sortOptions = [
 ];
 
 const Saved = () => {
-  const [savedColleges, setSavedColleges] = useState(initialSavedColleges);
+  const [savedColleges, setSavedColleges] = useState([]);
   const [sortOption, setSortOption] = useState('recent');
   const [sortOpen, setSortOpen] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    getSavedColleges()
+      .then(data => setSavedColleges(data))
+      .catch(err => console.error("Failed to fetch saved colleges:", err));
+  }, []);
 
   const sortedColleges = useMemo(() => {
     const sorted = [...savedColleges];
@@ -75,8 +46,13 @@ const Saved = () => {
 
   const hasSavedColleges = sortedColleges.length > 0;
 
-  const handleRemoveSaved = (id) => {
-    setSavedColleges((prev) => prev.filter((college) => college.id !== id));
+  const handleRemoveSaved = async (id) => {
+    try {
+      await removeSavedCollege(id);
+      setSavedColleges((prev) => prev.filter((college) => college.id !== id && college.college_id !== id));
+    } catch (error) {
+      console.error("Failed to remove saved college", error);
+    }
   };
 
   const handleViewDetails = (id) => {
