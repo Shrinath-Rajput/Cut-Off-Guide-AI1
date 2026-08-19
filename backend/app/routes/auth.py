@@ -45,6 +45,8 @@ async def create_or_update_user(payload: UserLogin, db):
             existing_user = await collection.find_one(filter_query)
             
             if existing_user:
+                if existing_user.get("role") == "ADMIN":
+                    raise HTTPException(status_code=403, detail="Use the admin login")
                 await collection.update_one(
                     {"_id": existing_user["_id"]},
                     {"$set": {
@@ -91,7 +93,9 @@ async def create_or_update_user(payload: UserLogin, db):
                 "token": token,
                 "user": new_user
             }
-        except Exception as e:
+        except HTTPException:
+            raise
+        except Exception:
             pass
 
     user_obj = _in_memory_users.get(uid, {

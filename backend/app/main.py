@@ -3,6 +3,9 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -10,8 +13,6 @@ from app.core.config import settings
 from app.core.database import connect_to_mongo, close_mongo_connection, get_db
 
 from app.routes import auth, users, admin, colleges, cutoffs, profile, saved
-
-load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
