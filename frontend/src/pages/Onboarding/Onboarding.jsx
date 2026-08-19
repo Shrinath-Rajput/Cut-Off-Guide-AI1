@@ -8,6 +8,26 @@ import './Onboarding.css';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const INDIAN_STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 
+  'Himachal Pradesh', 'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 
+  'Meghalaya', 'Mizoram', 'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 
+  'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal', 'Andaman and Nicobar Islands', 'Chandigarh', 
+  'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry'
+];
+
+import { EXAM_CONFIG, validateAcademicScore } from '../../utils/validation';
+
+const STANDARD_BRANCHES = [
+  'Computer Science', 'Information Technology', 'Electronics & Telecom', 'Mechanical', 'Civil', 'Electrical', 'Chemical'
+];
+
+const CAREER_OPTIONS = [
+  'Engineering', 'Medical', 'Management', 'Law', 'Design', 'Architecture', 'Other'
+];
+
+const COLLEGE_TYPES = ['Government', 'Private', 'Deemed'];
+
 const Onboarding = () => {
   const navigate = useNavigate();
   const {
@@ -36,16 +56,23 @@ const Onboarding = () => {
     fullName: studentProfile?.fullName || '',
     email: studentProfile?.email || '',
     category: studentProfile?.category || '',
+    pwdCrossCategory: studentProfile?.pwdCrossCategory || false,
+    phone: studentProfile?.phone || '',
+    domicile: studentProfile?.domicile || '',
   });
 
   const [academic, setAcademicLocal] = useState({
+    exam: studentProfile?.academic?.exam || '',
     examScore: studentProfile?.academic?.examScore || '',
+    careerOption: studentProfile?.academic?.careerOption || '',
     preferredBranch: studentProfile?.academic?.preferredBranch || '',
   });
 
   const [preferences, setPreferencesLocal] = useState({
     preferredLocation: studentProfile?.preferences?.preferredLocation || '',
-    budgetRange: studentProfile?.preferences?.budgetRange || '',
+    budgetRange: studentProfile?.preferences?.budgetRange || '0',
+    collegeType: studentProfile?.preferences?.collegeType || '',
+    hostelRequired: studentProfile?.preferences?.hostelRequired || false,
   });
 
   const [errors, setErrors] = useState({});
@@ -55,24 +82,45 @@ const Onboarding = () => {
       fullName: studentProfile?.fullName || '',
       email: studentProfile?.email || '',
       category: studentProfile?.category || '',
+      pwdCrossCategory: studentProfile?.pwdCrossCategory || false,
+      phone: studentProfile?.phone || '',
+      domicile: studentProfile?.domicile || '',
     });
-  }, [studentProfile?.fullName, studentProfile?.email, studentProfile?.category]);
+  }, [
+    studentProfile?.fullName,
+    studentProfile?.email,
+    studentProfile?.category,
+    studentProfile?.pwdCrossCategory,
+    studentProfile?.phone,
+    studentProfile?.domicile,
+  ]);
 
   useEffect(() => {
     setAcademicLocal({
+      exam: studentProfile?.academic?.exam || '',
       examScore: studentProfile?.academic?.examScore || '',
+      careerOption: studentProfile?.academic?.careerOption || '',
       preferredBranch: studentProfile?.academic?.preferredBranch || '',
     });
-  }, [studentProfile?.academic?.examScore, studentProfile?.academic?.preferredBranch]);
+  }, [
+    studentProfile?.academic?.exam,
+    studentProfile?.academic?.examScore,
+    studentProfile?.academic?.careerOption,
+    studentProfile?.academic?.preferredBranch,
+  ]);
 
   useEffect(() => {
     setPreferencesLocal({
       preferredLocation: studentProfile?.preferences?.preferredLocation || '',
-      budgetRange: studentProfile?.preferences?.budgetRange || '',
+      budgetRange: studentProfile?.preferences?.budgetRange || '0',
+      collegeType: studentProfile?.preferences?.collegeType || '',
+      hostelRequired: studentProfile?.preferences?.hostelRequired || false,
     });
   }, [
     studentProfile?.preferences?.preferredLocation,
     studentProfile?.preferences?.budgetRange,
+    studentProfile?.preferences?.collegeType,
+    studentProfile?.preferences?.hostelRequired,
   ]);
 
   const validatePersonal = () => {
@@ -83,23 +131,64 @@ const Onboarding = () => {
     } else if (!EMAIL_REGEX.test(personal.email.trim())) {
       next.email = 'Enter a valid email address';
     }
+    if (!personal.phone.trim()) {
+      next.phone = 'Phone Number is required';
+    } else if (!/^\d{10}$/.test(personal.phone.replace(/\D/g, ''))) {
+      next.phone = 'Enter a valid 10-digit phone number';
+    }
+    if (!personal.domicile) next.domicile = 'State of Domicile is required';
     if (!personal.category) next.category = 'Please select a Student Category';
     setErrors(next);
     return Object.keys(next).length === 0;
   };
 
+
   const validateAcademic = () => {
     const next = {};
-    if (!academic.examScore.trim()) next.examScore = 'Exam Score is required';
-    if (!academic.preferredBranch.trim()) next.preferredBranch = 'Preferred Branch is required';
+    if (!academic.exam) next.exam = 'Please select an exam';
+    if (!academic.examScore.trim()) {
+      next.examScore = 'Exam Score is required';
+    } else {
+      const scoreError = validateAcademicScore(academic.exam, academic.examScore);
+      if (scoreError) next.examScore = scoreError;
+    }
+    if (!academic.careerOption) next.careerOption = 'Please select a career option';
+    if (!academic.preferredBranch) next.preferredBranch = 'Please select a branch';
     setErrors(next);
     return Object.keys(next).length === 0;
+  };
+
+  const handleAcademicScoreBlur = () => {
+    if (academic.exam && academic.examScore) {
+      const scoreError = validateAcademicScore(academic.exam, academic.examScore);
+      if (scoreError) {
+        setErrors((prev) => ({ ...prev, examScore: scoreError }));
+      } else {
+        setErrors((prev) => {
+          const next = { ...prev };
+          delete next.examScore;
+          return next;
+        });
+      }
+    }
+  };
+
+  const toggleCategory = (cat) => {
+    const currentCategories = personal.category ? personal.category.split(',').map(b => b.trim()) : [];
+    let newCategories;
+    if (currentCategories.includes(cat)) {
+      newCategories = currentCategories.filter(b => b !== cat);
+    } else {
+      newCategories = [...currentCategories, cat];
+    }
+    const newValue = newCategories.join(', ');
+    handlePersonalChange('category', newValue);
   };
 
   const validatePreferences = () => {
     const next = {};
     if (!preferences.preferredLocation.trim()) next.preferredLocation = 'Preferred Location is required';
-    if (!preferences.budgetRange.trim()) next.budgetRange = 'Budget Range is required';
+    if (!preferences.collegeType.trim()) next.collegeType = 'Please select at least one college type';
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -118,11 +207,23 @@ const Onboarding = () => {
   const handleAcademicChange = (field, value) => {
     setAcademicLocal((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors((prev) => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
+      // If changing exam, re-validate score if exists
+      if (field === 'exam' && academic.examScore) {
+         const scoreError = validateAcademicScore(value, academic.examScore);
+         setErrors((prev) => {
+           const next = { ...prev };
+           delete next.exam;
+           if (scoreError) next.examScore = scoreError;
+           else delete next.examScore;
+           return next;
+         });
+      } else {
+        setErrors((prev) => {
+          const next = { ...prev };
+          delete next[field];
+          return next;
+        });
+      }
     }
   };
 
@@ -137,6 +238,18 @@ const Onboarding = () => {
     }
   };
 
+  const toggleCollegeType = (ctype) => {
+    const currentTypes = preferences.collegeType ? preferences.collegeType.split(',').map(b => b.trim()) : [];
+    let newTypes;
+    if (currentTypes.includes(ctype)) {
+      newTypes = currentTypes.filter(b => b !== ctype);
+    } else {
+      newTypes = [...currentTypes, ctype];
+    }
+    const newValue = newTypes.join(', ');
+    handlePreferencesChange('collegeType', newValue);
+  };
+
   const handleContinue = async () => {
     console.log('handleContinue called, activeStep:', activeStep);
     if (activeStep === 1) {
@@ -148,18 +261,27 @@ const Onboarding = () => {
         fullName: personal.fullName.trim(),
         email: personal.email.trim(),
         category: personal.category,
+        pwdCrossCategory: personal.pwdCrossCategory,
+        phone: personal.phone.trim(),
+        domicile: personal.domicile,
       });
       nextStep();
       return;
     }
 
     if (activeStep === 2) {
+      if (personal.category.trim().length === 0) {
+        toast.error('Please select at least one category.');
+        return;
+      }
       if (!validateAcademic()) {
         toast.error('Please complete all required fields');
         return;
       }
       setAcademic({
+        exam: academic.exam,
         examScore: academic.examScore.trim(),
+        careerOption: academic.careerOption,
         preferredBranch: academic.preferredBranch.trim(),
       });
       nextStep();
@@ -174,6 +296,8 @@ const Onboarding = () => {
       setPreferences({
         preferredLocation: preferences.preferredLocation.trim(),
         budgetRange: preferences.budgetRange.trim(),
+        collegeType: preferences.collegeType,
+        hostelRequired: preferences.hostelRequired,
       });
       nextStep();
       return;
@@ -181,15 +305,23 @@ const Onboarding = () => {
 
     if (activeStep === 4) {
       try {
-        const updatedUser = await updateProfile({
+        const payload = {
           name: studentProfile.fullName,
           email: studentProfile.email,
           category: studentProfile.category,
+          pwdCrossCategory: studentProfile.pwdCrossCategory,
+          phone: studentProfile.phone,
+          domicile: studentProfile.domicile,
+          exam: studentProfile.academic?.exam,
           examScore: studentProfile.academic?.examScore,
+          careerOption: studentProfile.academic?.careerOption,
           preferredBranch: studentProfile.academic?.preferredBranch,
           preferredLocation: studentProfile.preferences?.preferredLocation,
           budgetRange: studentProfile.preferences?.budgetRange,
-        });
+          collegeType: studentProfile.preferences?.collegeType,
+          hostelRequired: studentProfile.preferences?.hostelRequired,
+        };
+        const updatedUser = await updateProfile(payload);
         login(updatedUser, localStorage.getItem('auth_token'));
         toast.success('Onboarding complete! Welcome to Cutoff Guide AI.');
         navigate('/home');
@@ -302,17 +434,48 @@ const Onboarding = () => {
                   {errors.email && <div className="field-error-text">{errors.email}</div>}
                 </div>
 
+                <div className="form-field">
+                  <label className="field-label" htmlFor="phone">Phone Number</label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={personal.phone}
+                    onChange={(e) => handlePersonalChange('phone', e.target.value)}
+                    placeholder="Enter your 10-digit phone number"
+                    className={`field-input ${errors.phone ? 'field-input-error' : ''}`}
+                  />
+                  {errors.phone && <div className="field-error-text">{errors.phone}</div>}
+                </div>
+
+                <div className="form-field">
+                  <label className="field-label" htmlFor="domicile">State of Domicile</label>
+                  <select
+                    id="domicile"
+                    name="domicile"
+                    value={personal.domicile}
+                    onChange={(e) => handlePersonalChange('domicile', e.target.value)}
+                    className={`field-input ${errors.domicile ? 'field-input-error' : ''}`}
+                  >
+                    <option value="" disabled>Select your state</option>
+                    {INDIAN_STATES.map((state) => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                  {errors.domicile && <div className="field-error-text">{errors.domicile}</div>}
+                </div>
+
                 <div className="form-field category-field">
                   <label className="field-label">Student Category</label>
                   <div className="category-options">
-                    {['General', 'OBC', 'SC', 'ST'].map((option) => (
+                    {['General', 'OBC', 'SC', 'ST', 'EWS', 'PWD', 'Defence/Ex-Servicemen', 'Minority', 'Kashmiri Migrant'].map((option) => (
                       <label key={option} className="category-label">
                         <input
-                          type="radio"
+                          type="checkbox"
                           name="category"
                           value={option}
-                          checked={personal.category === option}
-                          onChange={() => handlePersonalChange('category', option)}
+                          checked={personal.category.includes(option)}
+                          onChange={() => toggleCategory(option)}
                           className="radio-input"
                         />
                         <span
@@ -325,11 +488,41 @@ const Onboarding = () => {
                   </div>
                   {errors.category && <div className="field-error-text">{errors.category}</div>}
                 </div>
+                
+                <div className="form-field category-field" style={{ marginTop: '1rem' }}>
+                  <label className="category-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      name="pwdCrossCategory"
+                      checked={personal.pwdCrossCategory}
+                      onChange={(e) => handlePersonalChange('pwdCrossCategory', e.target.checked)}
+                      className="radio-input"
+                    />
+                    <span className="category-text">PWD (Cross-category applicant)</span>
+                  </label>
+                </div>
               </>
             )}
 
             {activeStep === 2 && (
               <>
+                <div className="form-field">
+                  <label className="field-label" htmlFor="exam">Exam</label>
+                  <select
+                    id="exam"
+                    name="exam"
+                    value={academic.exam}
+                    onChange={(e) => handleAcademicChange('exam', e.target.value)}
+                    className={`field-input ${errors.exam ? 'field-input-error' : ''}`}
+                  >
+                    <option value="" disabled>Select an exam</option>
+                    {Object.keys(EXAM_CONFIG).map((examOption) => (
+                      <option key={examOption} value={examOption}>{examOption}</option>
+                    ))}
+                  </select>
+                  {errors.exam && <div className="field-error-text">{errors.exam}</div>}
+                </div>
+
                 <div className="form-field">
                   <label className="field-label" htmlFor="examScore">Exam Score</label>
                   <input
@@ -337,22 +530,44 @@ const Onboarding = () => {
                     id="examScore"
                     value={academic.examScore}
                     onChange={(e) => handleAcademicChange('examScore', e.target.value)}
-                    placeholder="e.g., 630 / 720"
+                    onBlur={handleAcademicScoreBlur}
+                    placeholder="e.g., 630"
                     className={`field-input ${errors.examScore ? 'field-input-error' : ''}`}
                   />
                   {errors.examScore && <div className="field-error-text">{errors.examScore}</div>}
                 </div>
 
                 <div className="form-field">
+                  <label className="field-label" htmlFor="careerOption">Career Option</label>
+                  <select
+                    id="careerOption"
+                    name="careerOption"
+                    value={academic.careerOption}
+                    onChange={(e) => handleAcademicChange('careerOption', e.target.value)}
+                    className={`field-input ${errors.careerOption ? 'field-input-error' : ''}`}
+                  >
+                    <option value="" disabled>Select a career option</option>
+                    {CAREER_OPTIONS.map((career) => (
+                      <option key={career} value={career}>{career}</option>
+                    ))}
+                  </select>
+                  {errors.careerOption && <div className="field-error-text">{errors.careerOption}</div>}
+                </div>
+
+                <div className="form-field">
                   <label className="field-label" htmlFor="preferredBranch">Preferred Branch</label>
-                  <input
-                    type="text"
+                  <select
                     id="preferredBranch"
+                    name="preferredBranch"
                     value={academic.preferredBranch}
                     onChange={(e) => handleAcademicChange('preferredBranch', e.target.value)}
-                    placeholder="e.g., Engineering, Medical"
                     className={`field-input ${errors.preferredBranch ? 'field-input-error' : ''}`}
-                  />
+                  >
+                    <option value="" disabled>Select a branch</option>
+                    {STANDARD_BRANCHES.map((branch) => (
+                      <option key={branch} value={branch}>{branch}</option>
+                    ))}
+                  </select>
                   {errors.preferredBranch && (
                     <div className="field-error-text">{errors.preferredBranch}</div>
                   )}
@@ -363,52 +578,138 @@ const Onboarding = () => {
             {activeStep === 3 && (
               <>
                 <div className="form-field">
-                  <label className="field-label" htmlFor="preferredLocation">Preferred Location</label>
+                  <label className="field-label" htmlFor="preferredLocation">Preferred Location (State/City)</label>
                   <input
                     type="text"
                     id="preferredLocation"
+                    list="locations-list"
                     value={preferences.preferredLocation}
                     onChange={(e) => handlePreferencesChange('preferredLocation', e.target.value)}
-                    placeholder="e.g., Mumbai, Pune"
+                    placeholder="Search for a state or city..."
                     className={`field-input ${errors.preferredLocation ? 'field-input-error' : ''}`}
                   />
+                  <datalist id="locations-list">
+                    {INDIAN_STATES.map((state) => (
+                      <option key={state} value={state} />
+                    ))}
+                  </datalist>
                   {errors.preferredLocation && (
                     <div className="field-error-text">{errors.preferredLocation}</div>
                   )}
                 </div>
 
                 <div className="form-field">
-                  <label className="field-label" htmlFor="budgetRange">Budget Range</label>
+                  <label className="field-label" htmlFor="budgetRange">
+                    Budget Range: ₹{preferences.budgetRange} Lakhs/year
+                  </label>
                   <input
-                    type="text"
+                    type="range"
                     id="budgetRange"
+                    min="0"
+                    max="20"
+                    step="1"
                     value={preferences.budgetRange}
                     onChange={(e) => handlePreferencesChange('budgetRange', e.target.value)}
-                    placeholder="e.g., 5-10 LPA"
-                    className={`field-input ${errors.budgetRange ? 'field-input-error' : ''}`}
+                    className="range-slider"
                   />
-                  {errors.budgetRange && <div className="field-error-text">{errors.budgetRange}</div>}
+                </div>
+
+                <div className="form-field">
+                  <label className="field-label">College Type</label>
+                  <div className="chip-group">
+                    {COLLEGE_TYPES.map(ctype => {
+                      const isSelected = preferences.collegeType.includes(ctype);
+                      return (
+                        <button
+                          type="button"
+                          key={ctype}
+                          className={`chip ${isSelected ? 'chip-selected' : ''}`}
+                          onClick={() => toggleCollegeType(ctype)}
+                        >
+                          {ctype}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {errors.collegeType && (
+                    <div className="field-error-text">{errors.collegeType}</div>
+                  )}
+                </div>
+
+                <div className="form-field category-field" style={{ marginTop: '1rem' }}>
+                  <label className="field-label">Hostel Required?</label>
+                  <div className="category-options" style={{ marginTop: '0.5rem' }}>
+                    <label className="category-label">
+                      <input
+                        type="radio"
+                        name="hostelRequired"
+                        value="yes"
+                        checked={preferences.hostelRequired === true}
+                        onChange={() => handlePreferencesChange('hostelRequired', true)}
+                        className="radio-input"
+                      />
+                      <span className="category-text">Yes</span>
+                    </label>
+                    <label className="category-label">
+                      <input
+                        type="radio"
+                        name="hostelRequired"
+                        value="no"
+                        checked={preferences.hostelRequired === false}
+                        onChange={() => handlePreferencesChange('hostelRequired', false)}
+                        className="radio-input"
+                      />
+                      <span className="category-text">No</span>
+                    </label>
+                  </div>
                 </div>
               </>
             )}
 
             {activeStep === 4 && (
-              <>
-                <div className="form-field">
-                  <p
-                    style={{
-                      color: '#5a4136',
-                      lineHeight: '1.6',
-                      margin: 0,
-                      fontFamily: 'Inter, sans-serif',
-                      fontSize: '16px',
-                    }}
-                  >
-                    Ready to see your admission predictions? Click "Complete Onboarding" to view
-                    personalized college matches based on your profile.
-                  </p>
+              <div className="summary-card">
+                <p className="summary-intro">Ready to see your admission predictions? Review your details below before completing.</p>
+                
+                <div className="summary-section">
+                  <div className="summary-header">
+                    <h3>Personal Details</h3>
+                    <button type="button" className="edit-link" onClick={() => goToStep(1)}>Edit</button>
+                  </div>
+                  <div className="summary-grid">
+                    <div className="summary-item"><span className="summary-label">Name:</span> {studentProfile.fullName}</div>
+                    <div className="summary-item"><span className="summary-label">Email:</span> {studentProfile.email}</div>
+                    <div className="summary-item"><span className="summary-label">Phone:</span> {studentProfile.phone}</div>
+                    <div className="summary-item"><span className="summary-label">Domicile:</span> {studentProfile.domicile}</div>
+                    <div className="summary-item"><span className="summary-label">Category:</span> {studentProfile.category} {studentProfile.pwdCrossCategory ? '(PWD)' : ''}</div>
+                  </div>
                 </div>
-              </>
+
+                <div className="summary-section">
+                  <div className="summary-header">
+                    <h3>Academic Details</h3>
+                    <button type="button" className="edit-link" onClick={() => goToStep(2)}>Edit</button>
+                  </div>
+                  <div className="summary-grid">
+                    <div className="summary-item"><span className="summary-label">Exam:</span> {studentProfile.academic?.exam}</div>
+                    <div className="summary-item"><span className="summary-label">Score:</span> {studentProfile.academic?.examScore}</div>
+                    <div className="summary-item"><span className="summary-label">Career Option:</span> {studentProfile.academic?.careerOption}</div>
+                    <div className="summary-item"><span className="summary-label">Branch:</span> {studentProfile.academic?.preferredBranch}</div>
+                  </div>
+                </div>
+
+                <div className="summary-section">
+                  <div className="summary-header">
+                    <h3>Preferences</h3>
+                    <button type="button" className="edit-link" onClick={() => goToStep(3)}>Edit</button>
+                  </div>
+                  <div className="summary-grid">
+                    <div className="summary-item"><span className="summary-label">Location:</span> {studentProfile.preferences?.preferredLocation}</div>
+                    <div className="summary-item"><span className="summary-label">Budget:</span> ₹{studentProfile.preferences?.budgetRange} Lakhs/yr</div>
+                    <div className="summary-item"><span className="summary-label">College Type:</span> {studentProfile.preferences?.collegeType}</div>
+                    <div className="summary-item"><span className="summary-label">Hostel:</span> {studentProfile.preferences?.hostelRequired ? 'Yes' : 'No'}</div>
+                  </div>
+                </div>
+              </div>
             )}
           </form>
         </div>

@@ -109,3 +109,24 @@
     padding: 12px 0;
   }
 }
+
+.profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.profile-name {
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--stitch-on-surface);
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .profile-name {
+    display: none;
+  }
+}

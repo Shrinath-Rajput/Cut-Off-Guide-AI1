@@ -11,9 +11,13 @@ class ProfileBase(BaseModel):
     category: Optional[str] = None
     domicile: Optional[str] = None
     examScore: Optional[str] = None
+    careerOption: Optional[str] = None
     preferredBranch: Optional[str] = None
     preferredLocation: Optional[str] = None
     budgetRange: Optional[str] = None
+    pwdCrossCategory: Optional[bool] = None
+    collegeType: Optional[str] = None
+    hostelRequired: Optional[bool] = None
 
 class ProfileCreate(ProfileBase):
     uid: str

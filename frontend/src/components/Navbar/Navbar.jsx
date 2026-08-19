@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { FiArrowLeft, FiMenu, FiX } from 'react-icons/fi';
+import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
 const navLinks = [
@@ -18,6 +19,7 @@ const navLinks = [
 const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', profileTo = '/profile' }) => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { currentUser } = useAuth();
 
   if (title) {
     return (
@@ -63,7 +65,10 @@ const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', p
           <Link to={bookmarkTo} className="navbar-icon" aria-label="Saved Colleges">
             <span className="material-symbols-outlined">bookmark</span>
           </Link>
-          <button className="navbar-icon" type="button" aria-label="Profile" onClick={() => navigate(profileTo)}>
+          <button className="navbar-icon profile-btn" type="button" aria-label="Profile" onClick={() => navigate(profileTo)}>
+            {currentUser && currentUser.name && (
+              <span className="profile-name">Welcome back, {currentUser.name}</span>
+            )}
             <span className="material-symbols-outlined">account_circle</span>
           </button>
           <button type="button" className="mobile-toggle" onClick={() => setMobileOpen((prev) => !prev)}>
