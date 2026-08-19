@@ -1,19 +1,22 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import campusImage from '../../assets/images/ChatGPT Image Aug 19, 2026, 02_36_18 PM.png';
+import managementImage from '../../assets/images/ChatGPT Image Aug 19, 2026, 02_37_38 PM.png';
+import medicalImage from '../../assets/images/ChatGPT Image Aug 19, 2026, 02_38_19 PM.png';
 import './Welcome.css';
 
 const bgImages = [
   {
     alt: 'IIT Delhi',
-    src: 'https://lh3.googleusercontent.com/aida/AP1WRLt_SfeGuNAGsex-1IUq9gDMIyzNF5yrMlV2tLe2Kkj8vqptBqHwmiFZsHLn2X8I48NlnnyS67P_F2X8RHdGin_OA_2z2udNnglHvAonRF3O4pPktH7N1A5MpFo2EqbuNLQQ4MQDwBOKx4J28HBHQRd2NGLozu-5H-uK4Y7PYAK6vyiW9FDy1hvC5Ip7RN2nyq7tZbQ9ydFc0dEL2yyEZtxcCqHQG6An6e9ngMZ9LCN3DiQ5q7Gl8MtYbVs',
+    src: campusImage,
   },
   {
-    alt: 'IIT Bombay',
-    src: 'https://lh3.googleusercontent.com/aida/AP1WRLthpBNX06PKmB9Hr7048okr6IY6sqM53bQYhCk6lb862nUHM8yw_nLd6xyX0RWMXR8tVp-nFUGFHaocwE-aYR984A9Ol493J3-0b_-9qMf_MdGLa2M_kRFvvQeis5mFppXKhe4vNzbObY2SlhBFqnmvFeDOZ-fSoipgguRH6sp6DilGz993DbXiMHHM5M0HvfaozGpSrt4NnrSvMQIgduIDuxfyDRQpxYXH5Gl5t1ryPvHCWRlXOqWPiFnc',
+    alt: 'IIM Bangalore',
+    src: managementImage,
   },
   {
-    alt: 'IISc Bangalore',
-    src: 'https://lh3.googleusercontent.com/aida/AP1WRLtyM_wIGUvM8yepWSQmC3S3OQiTOQThxAs94VINQwqq1Wv-goQCi-aHfEFRqBUQvWszo-6nUAP7xhkLWDhll-fGm5x_x5mX8dGoxq-ufwY9cO01hpxq1Gu2PJ4qmGsgEIT2oC5Jr30Wnd174WAvtsMp3N5O5TfoX2DCZRuEwmSfpnXkVGUEVGe3Gsh0UmFbEKebTsUtZYOkNGb7XWlRm5qhHcBuoTb7zwFnB1mQNWTw1ufU9V60GnCFsz5D',
+    alt: 'Medical colleges',
+    src: medicalImage,
   },
 ];
 

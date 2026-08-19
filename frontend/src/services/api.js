@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -44,5 +44,24 @@ export const searchCutoffs = async (payload) => {
 
 export const getCollegeById = async (id) => {
   const response = await api.get(`/api/colleges/${id}`);
+  return response.data;
+};
+
+export const getAdminColleges = async () => {
+  const response = await api.get('/api/admin/colleges', {
+    headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
+  });
+  return response.data;
+};
+
+export const uploadCollegeImage = async (collegeId, file) => {
+  const formData = new FormData();
+  formData.append('image', file);
+  const response = await api.post(`/api/admin/colleges/${collegeId}/image`, formData, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      'Content-Type': 'multipart/form-data',
+    },
+  });
   return response.data;
 };

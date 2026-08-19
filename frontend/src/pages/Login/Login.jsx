@@ -103,8 +103,14 @@ const Login = () => {
       if (response?.sessionId) {
         sessionStorage.setItem('auth_pending_otp_session_id', response.sessionId);
       }
+      if (response?.dev_otp) {
+        sessionStorage.setItem('auth_dev_otp', response.dev_otp);
+      } else {
+        sessionStorage.removeItem('auth_dev_otp');
+      }
 
       setView('otp');
+      navigate('/otp');
       setTimeout(() => {
         if (otpInputRefs.current[0]) otpInputRefs.current[0].focus();
         startTimer();
@@ -126,6 +132,7 @@ const Login = () => {
     setOtpDigits(['', '', '', '', '', '']);
     setOtpError('');
     if (timerIntervalRef.current) clearInterval(timerIntervalRef.current);
+    navigate('/login');
   };
 
   const handleOtpDigitChange = (index, value, event) => {

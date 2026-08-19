@@ -1,0 +1,19 @@
+.admin-images-page {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 3rem 1.25rem 5rem;
+}
+
+.admin-images-header { max-width: 700px; margin-bottom: 2rem; }
+.admin-images-eyebrow { color: #a04100; font-size: .75rem; font-weight: 800; letter-spacing: .12em; }
+.admin-images-header h1 { margin: .5rem 0; color: #1a1c1a; font-family: 'Newsreader', serif; font-size: clamp(2.4rem, 5vw, 4rem); }
+.admin-images-header p:last-child { color: #5a4136; line-height: 1.6; }
+.admin-images-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; }
+.admin-image-card { overflow: hidden; border: 1px solid #e2bfb0; border-radius: 20px; background: #fff; box-shadow: 0 12px 32px rgba(17, 17, 17, .07); }
+.admin-image-card > img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.admin-image-card-copy { padding: 1.25rem; }
+.admin-image-card-copy h2 { margin: 0; color: #1a1c1a; font-size: 1.15rem; }
+.admin-image-card-copy p { margin: .4rem 0 1rem; color: #5a4136; }
+.admin-upload-button { display: inline-flex; align-items: center; gap: .5rem; padding: .75rem 1rem; border-radius: 999px; background: #a04100; color: #fff; font-weight: 700; cursor: pointer; }
+.admin-upload-button input { display: none; }
+.admin-image-card-copy small { display: block; min-height: 1.2em; margin-top: .75rem; color: #756459; }

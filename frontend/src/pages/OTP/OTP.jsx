@@ -19,6 +19,7 @@ const OTP = () => {
   const pendingUser = sessionStorage.getItem('auth_pending_user');
   const pendingPhone = sessionStorage.getItem('auth_pending_phone');
   const pendingOtpSessionId = sessionStorage.getItem('auth_pending_otp_session_id');
+  const [developmentOtp, setDevelopmentOtp] = useState(sessionStorage.getItem('auth_dev_otp') || '');
   const parsedUser = pendingUser ? JSON.parse(pendingUser) : null;
 
   useEffect(() => {
@@ -90,6 +91,13 @@ const OTP = () => {
       if (response?.sessionId) {
         sessionStorage.setItem('auth_pending_otp_session_id', response.sessionId);
       }
+      if (response?.dev_otp) {
+        sessionStorage.setItem('auth_dev_otp', response.dev_otp);
+        setDevelopmentOtp(response.dev_otp);
+      } else {
+        sessionStorage.removeItem('auth_dev_otp');
+        setDevelopmentOtp('');
+      }
       setTimer(30);
       toast.success('OTP sent successfully');
     } catch (error) {
@@ -136,6 +144,10 @@ const OTP = () => {
         <div className="otp-input-shell">
           <OTPinput value={otp} onChange={handleOtpChange} />
         </div>
+
+        {developmentOtp && (
+          <div className="otp-development-code">Development OTP: <strong>{developmentOtp}</strong></div>
+        )}
 
         {error && <div className="otp-error">{error}</div>}
 

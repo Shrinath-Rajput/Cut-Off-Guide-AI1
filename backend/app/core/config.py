@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
@@ -21,6 +22,13 @@ class Settings(BaseSettings):
     SMS_FLASH: str = (os.getenv("SMS_FLASH", "0") or "0").strip()
 
     OTP_TTL_SECONDS: int = int(os.getenv("OTP_TTL_SECONDS", "300"))
+
+    IMAGE_STORAGE_PROVIDER: str = (os.getenv("IMAGE_STORAGE_PROVIDER", "local") or "local").strip().lower()
+    API_PUBLIC_URL: str = (os.getenv("API_PUBLIC_URL", "http://127.0.0.1:8000") or "http://127.0.0.1:8000").rstrip("/")
+    UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", str(Path(__file__).resolve().parents[2] / "uploads"))
+    CLOUDINARY_CLOUD_NAME: str = os.getenv("CLOUDINARY_CLOUD_NAME", "")
+    CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY", "")
+    CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
     
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",

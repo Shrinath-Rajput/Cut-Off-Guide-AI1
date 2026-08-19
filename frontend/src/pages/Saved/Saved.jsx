@@ -1,10 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import './Saved.css';
-import stanfordImage from '../../assets/images/clg.jpg';
-import mitImage from '../../assets/images/clg1.jpg';
-import cornellImage from '../../assets/images/clg2.jpg';
+import { getCollegeById } from '../../services/api';
+import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
 
 const initialSavedColleges = [
   {
@@ -16,7 +15,7 @@ const initialSavedColleges = [
     savedOn: 'Oct 24, 2023',
     rank: '#12',
     rating: '4.8',
-    image: stanfordImage,
+    image: null,
   },
   {
     id: 'mit',
@@ -27,7 +26,7 @@ const initialSavedColleges = [
     savedOn: 'Nov 02, 2023',
     rank: '#3',
     rating: '4.9',
-    image: mitImage,
+    image: null,
   },
   {
     id: 'cornell',
@@ -38,7 +37,7 @@ const initialSavedColleges = [
     savedOn: 'Nov 15, 2023',
     rank: '#21',
     rating: '4.5',
-    image: cornellImage,
+    image: null,
   },
 ];
 
@@ -54,6 +53,15 @@ const Saved = () => {
   const [sortOption, setSortOption] = useState('recent');
   const [sortOpen, setSortOpen] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    Promise.allSettled(savedColleges.map((college) => getCollegeById(college.id))).then((results) => {
+      setSavedColleges((current) => current.map((college, index) => {
+        const result = results[index];
+        return result?.status === 'fulfilled' ? { ...college, image: result.value.image || null } : college;
+      }));
+    });
+  }, []);
 
   const sortedColleges = useMemo(() => {
     const sorted = [...savedColleges];
@@ -143,7 +151,7 @@ const Saved = () => {
             {sortedColleges.map((college) => (
               <article key={college.id} className="saved-card">
                 <div className="saved-card-image-shell">
-                  <img src={college.image} alt={college.name} className="saved-card-image" />
+                  <img src={collegeImage(college.image)} alt={college.name} className="saved-card-image" onError={handleCollegeImageError} />
                   <button
                     type="button"
                     className="bookmark-button"

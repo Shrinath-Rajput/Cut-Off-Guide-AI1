@@ -1,13 +1,23 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 import { useAuth } from '../../context/AuthContext';
+import { getColleges } from '../../services/api';
+import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const userName = currentUser?.name || 'Alex';
+  const [recommendedColleges, setRecommendedColleges] = useState([]);
+
+  useEffect(() => {
+    getColleges({ page: 1, limit: 4 })
+      .then((response) => setRecommendedColleges(response.data || []))
+      .catch(() => setRecommendedColleges([]));
+  }, []);
 
   return (
     <div className="dashboard-page">
@@ -150,99 +160,22 @@ const Dashboard = () => {
             </button>
           </div>
           <div className="recommendations-scroll">
-            <article className="college-card">
-              <div className="college-image">
-                <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuCkEzPPEZKRYIlsvVjGHhqlBl-OvGS3qqCk_0LMpL20owyC8ATvRS0NYcYAp3O7rnVBIArdE7v4hE9IZuWVOt21_PAVeHNlEDB6MctmNS9u3uPy7s1fZer8NN7v_E0bgkM5Tl0e5MEKIj72H1MEv03tLsIygnjC5Dm8QPvIe3jmLluxpAQP4lckonowpqxrmh3ntLwATCi27dJof3K4OE6HoeS9q4uMBmY97hJPprYGMExMI77xhUp6"
-                  alt="Indian Institute of Technology Madras"
-                />
-                <div className="college-badge">
-                  <span className="material-symbols-outlined">star</span> 1
+            {recommendedColleges.map((college, index) => (
+              <article className="college-card" key={college.id}>
+                <div className="college-image">
+                  <img src={collegeImage(college.image)} alt={college.name} onError={handleCollegeImageError} />
+                  <div className="college-badge"><span className="material-symbols-outlined">star</span> {index + 1}</div>
                 </div>
-              </div>
-              <div className="college-card-body">
-                <h3>Indian Institute of Technology Madras</h3>
-                <p>Computer Science and Engineering</p>
-                <div className="college-card-footer">
-                  <div>
-                    <span className="college-label">Probability</span>
-                    <span className="college-value">85% - Safe</span>
+                <div className="college-card-body">
+                  <h3>{college.name}</h3>
+                  <p>{college.courses?.[0] || 'Courses available'}</p>
+                  <div className="college-card-footer">
+                    <div><span className="college-label">Rating</span><span className="college-value">{college.rating || 'N/A'}</span></div>
+                    <button type="button" className="details-button" onClick={() => navigate(`/college/${college.id}`)}>View Details</button>
                   </div>
-                  <button type="button" className="details-button">
-                    View Details
-                  </button>
                 </div>
-              </div>
-            </article>
-
-            <article className="college-card">
-              <div className="college-image">
-                <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHhaX6UhYgf3JIoU6xSXt8tz4eiGAMbXM_cinWH3SWQnA-FUaSruU8AGobPfDMP0PAKsjlJJF93SpEExxVgsWn2hvcikGeyPYx227zL7vov_dFi0U8BYTNe8RPkh-BhUNJ2QI0U6RDo0BajqBjanLKr4HAWexE-n4-KKxO3NKF1ovHHW39plmrkPZoY172QxksacorkK1a0LaRJ0pMitCcZDrT-UlueW-vfQe8VmjdqzoS6BvAnA5t"
-                  alt="Indian Institute of Technology Delhi"
-                />
-                <div className="college-badge">
-                  <span className="material-symbols-outlined">star</span> 2
-                </div>
-              </div>
-              <div className="college-card-body">
-                <h3>Indian Institute of Technology Delhi</h3>
-                <p>Electrical Engineering</p>
-                <div className="college-card-footer">
-                  <div>
-                    <span className="college-label">Probability</span>
-                    <span className="college-value college-value-warning">78% - Likely</span>
-                  </div>
-                  <button type="button" className="details-button details-button-outline">
-                    View Details
-                  </button>
-                </div>
-              </div>
-            </article>
-
-            <article className="college-card">
-              <div className="college-image">
-                <img
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnS83fWeqohG7gEM0XYmWqG7P4PiSNO2ICXVwR207ewtgKhekr26A0oGB4MGbRp4u6UwGipIgRMR6ediM6CEmGwhydRc_YhBneFiGaw7sq_lG2xoNL7HunMxlLISLZzBP3qncOXTNK4DtnVY0Jp-Rs8KoJ853QutYZ8v37zknQf3TQLf1nzDrcn6QXZG-LQ4HNzVtiIrKkGSesG8H2LzCZeoqgIF1nC134xf9LnJRkjfhQ1R5RKmU6"
-                  alt="Indian Institute of Technology Bombay"
-                />
-                <div className="college-badge">
-                  <span className="material-symbols-outlined">star</span> 3
-                </div>
-              </div>
-              <div className="college-card-body">
-                <h3>Indian Institute of Technology Bombay</h3>
-                <p>Mechanical Engineering</p>
-                <div className="college-card-footer">
-                  <div>
-                    <span className="college-label">Probability</span>
-                    <span className="college-value">65% - Moderate</span>
-                  </div>
-                  <button type="button" className="details-button details-button-outline">
-                    View Details
-                  </button>
-                </div>
-              </div>
-            </article>
-
-            <article className="college-card college-card-blank">
-              <div className="college-image college-image-blank">
-                <span className="material-symbols-outlined">account_balance</span>
-              </div>
-              <div className="college-card-body">
-                <h3>National Institute of Technology Trichy</h3>
-                <p>Computer Science</p>
-                <div className="college-card-footer">
-                  <div>
-                    <span className="college-label">Probability</span>
-                    <span className="college-value">92% - Safe</span>
-                  </div>
-                  <button type="button" className="details-button details-button-outline">
-                    View Details
-                  </button>
-                </div>
-              </div>
-            </article>
+              </article>
+            ))}
           </div>
         </section>
       </main>

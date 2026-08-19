@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import './CollegeDetails.css';
-import heroImage from '../../assets/images/clg.jpg';
+import heroImage from '../../assets/images/ChatGPT Image Aug 19, 2026, 02_36_18 PM.png';
+import { getCollegeById } from '../../services/api';
+import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
 
 const collegeDetails = {
   mit: {
@@ -94,12 +96,31 @@ const CollegeDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Overview');
-  const college = collegeDetails[id] || collegeDetails.mit;
+  const [college, setCollege] = useState(collegeDetails[id] || collegeDetails.mit);
+
+  useEffect(() => {
+    let mounted = true;
+    getCollegeById(id)
+      .then((data) => {
+        if (mounted) setCollege((previous) => ({ ...previous, ...data }));
+      })
+      .catch(() => {})
+      .finally(() => {});
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
 
   return (
     <MainLayout>
       <main className="college-details-page">
-        <section className="college-hero" style={{ backgroundImage: `url(${college.heroImage})` }}>
+        <section className="college-hero">
+          <img
+            src={collegeImage(college.image || college.heroImage)}
+            alt={college.name}
+            className="college-hero-image"
+            onError={handleCollegeImageError}
+          />
           <div className="hero-overlay" />
         </section>
 
