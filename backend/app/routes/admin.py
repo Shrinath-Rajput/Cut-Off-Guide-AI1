@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import secrets
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -9,7 +10,7 @@ from pydantic import BaseModel, Field
 from app.core.deps import require_admin
 from app.core.database import get_db
 from app.core.config import settings
-from app.core.security import create_access_token, get_password_hash, verify_password
+from app.core.security import create_access_token, get_password_hash
 from app.services.image_storage import save_college_image, save_ui_image
 
 router = APIRouter(prefix="/api/admin", tags=["Admin"])
@@ -54,22 +55,39 @@ def _query(search: Optional[str], fields: list[str]) -> dict:
 
 @router.post("/login")
 async def admin_login(request: AdminLoginRequest, db=Depends(get_db)):
-    user = await db["users"].find_one({"email": request.email, "role": "ADMIN"})
-    if not user and settings.ADMIN_EMAIL and request.email.lower() == settings.ADMIN_EMAIL.lower():
-        if not settings.ADMIN_PASSWORD or request.password != settings.ADMIN_PASSWORD:
-            raise HTTPException(status_code=401, detail="Invalid admin credentials")
+    configured_email = (settings.ADMIN_EMAIL or "").strip().lower()
+    configured_password = settings.ADMIN_PASSWORD or ""
+    if (
+        not configured_email
+        or request.email.strip().lower() != configured_email
+        or not configured_password
+        or not secrets.compare_digest(request.password, configured_password)
+    ):
+        raise HTTPException(status_code=401, detail="Invalid admin credentials")
+
+    user = await db["users"].find_one({"email": configured_email, "role": "ADMIN"})
+    if not user:
+        user = await db["users"].find_one({"role": "ADMIN"})
+    if not user:
         now = datetime.now(timezone.utc)
         result = await db["users"].insert_one({
-            "uid": f"admin-{uuid4().hex}", "name": "Administrator", "email": request.email,
-            "role": "ADMIN", "isActive": True, "passwordHash": get_password_hash(request.password),
+            "uid": f"admin-{uuid4().hex}", "name": "Administrator", "email": configured_email,
+            "role": "ADMIN", "isActive": True, "passwordHash": get_password_hash(configured_password),
             "createdAt": now, "lastLogin": now,
         })
         user = await db["users"].find_one({"_id": result.inserted_id})
-    password_hash = user.get("passwordHash") if user else None
-    password_hash = password_hash or (user or {}).get("password_hash")
-    if not user or not user.get("isActive", True) or not password_hash or not verify_password(request.password, password_hash):
-        raise HTTPException(status_code=401, detail="Invalid admin credentials")
-    await db["users"].update_one({"_id": user["_id"]}, {"$set": {"lastLogin": datetime.now(timezone.utc)}})
+
+    await db["users"].update_one(
+        {"_id": user["_id"]},
+        {"$set": {
+            "email": configured_email,
+            "role": "ADMIN",
+            "isActive": True,
+            "passwordHash": get_password_hash(configured_password),
+            "lastLogin": datetime.now(timezone.utc),
+        }},
+    )
+    user = await db["users"].find_one({"_id": user["_id"]})
     user = _clean(user)
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
