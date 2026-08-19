@@ -1,11 +1,45 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../../components/MainLayout/MainLayout';
-import { getSavedColleges, removeSavedCollege } from '../../services/api';
 import './Saved.css';
-import stanfordImage from '../../assets/images/clg.jpg';
-import mitImage from '../../assets/images/clg1.jpg';
-import cornellImage from '../../assets/images/clg2.jpg';
+import { getCollegeById } from '../../services/api';
+import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
+
+const initialSavedColleges = [
+  {
+    id: 'stanford',
+    name: 'Stanford University',
+    location: 'Stanford, CA',
+    course: 'Computer Science (B.S.)',
+    cutoff: '98.5%ile',
+    savedOn: 'Oct 24, 2023',
+    rank: '#12',
+    rating: '4.8',
+    image: null,
+  },
+  {
+    id: 'mit',
+    name: 'MIT',
+    location: 'Cambridge, MA',
+    course: 'Mechanical Eng.',
+    cutoff: '99.1%ile',
+    savedOn: 'Nov 02, 2023',
+    rank: '#3',
+    rating: '4.9',
+    image: null,
+  },
+  {
+    id: 'cornell',
+    name: 'Cornell University',
+    location: 'Ithaca, NY',
+    course: 'Data Science',
+    cutoff: '96.8%ile',
+    savedOn: 'Nov 15, 2023',
+    rank: '#21',
+    rating: '4.5',
+    image: null,
+  },
+];
 
 const sortOptions = [
   { value: 'recent', label: 'Recently Saved' },
@@ -15,15 +49,18 @@ const sortOptions = [
 ];
 
 const Saved = () => {
-  const [savedColleges, setSavedColleges] = useState([]);
+  const [savedColleges, setSavedColleges] = useState(initialSavedColleges);
   const [sortOption, setSortOption] = useState('recent');
   const [sortOpen, setSortOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    getSavedColleges()
-      .then(data => setSavedColleges(data))
-      .catch(err => console.error("Failed to fetch saved colleges:", err));
+    Promise.allSettled(savedColleges.map((college) => getCollegeById(college.id))).then((results) => {
+      setSavedColleges((current) => current.map((college, index) => {
+        const result = results[index];
+        return result?.status === 'fulfilled' ? { ...college, image: result.value.image || null } : college;
+      }));
+    });
   }, []);
 
   const sortedColleges = useMemo(() => {
@@ -46,13 +83,8 @@ const Saved = () => {
 
   const hasSavedColleges = sortedColleges.length > 0;
 
-  const handleRemoveSaved = async (id) => {
-    try {
-      await removeSavedCollege(id);
-      setSavedColleges((prev) => prev.filter((college) => college.id !== id && college.college_id !== id));
-    } catch (error) {
-      console.error("Failed to remove saved college", error);
-    }
+  const handleRemoveSaved = (id) => {
+    setSavedColleges((prev) => prev.filter((college) => college.id !== id));
   };
 
   const handleViewDetails = (id) => {
@@ -119,7 +151,7 @@ const Saved = () => {
             {sortedColleges.map((college) => (
               <article key={college.id} className="saved-card">
                 <div className="saved-card-image-shell">
-                  <img src={college.image} alt={college.name} className="saved-card-image" />
+                  <img src={collegeImage(college.image)} alt={college.name} className="saved-card-image" onError={handleCollegeImageError} />
                   <button
                     type="button"
                     className="bookmark-button"

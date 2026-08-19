@@ -1,10 +1,8 @@
 import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import heroImage from '../../assets/images/ChatGPT Image Aug 19, 2026, 02_36_18 PM.png';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import './Home.css';
-
-const heroImage =
-  'https://lh3.googleusercontent.com/aida-public/AB6AXuBQPJpMbLY2KKYymwKyfKT82PmRmV5_H9Sc0e9sSDIAsrvgR55keQtfd8PorDhJX-nJ5faZhm_LW0qTuATNB0RwvXT_joyPvJj8jj1AxVDgSJ-NyzujXJiq4vY1Hx-fsVLqb6TqhmL0SFxA37CpBK5tLIrPFWuM0g62u4nG_hdRtYlJhmknKEl2K53jev_pDVA9_gE9HwZ45BlBGgMd--mzB1gwbiuCuL4vxFhl4LclXKp8gf94_QFd';
 
 const featureCards = [
   {

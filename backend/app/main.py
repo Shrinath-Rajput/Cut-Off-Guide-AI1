@@ -5,6 +5,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import connect_to_mongo, close_mongo_connection, get_db
 
@@ -26,6 +27,9 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 # CORS configuration
 allowed_origins = list(dict.fromkeys((settings.CORS_ORIGINS or []) + [

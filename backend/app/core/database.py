@@ -1,3 +1,4 @@
+import logging
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import settings
 
@@ -11,11 +12,14 @@ def get_db():
     return db.db
 
 async def connect_to_mongo():
-    db.client = AsyncIOMotorClient(settings.MONGODB_URI)
-    db.db = db.client[settings.MONGODB_DATABASE]
-    print(f"Connected to MongoDB at {settings.MONGODB_URI}")
+    try:
+        db.client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=2000)
+        db.db = db.client[settings.MONGODB_DATABASE]
+        logging.info("Initialized MongoDB client at %s", settings.MONGODB_URI)
+    except Exception as e:
+        logging.warning("MongoDB initialization warning: %s", e)
 
 async def close_mongo_connection():
     if db.client:
         db.client.close()
-        print("Closed MongoDB connection")
+        logging.info("Closed MongoDB connection")

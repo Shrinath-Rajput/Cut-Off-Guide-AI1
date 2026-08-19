@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import './Compare.css';
 import { getCollegeById } from '../../services/api';
+import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
 
 const Compare = () => {
   const navigate = useNavigate();
@@ -164,7 +165,7 @@ const Compare = () => {
                     {card ? (
                       <>
                         <div className="college-card-meta">
-                          <img src={card.image} alt={card.name} className="college-card-image" />
+                          <img src={collegeImage(card.image)} alt={card.name} className="college-card-image" onError={handleCollegeImageError} />
                           <div>
                             <p className="college-card-name">{card.name}</p>
                             <p className="college-card-location">{card.location}</p>
@@ -198,7 +199,7 @@ const Compare = () => {
                     <div key={index} className={card ? 'table-cell college-header' : 'table-cell empty-header'}>
                       {card ? (
                         <>
-                          <img src={card.image} alt={card.name} />
+                          <img src={collegeImage(card.image)} alt={card.name} onError={handleCollegeImageError} />
                           <span>{card.name}</span>
                         </>
                       ) : (
