@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Hanken+Grotesk:wght@600;700&display=swap');
+
+:root {
+  color-scheme: light;
+  font-family: 'Inter', 'Hanken Grotesk', 'Segoe UI', Roboto, sans-serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #1a1c1a;
+  background-color: #faf9f6;
+  --background: #faf9f6;
+  --background-soft: #f4f3f0;
+  --surface: #ffffff;
+  --surface-muted: #fffbf5;
+  --border: #e2bfb0;
+  --shadow-soft: 0 18px 40px rgba(17, 17, 17, 0.08);
+  --shadow-strong: 0 12px 24px rgba(20, 33, 61, 0.08);
+  --accent: #a04100;
+  --accent-strong: #ff6b00;
+  --accent-soft: #ffdbcc;
+  --text: #1a1c1a;
+  --text-secondary: #5a4136;
+  --text-muted: #525e7d;
+  --text-inverse: #ffffff;
+  --radius: 28px;
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-symbols-outlined.fill-icon {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+body {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #faf9f6 0%, #fffdf9 100%);
+  color: var(--text);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  width: 100%;
+}
+
+body {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #ffffff 0%, #fff9f2 100%);
+  color: var(--text);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+::selection {
+  background: rgba(249, 115, 22, 0.18);
+}
+
+.page-shell {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: clamp(1.25rem, 3vw, 2.5rem);
+  gap: clamp(1rem, 2vw, 2rem);
+  position: relative;
+}
+
+.page-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.08), transparent 18%),
+    radial-gradient(circle at bottom right, rgba(249, 115, 22, 0.05), transparent 24%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+.auth-card {
+  width: min(100%, 40rem);
+  padding: 2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+}
+
+.page-shell.login-shell,
+.page-shell.otp-shell,
+.page-shell.profile-shell,
+.page-shell.welcome-shell,
+.page-shell.splash-shell,
+.page-shell.onboarding-shell {
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .page-shell {
+    padding: 1rem;
+  }
+}
