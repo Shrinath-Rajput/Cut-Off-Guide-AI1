@@ -1,10 +1,18 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000',
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000',
   headers: {
     'Content-Type': 'application/json',
   },
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('auth_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export const sendOtp = async (payload) => {
@@ -44,6 +52,16 @@ export const searchCutoffs = async (payload) => {
 
 export const getCollegeById = async (id) => {
   const response = await api.get(`/api/colleges/${id}`);
+  return response.data;
+};
+
+export const getProfile = async () => {
+  const response = await api.get('/api/profile');
+  return response.data;
+};
+
+export const updateProfile = async (payload) => {
+  const response = await api.put('/api/profile', payload);
   return response.data;
 };
 
