@@ -18,7 +18,8 @@ import Assistant from '../pages/Assistant/Assistant';
 import Saved from '../pages/Saved/Saved';
 import History from '../pages/History/History';
 import GoogleCallback from '../pages/GoogleCallback/GoogleCallback';
-import AdminImages from '../pages/AdminImages/AdminImages';
+import AdminLogin from '../pages/AdminLogin/AdminLogin';
+import AdminPanel from '../pages/AdminPanel/AdminPanel';
 import ProtectedRoute from './ProtectedRoute';
 import { OnboardingProvider } from '../context/OnboardingContext';
 import { useAuth } from '../context/AuthContext';
@@ -78,18 +79,25 @@ const AppRoutes = () => {
           }
         />
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
-        <Route
-          path="/admin/images"
-          element={
-            <ProtectedRoute>
-              {currentUser?.role === 'ADMIN' ? <AdminImages /> : <Navigate to="/home" replace />}
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/admin/dashboard" element={<AdminRoute currentUser={currentUser}><AdminPanel section="dashboard" /></AdminRoute>} />
+        <Route path="/admin/users" element={<AdminRoute currentUser={currentUser}><AdminPanel section="users" /></AdminRoute>} />
+        <Route path="/admin/enquiries" element={<AdminRoute currentUser={currentUser}><AdminPanel section="enquiries" /></AdminRoute>} />
+        <Route path="/admin/data" element={<AdminRoute currentUser={currentUser}><AdminPanel section="data" /></AdminRoute>} />
+        <Route path="/admin/images" element={<AdminRoute currentUser={currentUser}><AdminPanel section="images" /></AdminRoute>} />
+        <Route path="/admin/subscriptions" element={<AdminRoute currentUser={currentUser}><AdminPanel section="plans" /></AdminRoute>} />
+        <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/welcome" replace />} />
       </Routes>
     </BrowserRouter>
   );
 };
+
+const AdminRoute = ({ currentUser, children }) => (
+  <ProtectedRoute>
+    {currentUser?.role === 'ADMIN' ? children : <Navigate to="/admin/login" replace />}
+  </ProtectedRoute>
+);
 
 export default AppRoutes;

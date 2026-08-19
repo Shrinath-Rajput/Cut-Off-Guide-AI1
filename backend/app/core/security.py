@@ -6,7 +6,7 @@ from app.core.config import settings
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 def create_access_token(subject: Union[str, Any], role: str = "USER", expires_delta: timedelta = None) -> str:

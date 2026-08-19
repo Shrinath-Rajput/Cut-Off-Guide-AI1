@@ -66,6 +66,9 @@ const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', p
           <button className="navbar-icon" type="button" aria-label="Profile" onClick={() => navigate(profileTo)}>
             <span className="material-symbols-outlined">account_circle</span>
           </button>
+          <Link to="/admin/login" className="navbar-icon" aria-label="Admin Panel" title="Admin Panel">
+            <span className="material-symbols-outlined">admin_panel_settings</span>
+          </Link>
           <button type="button" className="mobile-toggle" onClick={() => setMobileOpen((prev) => !prev)}>
             {mobileOpen ? <FiX /> : <FiMenu />}
           </button>

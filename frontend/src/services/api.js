@@ -83,3 +83,43 @@ export const uploadCollegeImage = async (collegeId, file) => {
   });
   return response.data;
 };
+
+export const adminLogin = async (credentials) => {
+  const response = await api.post('/api/admin/login', credentials);
+  return response.data;
+};
+
+export const getAdminDashboard = async () => (await api.get('/api/admin/dashboard')).data;
+export const getAdminUsers = async (params = {}) => (await api.get('/api/admin/users', { params })).data;
+export const updateAdminUser = async (id, payload) => (await api.patch(`/api/admin/users/${id}`, payload)).data;
+export const deleteAdminUser = async (id) => (await api.delete(`/api/admin/users/${id}`)).data;
+export const createAdminCollege = async (payload) => (await api.post('/api/admin/colleges', payload)).data;
+export const updateAdminCollege = async (id, payload) => (await api.put(`/api/admin/colleges/${id}`, payload)).data;
+export const deleteAdminCollege = async (id) => (await api.delete(`/api/admin/colleges/${id}`)).data;
+export const getAdminCutoffs = async (params = {}) => (await api.get('/api/admin/cutoffs', { params })).data;
+export const createAdminCutoff = async (payload) => (await api.post('/api/admin/cutoffs', payload)).data;
+export const updateAdminCutoff = async (id, payload) => (await api.put(`/api/admin/cutoffs/${id}`, payload)).data;
+export const deleteAdminCutoff = async (id) => (await api.delete(`/api/admin/cutoffs/${id}`)).data;
+export const getAdminEnquiries = async (params = {}) => (await api.get('/api/admin/enquiries', { params })).data;
+export const updateAdminEnquiry = async (id, payload) => (await api.patch(`/api/admin/enquiries/${id}`, payload)).data;
+export const deleteAdminEnquiry = async (id) => (await api.delete(`/api/admin/enquiries/${id}`)).data;
+export const getAdminSubscriptions = async () => (await api.get('/api/admin/subscriptions')).data;
+export const createAdminSubscription = async (payload) => (await api.post('/api/admin/subscriptions', payload)).data;
+export const updateAdminSubscription = async (id, payload) => (await api.put(`/api/admin/subscriptions/${id}`, payload)).data;
+export const deleteAdminSubscription = async (id) => (await api.delete(`/api/admin/subscriptions/${id}`)).data;
+export const getAdminImages = async () => (await api.get('/api/admin/images')).data;
+export const uploadAdminImage = async (file, section, name) => {
+  const formData = new FormData();
+  formData.append('image', file);
+  const response = await api.post('/api/admin/images', formData, { params: { section, name }, headers: { 'Content-Type': 'multipart/form-data' } });
+  return response.data;
+};
+export const updateAdminImage = async (id, payload) => (await api.patch(`/api/admin/images/${id}`, payload)).data;
+export const replaceAdminImage = async (id, file) => {
+  const formData = new FormData();
+  formData.append('image', file);
+  const response = await api.post(`/api/admin/images/${id}/replace`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+  return response.data;
+};
+export const deleteAdminImage = async (id) => (await api.delete(`/api/admin/images/${id}`)).data;
+export const trainAdminDatabase = async () => (await api.post('/api/admin/train')).data;
