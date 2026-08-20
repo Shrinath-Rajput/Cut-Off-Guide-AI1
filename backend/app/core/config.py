@@ -23,6 +23,9 @@ class Settings(BaseSettings):
 
     OTP_TTL_SECONDS: int = int(os.getenv("OTP_TTL_SECONDS", "300"))
 
+    HUGGINGFACE_API_TOKEN: str = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACEHUB_API_TOKEN") or ""
+    HUGGINGFACE_MODEL: str = os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
+
     IMAGE_STORAGE_PROVIDER: str = (os.getenv("IMAGE_STORAGE_PROVIDER", "local") or "local").strip().lower()
     API_PUBLIC_URL: str = (os.getenv("API_PUBLIC_URL", "http://127.0.0.1:8000") or "http://127.0.0.1:8000").rstrip("/")
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", str(Path(__file__).resolve().parents[2] / "uploads"))

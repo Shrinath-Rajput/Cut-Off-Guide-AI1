@@ -9,7 +9,7 @@ const navLinks = [
   { label: 'Colleges', to: '/colleges' },
   { label: 'Compare', to: '/compare' },
   { label: 'Cutoff / Result', to: '/cutoff' },
-  { label: 'AI Assistant', to: '/assistant' },
+  { label: 'AI Council', to: '/assistant' },
   { label: 'Saved Colleges', to: '/saved' },
   { label: 'Contact', to: '/contact' },
   { label: 'Terms & Conditions', to: '/terms' },
