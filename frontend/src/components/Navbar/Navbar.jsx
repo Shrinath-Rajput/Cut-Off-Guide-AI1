@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
 const navLinks = [
+<<<<<<< HEAD
   { label: 'Home', to: '/home', icon: House },
   { label: 'About', to: '/about', icon: UsersRound },
   { label: 'Colleges', to: '/colleges', icon: GraduationCap },
@@ -14,6 +15,17 @@ const navLinks = [
   { label: 'Saved Colleges', to: '/saved', icon: Bookmark },
   { label: 'Contact', to: '/contact', icon: Mail },
   { label: 'Terms & Conditions', to: '/terms', icon: FileText },
+=======
+  { label: 'Home', to: '/home' },
+  { label: 'About', to: '/about' },
+  { label: 'Colleges', to: '/colleges' },
+  { label: 'Compare', to: '/compare' },
+  { label: 'Cutoff / Result', to: '/cutoff' },
+  { label: 'AI Council', to: '/assistant' },
+  { label: 'Saved Colleges', to: '/saved' },
+  { label: 'Contact', to: '/contact' },
+  { label: 'Terms & Conditions', to: '/terms' },
+>>>>>>> origin/veer
 ];
 
 const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', profileTo = '/profile' }) => {
