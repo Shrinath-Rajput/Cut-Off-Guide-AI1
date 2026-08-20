@@ -1,114 +1,270 @@
 import { useEffect, useRef, useState } from 'react';
-import MainLayout from '../../components/MainLayout/MainLayout';
 import './Assistant.css';
 
-const suggestionButtons = [
+const DEFAULT_SUGGESTIONS = [
   'What colleges can I get with my percentile?',
-  'Which college is best for CSE?',
-  'Compare these colleges',
+  'Which college is best for CSE in Maharashtra?',
+  'Compare COEP vs VJTI for Computer Engineering',
+  'What are the cutoffs for Tier 1 NITs?',
 ];
 
-const recentChats = [
-  { id: 'top-engineering', title: 'Top Engineering Colleges in Maharashtra', selected: true },
-  { id: 'cse-cutoffs', title: 'CSE Cutoffs for Tier 1', selected: false },
-  { id: 'nit-compare', title: 'Comparing NIT Warangal & Trichy', selected: false },
-];
+const DEFAULT_WELCOME_MESSAGE = {
+  id: 'welcome-msg',
+  from: 'assistant',
+  text: "Hello! I'm your CutoffGuide AI Council. I can help you analyze admission chances, compare colleges, check cutoffs, and navigate the counseling process. How can I assist you today?",
+  timestamp: Date.now(),
+};
 
-const savedConversations = [
-  { id: 'target-colleges', title: 'My Target Colleges List' },
-];
+const STORAGE_KEY = 'cutoffguide_ai_chats';
 
-const initialMessages = [
-  {
-    id: 'assistant-welcome',
-    from: 'assistant',
-    text: "Hello! I'm your Cutoff Guide AI. I can help you analyze admission chances, compare universities, or find the right course based on your scores. How can I assist you today?",
-  },
-  {
-    id: 'user-sample',
-    from: 'user',
-    text: 'I scored 92 percentile in JEE Mains. Can I get Computer Science in any top NIT?',
-  },
-  {
-    id: 'assistant-sample',
-    from: 'assistant',
-    text: 'With a 92 percentile in JEE Mains, securing Computer Science Engineering (CSE) in top-tier NITs (like Trichy, Warangal, or Surathkal) under the Open category will be highly challenging, as their cutoffs usually close above the 98-99 percentile mark.',
-    details: 'However, you have good chances in:',
-    list: [
-      'Newer NITs (e.g., NIT Mizoram, NIT Nagaland) depending on your home state quota.',
-      'Top state-level government colleges or reputed private institutions.',
-      'Other branches like Civil or Metallurgical in mid-tier NITs.',
+const loadSavedChats = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('Failed to load chat history from localStorage', err);
+  }
+
+  // Initial seed chat if empty
+  const defaultChat = {
+    id: `chat-${Date.now()}`,
+    title: 'Top Engineering Colleges in Maharashtra',
+    createdAt: Date.now(),
+    messages: [
+      DEFAULT_WELCOME_MESSAGE,
+      {
+        id: 'seed-user',
+        from: 'user',
+        text: 'I scored 92 percentile in JEE Mains. Can I get Computer Science in any top NIT?',
+        timestamp: Date.now() - 60000,
+      },
+      {
+        id: 'seed-assistant',
+        from: 'assistant',
+        text: 'With a 92 percentile in JEE Mains, your approximate general rank is around 80,000 to 90,000.\n\nSecuring Computer Science Engineering (CSE) in top-tier NITs (like Trichy, Warangal, or Surathkal) under the Open category will be highly challenging, as their cutoffs usually close within the top 5,000 ranks.',
+        listTitle: 'Alternative Options to Consider:',
+        list: [
+          'Newer NITs (e.g., NIT Mizoram, NIT Nagaland, NIT Sikkim) during CSAB special rounds.',
+          'Top state-level government colleges or reputed autonomous institutions where home state quota applies.',
+          'Other high-demand branches like ECE, IT, or Electrical in mid-tier NITs.',
+        ],
+        suggestions: [
+          'Yes, show me target colleges',
+          'What about ECE in top colleges?',
+        ],
+        timestamp: Date.now() - 30000,
+      },
     ],
-    action: 'Open Predictor with these stats',
-  },
-];
+  };
+
+  return [defaultChat];
+};
 
 const Assistant = () => {
-  const [messages, setMessages] = useState(initialMessages);
+  const [chats, setChats] = useState(loadSavedChats);
+  const [activeChatId, setActiveChatId] = useState(() => {
+    const loaded = loadSavedChats();
+    return loaded[0]?.id || `chat-${Date.now()}`;
+  });
   const [query, setQuery] = useState('');
-  const [activeChat, setActiveChat] = useState(recentChats[0].id);
-  const [isTyping, setIsTyping] = useState(true);
+  const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const chatHistoryRef = useRef(null);
 
+  const chatHistoryRef = useRef(null);
+  const textareaRef = useRef(null);
+
+  // Save chats to localStorage whenever chats state changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(chats));
+    } catch (err) {
+      console.error('Failed to save chat history to localStorage', err);
+    }
+  }, [chats]);
+
+  const currentChat = chats.find((c) => c.id === activeChatId) || chats[0];
+  const messages = currentChat?.messages || [DEFAULT_WELCOME_MESSAGE];
+
+  // Scroll to bottom on new message or typing
   useEffect(() => {
     if (chatHistoryRef.current) {
       chatHistoryRef.current.scrollTop = chatHistoryRef.current.scrollHeight;
     }
   }, [messages, isTyping]);
 
-  const assistantApiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
-
-  const sendAssistantMessage = async (messageText) => {
-    const response = await fetch(`${assistantApiBase}/api/assistant`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ message: messageText }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Assistant backend request failed');
+  // Auto-resize textarea
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 128)}px`;
     }
+  }, [query]);
 
-    const data = await response.json();
-    return data.reply || data.message || JSON.stringify(data);
+  const assistantApiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+
+  const handleNewChat = () => {
+    const newChatId = `chat-${Date.now()}`;
+    const newChat = {
+      id: newChatId,
+      title: 'New Conversation',
+      createdAt: Date.now(),
+      messages: [
+        {
+          ...DEFAULT_WELCOME_MESSAGE,
+          id: `welcome-${Date.now()}`,
+          timestamp: Date.now(),
+        },
+      ],
+    };
+
+    setChats((prev) => [newChat, ...prev]);
+    setActiveChatId(newChatId);
+    setSidebarOpen(false);
+    if (textareaRef.current) textareaRef.current.focus();
+  };
+
+  const handleSelectChat = (chatId) => {
+    setActiveChatId(chatId);
+    setSidebarOpen(false);
+  };
+
+  const handleDeleteChat = (e, chatId) => {
+    e.stopPropagation();
+    setChats((prev) => {
+      const filtered = prev.filter((c) => c.id !== chatId);
+      if (filtered.length === 0) {
+        const fresh = {
+          id: `chat-${Date.now()}`,
+          title: 'New Conversation',
+          createdAt: Date.now(),
+          messages: [{ ...DEFAULT_WELCOME_MESSAGE, id: `welcome-${Date.now()}`, timestamp: Date.now() }],
+        };
+        setActiveChatId(fresh.id);
+        return [fresh];
+      }
+      if (activeChatId === chatId) {
+        setActiveChatId(filtered[0].id);
+      }
+      return filtered;
+    });
+  };
+
+  const parseMessageDetails = (rawText) => {
+    let cleanText = rawText || '';
+    // Strip <think>...</think> if returned by deepseek models
+    cleanText = cleanText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+
+    return {
+      text: cleanText,
+    };
   };
 
   const handleMessageSend = async (messageText) => {
     const text = messageText.trim();
-    if (!text) return;
+    if (!text || isTyping) return;
 
     const userMessage = {
       id: `user-${Date.now()}`,
       from: 'user',
       text,
+      timestamp: Date.now(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    // Update active chat title if it's the first user message
+    const isFirstUserMessage = messages.filter((m) => m.from === 'user').length === 0;
+    const updatedTitle = isFirstUserMessage
+      ? text.length > 40
+        ? `${text.slice(0, 40)}...`
+        : text
+      : currentChat.title;
+
+    // Append user message immediately
+    setChats((prev) =>
+      prev.map((chat) => {
+        if (chat.id !== activeChatId) return chat;
+        return {
+          ...chat,
+          title: updatedTitle,
+          messages: [...chat.messages, userMessage],
+        };
+      })
+    );
+
     setQuery('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = '52px';
+    }
     setIsTyping(true);
 
-    const pendingId = `assistant-pending-${Date.now()}`;
-    setMessages((prev) => [...prev, { id: pendingId, from: 'assistant', pending: true }]);
+    // Build context history for LLM
+    const historyPayload = messages
+      .filter((m) => !m.pending && !m.error)
+      .map((m) => ({
+        role: m.from === 'user' ? 'user' : 'assistant',
+        content: m.text || '',
+      }));
 
     try {
-      const assistantText = await sendAssistantMessage(text);
-      setMessages((prev) => prev.map((message) => {
-        if (message.id !== pendingId) return message;
-        return { id: `assistant-${Date.now()}`, from: 'assistant', text: assistantText };
-      }));
+      const response = await fetch(`${assistantApiBase}/api/assistant`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: text,
+          history: historyPayload,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || errorData.message || 'Assistant backend request failed');
+      }
+
+      const data = await response.json();
+      const replyRaw = data.reply || data.message || 'No response received.';
+      const parsed = parseMessageDetails(replyRaw);
+
+      const assistantMessage = {
+        id: `assistant-${Date.now()}`,
+        from: 'assistant',
+        text: parsed.text,
+        timestamp: Date.now(),
+      };
+
+      setChats((prev) =>
+        prev.map((chat) => {
+          if (chat.id !== activeChatId) return chat;
+          return {
+            ...chat,
+            messages: [...chat.messages, assistantMessage],
+          };
+        })
+      );
     } catch (error) {
-      setMessages((prev) => prev.map((message) => {
-        if (message.id !== pendingId) return message;
-        return {
-          id: `assistant-error-${Date.now()}`,
-          from: 'assistant',
-          text: 'Sorry, we could not reach the AI service right now. Please try again in a moment.',
-          error: true,
-        };
-      }));
+      console.error('Assistant chat error', error);
+      const errorMessage = {
+        id: `assistant-error-${Date.now()}`,
+        from: 'assistant',
+        text: 'Sorry, we encountered an issue communicating with the AI service. Please check that the server and Hugging Face configuration are active.',
+        error: true,
+        timestamp: Date.now(),
+      };
+
+      setChats((prev) =>
+        prev.map((chat) => {
+          if (chat.id !== activeChatId) return chat;
+          return {
+            ...chat,
+            messages: [...chat.messages, errorMessage],
+          };
+        })
+      );
     } finally {
       setIsTyping(false);
     }
@@ -118,169 +274,226 @@ const Assistant = () => {
     handleMessageSend(query);
   };
 
-  const handleSuggestion = (suggestion) => {
-    handleMessageSend(suggestion);
-  };
-
-  const handleNewChat = () => {
-    setMessages(initialMessages);
-    setActiveChat(recentChats[0].id);
-    setIsTyping(true);
-    setSidebarOpen(false);
-  };
-
-  const handleSelectChat = (chatId) => {
-    setActiveChat(chatId);
-    setMessages(initialMessages);
-    setSidebarOpen(false);
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
   return (
-    <MainLayout>
-      <div className="assistant-page">
-        <div className={`assistant-shell ${sidebarOpen ? 'sidebar-open' : ''}`}>
-          <aside className="assistant-sidebar">
-            <div className="sidebar-top">
-              <button className="new-chat-button" type="button" onClick={handleNewChat}>
-                <span className="material-symbols-outlined">add</span>
-                New Chat
-              </button>
+    <div className="assistant-page-container">
+      <div className={`assistant-layout ${sidebarOpen ? 'sidebar-open' : ''}`}>
+        {/* Side Navigation Bar */}
+        <nav className="assistant-sidenav">
+          {/* Header */}
+          <div className="sidenav-header">
+            <div className="sidenav-logo-badge">
+              <span className="material-symbols-outlined text-[24px]">school</span>
             </div>
-
-            <div className="sidebar-section">
-              <div className="sidebar-heading">RECENT CHATS</div>
-              <ul className="sidebar-list">
-                {recentChats.map((chat) => (
-                  <li
-                    key={chat.id}
-                    className={`sidebar-item ${activeChat === chat.id ? 'active' : ''}`}
-                    onClick={() => handleSelectChat(chat.id)}
-                  >
-                    {chat.title}
-                  </li>
-                ))}
-              </ul>
+            <div className="sidenav-brand-text">
+              <h2 className="sidenav-title">AI Council</h2>
+              <p className="sidenav-subtitle">Your Academic Guide</p>
             </div>
+          </div>
 
-            <div className="sidebar-section">
-              <div className="sidebar-heading">SAVED CONVERSATIONS</div>
-              <ul className="sidebar-list">
-                {savedConversations.map((saved) => (
-                  <li key={saved.id} className="sidebar-item saved-item">
-                    <span>{saved.title}</span>
-                    <span className="material-symbols-outlined bookmark-icon">bookmark</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </aside>
+          {/* CTA: New Chat */}
+          <button className="sidenav-new-chat-btn" type="button" onClick={handleNewChat}>
+            <span className="material-symbols-outlined text-sm">add</span>
+            New Chat
+          </button>
 
-          <section className="assistant-chat-area">
-            <div className="chat-header-row">
-              <button
-                type="button"
-                className="mobile-sidebar-toggle"
-                onClick={() => setSidebarOpen(true)}
-              >
-                Chats
-              </button>
-            </div>
-
-            <div className="chat-panel">
-              <div className="chat-header">
-                <div>
-                  <h1>Your AI College Admission Assistant</h1>
-                  <p>Ask anything about colleges, cutoffs, courses and admissions.</p>
-                </div>
+          {/* Navigation Tabs / Recent Chats */}
+          <div className="sidenav-scroll-area chat-scroll">
+            <div className="sidenav-section">
+              <div className="sidenav-section-header">
+                <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
+                <h3>Recent Chats</h3>
               </div>
-
-              <div className="chat-history" ref={chatHistoryRef}>
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`chat-message ${message.from} ${message.pending ? 'pending' : ''} ${message.error ? 'error' : ''}`}
-                  >
-                    <div className="message-avatar">
-                      <span className="material-symbols-outlined">
-                        {message.from === 'assistant' ? 'smart_toy' : 'person'}
+              <ul className="sidenav-chat-list">
+                {chats.map((chat) => (
+                  <li key={chat.id}>
+                    <button
+                      type="button"
+                      className={`sidenav-chat-item ${activeChatId === chat.id ? 'active' : ''}`}
+                      onClick={() => handleSelectChat(chat.id)}
+                    >
+                      <span className="truncate flex-1 text-left">{chat.title || 'Untitled Conversation'}</span>
+                      <span
+                        className="material-symbols-outlined chat-delete-btn"
+                        onClick={(e) => handleDeleteChat(e, chat.id)}
+                        title="Delete chat"
+                      >
+                        close
                       </span>
-                    </div>
-                    <div className="message-bubble">
-                      <p>{message.text}</p>
-                      {message.list && (
-                        <ul className="assistant-list">
-                          {message.list.map((item) => (
-                            <li key={item}>{item}</li>
-                          ))}
-                        </ul>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Footer note */}
+          <div className="sidenav-footer">
+            <p className="text-xs text-on-surface-variant/60">Powered by Mistral-7B Instruct</p>
+          </div>
+        </nav>
+
+        {/* Main Content Area */}
+        <main className="assistant-main-panel">
+          {/* Subtle Radial Background Pattern */}
+          <div className="assistant-bg-pattern" />
+
+          {/* Mobile Top Nav */}
+          <header className="mobile-header glass-panel md:hidden">
+            <button className="mobile-menu-btn" type="button" onClick={() => setSidebarOpen(true)}>
+              <span className="material-symbols-outlined">menu</span>
+            </button>
+            <h1 className="mobile-brand-title">AI Council</h1>
+            <button className="mobile-add-btn" type="button" onClick={handleNewChat} aria-label="New chat">
+              <span className="material-symbols-outlined text-sm">add</span>
+            </button>
+          </header>
+
+          {/* Chat Header (Glassy Desktop) */}
+          <div className="desktop-chat-header glass-panel hidden md:block">
+            <div className="header-inner-wrap">
+              <div className="header-icon-box">
+                <span className="material-symbols-outlined text-[28px]">school</span>
+              </div>
+              <div>
+                <h1 className="header-headline">Your AI Council Assistant</h1>
+                <p className="header-subline">Ask anything about colleges, cutoffs, courses and admissions.</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Chat Interface Scroll Area */}
+          <div className="chat-messages-container chat-scroll" ref={chatHistoryRef}>
+            <div className="messages-inner-wrap">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`message-row ${message.from === 'user' ? 'user-row' : 'assistant-row'} ${
+                    message.error ? 'error-row' : ''
+                  }`}
+                >
+                  <div className={`avatar-box ${message.from === 'user' ? 'user-avatar' : 'assistant-avatar'}`}>
+                    <span className="material-symbols-outlined text-[18px]">
+                      {message.from === 'user' ? 'person' : 'school'}
+                    </span>
+                  </div>
+
+                  <div className={`message-bubble-box ${message.from === 'user' ? 'user-bubble' : 'assistant-bubble'}`}>
+                    <div className="bubble-content">
+                      <p className="bubble-text">{message.text}</p>
+
+                      {message.list && message.list.length > 0 && (
+                        <div className="bubble-callout-card">
+                          {message.listTitle && (
+                            <h4 className="callout-title">
+                              <span className="material-symbols-outlined text-[18px]">analytics</span>
+                              {message.listTitle}
+                            </h4>
+                          )}
+                          <ul className="callout-list">
+                            {message.list.map((item, idx) => (
+                              <li key={idx}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
                       )}
-                      {message.action && (
-                        <div className="recommendation-card">
-                          <span className="recommendation-label">RECOMMENDED ACTION</span>
-                          <div className="recommendation-content">
-                            <span>{message.action}</span>
-                            <span className="material-symbols-outlined">arrow_forward</span>
-                          </div>
+
+                      {message.suggestions && message.suggestions.length > 0 && (
+                        <div className="message-suggestions-row">
+                          {message.suggestions.map((sug, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              className="suggestion-action-btn"
+                              onClick={() => handleMessageSend(sug)}
+                            >
+                              {sug}
+                            </button>
+                          ))}
                         </div>
                       )}
                     </div>
                   </div>
-                ))}
+                </div>
+              ))}
 
-                {isTyping && (
-                  <div className="chat-message assistant typing-row">
-                    <div className="message-avatar">
-                      <span className="material-symbols-outlined">smart_toy</span>
-                    </div>
-                    <div className="message-bubble typing-bubble">
-                      <div className="typing-indicator">
-                        <span />
-                        <span />
-                        <span />
-                      </div>
+              {/* Typing indicator */}
+              {isTyping && (
+                <div className="message-row assistant-row typing-row">
+                  <div className="avatar-box assistant-avatar">
+                    <span className="material-symbols-outlined text-[18px]">school</span>
+                  </div>
+                  <div className="message-bubble-box assistant-bubble typing-bubble">
+                    <div className="typing-dots">
+                      <span />
+                      <span />
+                      <span />
                     </div>
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Fixed Bottom Input Area */}
+          <div className="chat-input-bottom-bar">
+            <div className="input-inner-container">
+              {/* Quick Suggestion Chips */}
+              <div className="quick-suggestions-chips">
+                {DEFAULT_SUGGESTIONS.map((sug, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    className="chip-btn"
+                    onClick={() => handleMessageSend(sug)}
+                  >
+                    {sug}
+                  </button>
+                ))}
               </div>
 
-              <div className="chat-input-shell">
-                <div className="suggestion-chips">
-                  {suggestionButtons.map((suggestion) => (
-                    <button
-                      key={suggestion}
-                      type="button"
-                      className="suggestion-chip"
-                      onClick={() => handleSuggestion(suggestion)}
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
+              {/* Input Box */}
+              <div className="input-glass-box">
+                <button type="button" className="input-action-btn" aria-label="Attachment">
+                  <span className="material-symbols-outlined">attach_file</span>
+                </button>
+                <textarea
+                  ref={textareaRef}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="Ask your admissions or cutoff question..."
+                  rows={1}
+                  className="chat-textarea"
+                />
+                <button
+                  type="button"
+                  className="input-send-btn"
+                  onClick={handleSend}
+                  disabled={!query.trim() || isTyping}
+                  aria-label="Send message"
+                >
+                  <span className="material-symbols-outlined text-[20px]">send</span>
+                </button>
+              </div>
 
-                <div className="chat-input-row">
-                  <input
-                    value={query}
-                    onChange={(event) => setQuery(event.target.value)}
-                    placeholder="Type your academic query here..."
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                  />
-                  <button type="button" className="send-button" onClick={handleSend}>
-                    <span className="material-symbols-outlined">send</span>
-                  </button>
-                </div>
+              <div className="disclaimer-text">
+                <p>AI can make mistakes. Always verify cutoffs with official JoSAA / CSAB / CET Cell counseling data.</p>
               </div>
             </div>
-          </section>
+          </div>
 
-          <div className="sidebar-backdrop" onClick={() => setSidebarOpen(false)} />
-        </div>
+          {/* Mobile backdrop */}
+          <div className="mobile-backdrop" onClick={() => setSidebarOpen(false)} />
+        </main>
       </div>
-    </MainLayout>
+    </div>
   );
 };
 

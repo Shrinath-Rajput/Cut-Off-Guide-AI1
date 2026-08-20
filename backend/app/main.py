@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import connect_to_mongo, close_mongo_connection, get_db
 
-from app.routes import auth, users, admin, colleges, cutoffs
+from app.routes import assistant, auth, users, admin, colleges, cutoffs
 
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
@@ -35,6 +35,7 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads"
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,6 +46,7 @@ app.include_router(users.router)
 app.include_router(admin.router)
 app.include_router(colleges.router)
 app.include_router(cutoffs.router)
+app.include_router(assistant.router)
 
 @app.get("/api/health", tags=["Health"])
 async def health_check():

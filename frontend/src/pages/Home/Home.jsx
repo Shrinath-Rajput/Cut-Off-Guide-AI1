@@ -22,7 +22,7 @@ const featureCards = [
     icon: 'compare_arrows',
   },
   {
-    title: 'Career Assistant',
+    title: 'AI Council',
     text: 'Consult with our generative AI for personalized advice on course selection and long-term career trajectories.',
     icon: 'support_agent',
   },
@@ -43,7 +43,7 @@ const navLinks = [
   { label: 'Colleges', to: '/colleges' },
   { label: 'Predictor', to: '/cutoff' },
   { label: 'Compare', to: '/compare' },
-  { label: 'AI Assistant', to: '/assistant' },
+  { label: 'AI Council', to: '/assistant' },
   { label: 'About', to: '/about' },
 ];
 
@@ -155,7 +155,7 @@ export default function Home() {
                   <p className="footer-section-title">Product</p>
                   <Link to="/colleges">Colleges</Link>
                   <Link to="/cutoff">Predictor</Link>
-                  <Link to="/assistant">AI Assistant</Link>
+                  <Link to="/assistant">AI Council</Link>
                 </div>
                 <div>
                   <p className="footer-section-title">Company</p>
