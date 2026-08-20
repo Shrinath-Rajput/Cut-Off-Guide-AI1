@@ -5,16 +5,23 @@ const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
+  const [adminUser, setAdminUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('auth_user');
     const storedToken = localStorage.getItem('auth_token');
+    const storedAdminUser = localStorage.getItem('admin_user');
+    const storedAdminToken = localStorage.getItem('admin_token');
 
     if (storedUser && storedToken) {
       setCurrentUser(JSON.parse(storedUser));
       setIsAuthenticated(true);
+    }
+
+    if (storedAdminUser && storedAdminToken) {
+      setAdminUser(JSON.parse(storedAdminUser));
     }
 
     setLoading(false);
@@ -49,6 +56,18 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
   };
 
+  const adminLogin = (user, token) => {
+    localStorage.setItem('admin_token', token);
+    localStorage.setItem('admin_user', JSON.stringify(user));
+    setAdminUser(user);
+  };
+
+  const adminLogout = () => {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    setAdminUser(null);
+  };
+
   const registerAndLogin = async (userPayload) => {
     const response = await registerUserApi(userPayload);
     const backendUser = response?.user || userPayload;
@@ -64,8 +83,11 @@ export const AuthProvider = ({ children }) => {
         currentUser,
         loading,
         isAuthenticated,
+        adminUser,
         login,
         logout,
+        adminLogin,
+        adminLogout,
         registerAndLogin,
       }}
     >

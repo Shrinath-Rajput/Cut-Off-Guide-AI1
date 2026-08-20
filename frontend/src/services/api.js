@@ -8,7 +8,9 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
+  const token = config.url?.startsWith('/api/admin')
+    ? localStorage.getItem('admin_token') || localStorage.getItem('auth_token')
+    : localStorage.getItem('auth_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -67,7 +69,7 @@ export const updateProfile = async (payload) => {
 
 export const getAdminColleges = async () => {
   const response = await api.get('/api/admin/colleges', {
-    headers: { Authorization: `Bearer ${localStorage.getItem('auth_token')}` },
+    headers: { Authorization: `Bearer ${localStorage.getItem('admin_token') || localStorage.getItem('auth_token')}` },
   });
   return response.data;
 };
@@ -77,7 +79,7 @@ export const uploadCollegeImage = async (collegeId, file) => {
   formData.append('image', file);
   const response = await api.post(`/api/admin/colleges/${collegeId}/image`, formData, {
     headers: {
-      Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
+      Authorization: `Bearer ${localStorage.getItem('admin_token') || localStorage.getItem('auth_token')}`,
       'Content-Type': 'multipart/form-data',
     },
   });

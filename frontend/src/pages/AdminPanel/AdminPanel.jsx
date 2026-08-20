@@ -19,7 +19,7 @@ const date = (value) => value ? new Date(value).toLocaleDateString() : '—';
 const errorText = (error) => error.response?.data?.detail || 'Something went wrong';
 
 const AdminPanel = ({ section: initialSection = 'dashboard' }) => {
-  const { currentUser, logout } = useAuth();
+  const { adminUser, adminLogout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const routeSection = location.pathname.split('/')[2] || initialSection;
@@ -57,7 +57,7 @@ const AdminPanel = ({ section: initialSection = 'dashboard' }) => {
       close(); toast.success('Changes saved'); refresh();
     } catch (error) { toast.error(errorText(error)); }
   };
-  const signOut = () => { sessionStorage.setItem('admin_logout_redirect', 'true'); logout(); navigate('/home', { replace: true, state: { fromAdminLogout: true } }); };
+  const signOut = () => { adminLogout(); window.location.replace('/home'); };
 
   return <div className="admin-app">
     <aside className={`admin-sidebar ${mobileOpen ? 'open' : ''}`}>
@@ -67,7 +67,7 @@ const AdminPanel = ({ section: initialSection = 'dashboard' }) => {
     </aside>
     {mobileOpen && <button className="admin-overlay" aria-label="Close menu" onClick={() => setMobileOpen(false)} />}
     <main className="admin-main">
-      <header className="admin-topbar"><button className="admin-menu" onClick={() => setMobileOpen(true)}><Menu size={21} /></button><div><p className="admin-kicker">ADMIN PANEL</p><h1>{modules.find(([id]) => id === section)?.[1]}</h1></div><div className="admin-user"><span>{currentUser?.name?.slice(0, 1) || 'A'}</span><div><strong>{currentUser?.name || 'Administrator'}</strong><small>{currentUser?.email || 'Admin account'}</small></div></div></header>
+      <header className="admin-topbar"><button className="admin-menu" onClick={() => setMobileOpen(true)}><Menu size={21} /></button><div><p className="admin-kicker">ADMIN PANEL</p><h1>{modules.find(([id]) => id === section)?.[1]}</h1></div><div className="admin-user"><span>{adminUser?.name?.slice(0, 1) || 'A'}</span><div><strong>{adminUser?.name || 'Administrator'}</strong><small>{adminUser?.email || 'Admin account'}</small></div></div></header>
       <div className="admin-content">{loading && <div className="admin-loading">Loading workspace...</div>}{!loading && section === 'dashboard' && <Dashboard data={data.dashboard} onTrain={async () => { const result = await trainAdminDatabase(); toast(result.message); }} />}{!loading && section === 'users' && <UsersView items={data.users} search={search} setSearch={setSearch} reload={() => refresh('users')} onEdit={(item) => open('user', item)} onDelete={(id) => destroy('user', () => deleteAdminUser(id))} />}{!loading && section === 'enquiries' && <EnquiriesView items={data.enquiries} search={search} setSearch={setSearch} onDelete={(id) => destroy('enquiry', () => deleteAdminEnquiry(id))} onUpdate={async (id, payload) => { await updateAdminEnquiry(id, payload); toast.success('Enquiry updated'); refresh(); }} />}{!loading && section === 'data' && <DataView colleges={data.colleges} cutoffs={data.cutoffs} search={search} setSearch={setSearch} onAddCollege={() => open('college', emptyCollege)} onEditCollege={(item) => open('college', { ...item, courses: item.courses?.join(', ') })} onDeleteCollege={(id) => destroy('college', () => deleteAdminCollege(id))} onAddCutoff={() => open('cutoff', emptyCutoff)} onEditCutoff={(item) => open('cutoff', item)} onDeleteCutoff={(id) => destroy('cutoff', () => deleteAdminCutoff(id))} />}{!loading && section === 'plans' && <PlansView items={data.plans} onAdd={() => open('plan', emptyPlan)} onEdit={(item) => open('plan', { ...item, features: item.features?.join(', ') })} onToggle={async (id, isActive) => { await updateAdminSubscription(id, { isActive }); toast.success('Plan updated'); refresh('plans'); }} onDelete={(id) => destroy('plan', () => deleteAdminSubscription(id))} />}{!loading && section === 'images' && <ImagesView items={data.images} onUpload={async (file, imageSection, name) => { await uploadAdminImage(file, imageSection, name); toast.success('Image uploaded'); refresh('images'); }} onReplace={async (id, file) => { await replaceAdminImage(id, file); toast.success('Image replaced'); refresh('images'); }} onToggle={async (id, isActive) => { await updateAdminImage(id, { isActive }); refresh('images'); }} onDelete={(id) => destroy('image', () => deleteAdminImage(id))} />}</div>
     </main>
     {modal && <Modal title={`${form.id ? 'Edit' : 'Add'} ${modal}`} onClose={close}>{modal === 'user' && <UserForm form={form} field={field} onSave={async () => { await updateAdminUser(form.id, form); close(); toast.success('User updated'); refresh(); }} />}{modal === 'college' && <RecordForm form={form} field={field} fields={Object.keys(emptyCollege)} onSave={() => save('college')} />}{modal === 'cutoff' && <RecordForm form={form} field={field} fields={Object.keys(emptyCutoff)} onSave={() => save('cutoff')} />}{modal === 'plan' && <RecordForm form={form} field={field} fields={Object.keys(emptyPlan)} onSave={() => save('plan')} />}</Modal>}

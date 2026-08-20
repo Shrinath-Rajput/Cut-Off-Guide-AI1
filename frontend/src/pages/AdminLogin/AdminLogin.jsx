@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { adminLogin } from '../../services/api';
+import { adminLogin as adminLoginApi } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import './AdminLogin.css';
 
 const AdminLogin = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { adminLogin: saveAdminSession } = useAuth();
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
 
@@ -16,8 +16,8 @@ const AdminLogin = () => {
     event.preventDefault();
     setLoading(true);
     try {
-      const response = await adminLogin(credentials);
-      login(response.user, response.token);
+      const response = await adminLoginApi(credentials);
+      saveAdminSession(response.user, response.token);
       navigate('/admin/dashboard', { replace: true });
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Unable to sign in');
@@ -38,7 +38,7 @@ const AdminLogin = () => {
           <label>Password<input type="password" required value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} /></label>
           <button className="admin-primary-button" disabled={loading}>{loading ? 'Checking access...' : 'Login'}</button>
         </form>
-        <button className="admin-back-link" onClick={() => navigate('/welcome')}>Return to Cutoff Guide</button>
+        <button className="admin-back-link" onClick={() => navigate('/home')}>Return to Cutoff Guide</button>
       </section>
     </main>
   );
