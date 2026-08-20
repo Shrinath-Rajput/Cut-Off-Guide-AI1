@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import Navbar from '../../components/Navbar/Navbar';
 import './Assistant.css';
 
 const DEFAULT_SUGGESTIONS = [
@@ -282,8 +283,10 @@ const Assistant = () => {
   };
 
   return (
-    <div className="assistant-page-container">
-      <div className={`assistant-layout ${sidebarOpen ? 'sidebar-open' : ''}`}>
+    <>
+      <Navbar />
+      <div className="assistant-page-container">
+        <div className={`assistant-layout ${sidebarOpen ? 'sidebar-open' : ''}`}>
         {/* Side Navigation Bar */}
         <nav className="assistant-sidenav">
           {/* Header */}
@@ -492,8 +495,9 @@ const Assistant = () => {
           {/* Mobile backdrop */}
           <div className="mobile-backdrop" onClick={() => setSidebarOpen(false)} />
         </main>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

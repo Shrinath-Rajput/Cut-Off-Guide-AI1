@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { useAuth } from '../../context/AuthContext';
-import { updateProfile } from '../../services/api';
+import { registerUser, updateProfile } from '../../services/api';
 import './Onboarding.css';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -30,6 +30,8 @@ const COLLEGE_TYPES = ['Government', 'Private', 'Deemed'];
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isSignup = new URLSearchParams(location.search).get('mode') === 'signup';
   const {
     activeStep,
     studentProfile,
@@ -76,6 +78,9 @@ const Onboarding = () => {
   });
 
   const [errors, setErrors] = useState({});
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setPersonalLocal({
@@ -304,7 +309,14 @@ const Onboarding = () => {
     }
 
     if (activeStep === 4) {
+      if (isSignup && (!password || password.length < 8 || password !== confirmPassword)) {
+        const message = !password || password.length < 8 ? 'Password must be at least 8 characters' : 'Passwords do not match';
+        setErrors({ password: message });
+        toast.error(message);
+        return;
+      }
       try {
+        setIsSubmitting(true);
         const payload = {
           name: studentProfile.fullName,
           email: studentProfile.email,
@@ -321,12 +333,21 @@ const Onboarding = () => {
           collegeType: studentProfile.preferences?.collegeType,
           hostelRequired: studentProfile.preferences?.hostelRequired,
         };
-        const updatedUser = await updateProfile(payload);
-        login(updatedUser, localStorage.getItem('auth_token'));
-        toast.success('Onboarding complete! Welcome to Cutoff Guide AI.');
-        navigate('/home');
+        if (isSignup) {
+          await registerUser({ ...payload, password });
+          localStorage.removeItem('onboarding_state');
+          toast.success('Account created successfully. Please sign in.');
+          navigate('/login', { replace: true });
+        } else {
+          const updatedUser = await updateProfile(payload);
+          login(updatedUser, localStorage.getItem('auth_token'));
+          toast.success('Onboarding complete! Welcome to Cutoff Guide AI.');
+          navigate('/home');
+        }
       } catch (error) {
-        toast.error('Failed to save profile. Please try again.');
+        toast.error(error?.response?.data?.detail || error?.response?.data?.message || 'Failed to save profile. Please try again.');
+      } finally {
+        setIsSubmitting(false);
       }
     }
   };
@@ -667,7 +688,21 @@ const Onboarding = () => {
             )}
 
             {activeStep === 4 && (
-              <div className="summary-card">
+              <>
+                {isSignup && (
+                  <div className="summary-section">
+                    <div className="form-field">
+                      <label className="field-label" htmlFor="signup-password">Password</label>
+                      <input id="signup-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="field-input" autoComplete="new-password" />
+                    </div>
+                    <div className="form-field">
+                      <label className="field-label" htmlFor="signup-confirm-password">Confirm Password</label>
+                      <input id="signup-confirm-password" type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="field-input" autoComplete="new-password" />
+                    </div>
+                    {errors.password && <div className="field-error-text">{errors.password}</div>}
+                  </div>
+                )}
+                <div className="summary-card">
                 <p className="summary-intro">Ready to see your admission predictions? Review your details below before completing.</p>
                 
                 <div className="summary-section">
@@ -709,14 +744,15 @@ const Onboarding = () => {
                     <div className="summary-item"><span className="summary-label">Hostel:</span> {studentProfile.preferences?.hostelRequired ? 'Yes' : 'No'}</div>
                   </div>
                 </div>
-              </div>
+                </div>
+              </>
             )}
           </form>
         </div>
 
         <div className="bottom-action">
-          <button className="continue-button" onClick={handleContinue} type="button">
-            {getButtonText()}
+          <button className="continue-button" onClick={handleContinue} type="button" disabled={isSubmitting}>
+            {isSubmitting ? 'Creating Account...' : isSignup && activeStep === 4 ? 'Create Account' : getButtonText()}
             <span className="material-symbols-outlined button-icon">arrow_forward</span>
           </button>
         </div>

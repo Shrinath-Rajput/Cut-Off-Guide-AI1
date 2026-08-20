@@ -17,7 +17,6 @@ import Cutoff from '../pages/Cutoff/Cutoff';
 import Assistant from '../pages/Assistant/Assistant';
 import Saved from '../pages/Saved/Saved';
 import History from '../pages/History/History';
-import GoogleCallback from '../pages/GoogleCallback/GoogleCallback';
 import AdminLogin from '../pages/AdminLogin/AdminLogin';
 import AdminPanel from '../pages/AdminPanel/AdminPanel';
 import ProtectedRoute from './ProtectedRoute';
@@ -67,14 +66,11 @@ const AppRoutes = () => {
         <Route
           path="/onboarding"
           element={
-            <ProtectedRoute>
-              <OnboardingProvider currentUser={currentUser}>
-                <Onboarding />
-              </OnboardingProvider>
-            </ProtectedRoute>
+            <OnboardingProvider currentUser={currentUser}>
+              <Onboarding />
+            </OnboardingProvider>
           }
         />
-        <Route path="/auth/google/callback" element={<GoogleCallback />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
         <Route path="/admin/dashboard" element={<AdminRoute><AdminPanel section="dashboard" /></AdminRoute>} />
