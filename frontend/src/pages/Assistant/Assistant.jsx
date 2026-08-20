@@ -97,31 +97,15 @@ const Assistant = () => {
     }
   }, [messages, isTyping]);
 
-<<<<<<< HEAD
-  const assistantApiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
-
-  const sendAssistantMessage = async (messageText) => {
-    const response = await fetch(`${assistantApiBase}/api/assistant`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ message: messageText }),
-    });
-
-    if (!response.ok) {
-      throw new Error('Assistant backend request failed');
-=======
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 128)}px`;
->>>>>>> origin/veer
     }
   }, [query]);
 
-  const assistantApiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+  const assistantApiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
 
   const handleNewChat = () => {
     const newChatId = `chat-${Date.now()}`;
