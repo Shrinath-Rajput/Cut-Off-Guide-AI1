@@ -11,10 +11,10 @@ const initialProfile = {
   email: '',
   phone: '',
   dob: '',
-  exam: 'JEE Main',
+  exam: '',
   percentile: '',
-  category: 'General',
-  domicile: 'Maharashtra',
+  category: '',
+  domicile: '',
 };
 
 const Profile = () => {
@@ -62,7 +62,7 @@ const Profile = () => {
 
   const handleLogout = async () => {
     await logout();
-    window.location.href = '/welcome';
+    navigate('/home', { replace: true });
   };
 
   return (
@@ -114,8 +114,8 @@ const Profile = () => {
                   <span className="material-symbols-outlined">edit</span>
                 </button>
               </div>
-              <h2 className="avatar-name">Alex Carter</h2>
-              <p className="avatar-email">alex.carter@example.com</p>
+              <h2 className="avatar-name">{profile.name || currentUser?.name || 'User'}</h2>
+              <p className="avatar-email">{profile.email || currentUser?.email || ''}</p>
               <div className="badges-container">
                 <span className="badge badge-premium">Premium Member</span>
                 <span className="badge badge-engineering">Engineering</span>

@@ -27,6 +27,9 @@ export const verifyOtp = async (payload) => {
   return response.data;
 };
 
+export const sendLoginOtp = async (payload) => (await api.post('/api/auth/login/send-otp', payload)).data;
+export const verifyLoginOtp = async (payload) => (await api.post('/api/auth/login/verify-otp', payload)).data;
+
 export const registerUser = async (user) => {
   const response = await api.post('/api/auth/register', user);
   return response.data;
@@ -34,11 +37,6 @@ export const registerUser = async (user) => {
 
 export const loginUser = async (user) => {
   const response = await api.post('/api/auth/login', user);
-  return response.data;
-};
-
-export const googleAuth = async (user) => {
-  const response = await api.post('/api/auth/google', user);
   return response.data;
 };
 

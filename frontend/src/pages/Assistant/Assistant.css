@@ -22,8 +22,8 @@
 }
 
 .assistant-page-container {
-  min-height: calc(100vh - 4rem);
-  height: calc(100vh - 4rem);
+  min-height: calc(100vh - 72px);
+  height: calc(100vh - 72px);
   background-color: var(--ai-bg);
   color: var(--ai-text-on-bg);
   font-family: 'Plus Jakarta Sans', sans-serif;

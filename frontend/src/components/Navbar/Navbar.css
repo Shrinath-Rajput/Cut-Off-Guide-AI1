@@ -94,6 +94,10 @@
     display: none;
   }
 
+  .navbar-actions .navbar-icon {
+    display: none;
+  }
+
   .mobile-drawer {
     position: fixed;
     z-index: 101;
