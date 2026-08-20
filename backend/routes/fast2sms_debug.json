@@ -1,5 +1,4 @@
-<<<<<<< HEAD
-{"numbers": "918421026865", "message": "Your verification OTP is 956550. It is valid for 5 minutes.", "route": "q", "language": "english", "flash": "0"}
-=======
-{"numbers": "919699510445", "message": "Your verification OTP is 591288. It is valid for 5 minutes.", "route": "q", "language": "english", "flash": "0"}
->>>>>>> main
+[
+	{"numbers": "918421026865", "message": "Your verification OTP is 956550. It is valid for 5 minutes.", "route": "q", "language": "english", "flash": "0"},
+	{"numbers": "919699510445", "message": "Your verification OTP is 591288. It is valid for 5 minutes.", "route": "q", "language": "english", "flash": "0"}
+]
