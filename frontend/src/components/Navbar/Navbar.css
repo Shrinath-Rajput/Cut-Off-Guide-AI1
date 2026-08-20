@@ -90,39 +90,205 @@
 }
 
 @media (max-width: 1199px) {
-  .site-menu {
-    position: fixed;
-    top: 72px;
-    right: 0;
-    width: min(320px, 80vw);
-    background: #ffffff;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 24px 20px;
-    gap: 16px;
-    border-left: 1px solid #e2bfb0;
-    box-shadow: -8px 0 30px rgba(20, 33, 61, 0.08);
-    height: calc(100vh - 72px);
-    transform: translateX(100%);
-    transition: transform 0.25s ease;
-    overflow-y: auto;
+  .desktop-menu {
+    display: none;
   }
 
-  .site-menu.open {
+  .mobile-drawer {
+    position: fixed;
+    z-index: 101;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    width: min(330px, 85vw);
+    height: 100vh;
+    padding: 28px 20px 22px;
+    color: #1a1c1a;
+    background: linear-gradient(180deg, #fffdf9 0%, #fff9f2 100%);
+    border-right: 1px solid #e2bfb0;
+    border-radius: 0 22px 22px 0;
+    box-shadow: 14px 0 40px rgba(53, 34, 23, 0.18);
+    transform: translateX(-105%);
+    transition: transform 0.3s ease;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .mobile-drawer.open {
     transform: translateX(0);
   }
 
-  .navbar-actions {
-    gap: 12px;
+  .drawer-overlay {
+    position: fixed;
+    z-index: 100;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: rgba(20, 18, 16, 0.38);
+    cursor: pointer;
+    animation: drawer-overlay-in 0.3s ease both;
+  }
+
+  .drawer-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 4px 24px;
+    border-bottom: 1px solid rgba(160, 65, 0, 0.2);
+  }
+
+  .drawer-brand {
+    display: grid;
+    gap: 5px;
+    color: #a04100;
+  }
+
+  .drawer-brand strong {
+    font-family: 'Newsreader', serif;
+    font-size: 23px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+
+  .drawer-brand span {
+    max-width: 205px;
+    color: #806354;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .drawer-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    border: 1px solid rgba(160, 65, 0, 0.18);
+    border-radius: 11px;
+    color: #5a4136;
+    background: rgba(255, 255, 255, 0.68);
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  }
+
+  .drawer-close:hover,
+  .drawer-close:focus-visible {
+    color: #a04100;
+    background: #ffeadf;
+    border-color: #d79c82;
+  }
+
+  .mobile-drawer .site-menu {
+    display: grid;
+    flex: 1 1 auto;
+    gap: 4px;
+    align-content: start;
+    margin: 22px 0;
+    white-space: normal;
+  }
+
+  .mobile-drawer .site-menu a,
+  .drawer-actions button,
+  .drawer-actions a {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    min-height: 46px;
+    padding: 11px 12px;
+    border: 0;
+    border-radius: 10px;
+    color: #5a4136;
+    background: transparent;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+  }
+
+  .mobile-drawer .site-menu a:hover,
+  .mobile-drawer .site-menu a:focus-visible,
+  .mobile-drawer .site-menu a.active,
+  .drawer-actions button:hover,
+  .drawer-actions button:focus-visible,
+  .drawer-actions a:hover,
+  .drawer-actions a:focus-visible {
+    color: #a04100;
+    background: #ffeadf;
+    outline: none;
+  }
+
+  .mobile-drawer .site-menu a.active,
+  .drawer-actions a.active {
+    font-weight: 600;
+  }
+
+  .mobile-drawer .site-menu a svg,
+  .drawer-actions svg {
+    flex: 0 0 19px;
+  }
+
+  .drawer-actions {
+    display: grid;
+    gap: 4px;
+    padding-top: 18px;
+    border-top: 1px solid rgba(160, 65, 0, 0.2);
+  }
+
+  .drawer-welcome {
+    padding: 0 12px 9px;
+    color: #806354;
+    font-size: 12px;
+  }
+
+  .drawer-welcome strong {
+    color: #a04100;
+    font-weight: 600;
   }
 
   .mobile-toggle {
+    position: relative;
+    z-index: 102;
     display: inline-flex;
   }
 
-  .site-menu a {
-    width: 100%;
-    padding: 12px 0;
+  body.drawer-open {
+    overflow: hidden;
+  }
+
+  .mobile-drawer a:focus-visible,
+  .mobile-drawer button:focus-visible,
+  .mobile-toggle:focus-visible {
+    outline: 3px solid rgba(160, 65, 0, 0.35);
+    outline-offset: 2px;
+  }
+
+  @keyframes drawer-overlay-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+}
+
+.mobile-drawer,
+.drawer-overlay {
+  display: none;
+}
+
+@media (max-width: 1199px) {
+  .mobile-drawer {
+    display: flex;
+  }
+
+  .drawer-overlay {
+    display: block;
   }
 }
 
