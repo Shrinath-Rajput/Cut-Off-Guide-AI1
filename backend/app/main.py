@@ -12,7 +12,13 @@ from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import connect_to_mongo, close_mongo_connection, get_db
 
+<<<<<<< HEAD
 from app.routes import auth, users, admin, colleges, cutoffs, profile, saved
+=======
+from app.routes import assistant, auth, users, admin, colleges, cutoffs
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+>>>>>>> origin/veer
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,7 +53,12 @@ allowed_origins = list(dict.fromkeys((settings.CORS_ORIGINS or []) + [
 ]))
 app.add_middleware(
     CORSMiddleware,
+<<<<<<< HEAD
     allow_origins=allowed_origins,
+=======
+    allow_origins=settings.CORS_ORIGINS,
+    allow_origin_regex=r"https?://.*",
+>>>>>>> origin/veer
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -58,8 +69,12 @@ app.include_router(users.router)
 app.include_router(admin.router)
 app.include_router(colleges.router)
 app.include_router(cutoffs.router)
+<<<<<<< HEAD
 app.include_router(profile.router)
 app.include_router(saved.router)
+=======
+app.include_router(assistant.router)
+>>>>>>> origin/veer
 
 @app.get("/api/health", tags=["Health"])
 async def health_check():
