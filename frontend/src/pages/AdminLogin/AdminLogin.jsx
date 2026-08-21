@@ -38,7 +38,7 @@ const AdminLogin = () => {
           <label>Password<input type="password" required value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} /></label>
           <button className="admin-primary-button" disabled={loading}>{loading ? 'Checking access...' : 'Login'}</button>
         </form>
-        <button className="admin-back-link" onClick={() => navigate('/home')}>Return to Cutoff Guide</button>
+        <button className="admin-back-link" onClick={() => navigate('/login')}>Return to Cutoff Guide</button>
       </section>
     </main>
   );

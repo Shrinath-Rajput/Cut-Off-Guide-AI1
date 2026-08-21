@@ -50,8 +50,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('auth_user');
+    sessionStorage.removeItem('auth_pending_otp_session_id');
+    sessionStorage.removeItem('auth_pending_user');
+    sessionStorage.removeItem('auth_pending_phone');
     setCurrentUser(null);
     setIsAuthenticated(false);
   };

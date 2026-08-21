@@ -23,6 +23,27 @@ import ProtectedRoute from './ProtectedRoute';
 import { OnboardingProvider } from '../context/OnboardingContext';
 import { useAuth } from '../context/AuthContext';
 
+const PublicOnlyRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) return null;
+  const hasToken = !!localStorage.getItem('auth_token');
+  const hasUser = !!localStorage.getItem('auth_user');
+  const authed = isAuthenticated || (hasToken && hasUser);
+  if (authed) {
+    return <Navigate to="/home" replace />;
+  }
+  return children;
+};
+
+const FallbackRoute = () => {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) return null;
+  const hasToken = !!localStorage.getItem('auth_token');
+  const hasUser = !!localStorage.getItem('auth_user');
+  const authed = isAuthenticated || (hasToken && hasUser);
+  return <Navigate to={authed ? '/home' : '/login'} replace />;
+};
+
 const AppRoutes = () => {
   const { currentUser } = useAuth();
   return (
@@ -30,22 +51,75 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<Splash />} />
         <Route path="/welcome" element={<Welcome />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/otp" element={<OTP />} />
+        <Route path="/login" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+        <Route path="/otp" element={<PublicOnlyRoute><OTP /></PublicOnlyRoute>} />
         <Route path="/about" element={<About />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Terms />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/colleges" element={<Colleges />} />
-        <Route path="/college/:id" element={<CollegeDetails />} />
-        <Route path="/compare" element={<Compare />} />
-        <Route path="/cutoff" element={<Cutoff />} />
-        <Route path="/assistant" element={<Assistant />} />
-        <Route path="/saved" element={<Saved />} />
-        <Route path="/history" element={<History />} />
+        <Route
+          path="/colleges"
+          element={
+            <ProtectedRoute>
+              <Colleges />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/college/:id"
+          element={
+            <ProtectedRoute>
+              <CollegeDetails />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/compare"
+          element={
+            <ProtectedRoute>
+              <Compare />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cutoff"
+          element={
+            <ProtectedRoute>
+              <Cutoff />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/assistant"
+          element={
+            <ProtectedRoute>
+              <Assistant />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/saved"
+          element={
+            <ProtectedRoute>
+              <Saved />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <History />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/home"
-          element={<Home />}
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/profile"
@@ -80,7 +154,7 @@ const AppRoutes = () => {
         <Route path="/admin/images" element={<AdminRoute><AdminPanel section="images" /></AdminRoute>} />
         <Route path="/admin/subscriptions" element={<AdminRoute><AdminPanel section="plans" /></AdminRoute>} />
         <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/welcome" replace />} />
+        <Route path="*" element={<FallbackRoute />} />
       </Routes>
     </BrowserRouter>
   );

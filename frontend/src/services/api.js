@@ -17,6 +17,26 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401) {
+      const isAdminRoute = error?.config?.url?.startsWith('/api/admin');
+      if (!isAdminRoute) {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('auth_user');
+        sessionStorage.removeItem('auth_pending_otp_session_id');
+        sessionStorage.removeItem('auth_pending_user');
+        sessionStorage.removeItem('auth_pending_phone');
+        if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/welcome') && !window.location.pathname.startsWith('/onboarding')) {
+          window.location.replace('/login');
+        }
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const sendOtp = async (payload) => {
   const response = await api.post('/api/auth/send-otp', payload);
   return response.data;
