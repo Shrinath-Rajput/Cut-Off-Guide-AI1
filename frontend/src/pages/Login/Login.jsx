@@ -19,6 +19,7 @@ const Login = () => {
   const [view, setView] = useState('credentials');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
@@ -37,7 +38,7 @@ const Login = () => {
   const handleNext = async (event) => {
     event.preventDefault();
     if (!identifier.trim() || !password) {
-      setError(!identifier.trim() ? 'Enter your username or email.' : 'Enter your password.');
+      setError(!identifier.trim() ? 'Enter your email or username.' : 'Password is required.');
       return;
     }
     setIsLoading(true);
@@ -48,7 +49,7 @@ const Login = () => {
       setPhone(response.otpPhone || response.user.phone || '');
       setView('phone');
     } catch (requestError) {
-      setError(getErrorMessage(requestError, 'Unable to sign in. Please check your credentials.'));
+      setError(getErrorMessage(requestError, 'Invalid username/email or password.'));
     } finally {
       setIsLoading(false);
     }
@@ -124,46 +125,173 @@ const Login = () => {
   };
 
   return (
-    <div className="stitch-auth-page">
-      <header className="stitch-auth-header">
-        <div className="stitch-auth-brand">
-          <span className="material-symbols-outlined stitch-auth-brand-icon">school</span>
-          <span className="stitch-auth-brand-text">Cutoff Guide AI</span>
-        </div>
-        <button type="button" className="stitch-auth-close-btn" onClick={() => navigate('/welcome')} aria-label="Close">
-          <span className="material-symbols-outlined stitch-auth-close-icon">close</span>
-        </button>
-      </header>
-      <main className="stitch-auth-main">
-        <div className="stitch-auth-card">
-          <div className="stitch-auth-header-section">
-            <h1 className="stitch-auth-headline">{view === 'credentials' ? 'Sign In' : 'Verify Your Phone'}</h1>
-            <p className="stitch-auth-subhead">{view === 'credentials' ? 'Sign in to continue to your personalized college guide.' : `We sent a verification code to ${formatPhone(phone)}`}</p>
+    <div className="cg-auth-page">
+      <div className="cg-auth-bg" aria-hidden="true">
+        <div className="cg-auth-blob cg-auth-blob--top" />
+        <div className="cg-auth-blob cg-auth-blob--bottom" />
+      </div>
+      <main className="cg-auth-main">
+        <div className="cg-auth-card">
+          <div className="cg-auth-brand">
+            <span className="material-symbols-outlined cg-auth-brand-icon fill-icon">school</span>
+            <span className="cg-auth-brand-text">Cutoff Guide AI</span>
           </div>
+
+          <div className="cg-auth-hero">
+            <h1 className="cg-auth-title">
+              {view === 'credentials' && 'Sign In'}
+              {view === 'phone' && 'Verify Your Phone'}
+              {view === 'otp' && 'Enter OTP'}
+            </h1>
+            <p className="cg-auth-subtitle">
+              {view === 'credentials' && 'Welcome back! Please enter your details.'}
+              {view === 'phone' && 'Confirm your phone number to receive a secure OTP.'}
+              {view === 'otp' && `We sent a verification code to ${formatPhone(phone)}`}
+            </p>
+          </div>
+
           {view === 'credentials' && (
-            <form className="stitch-form" onSubmit={handleNext} noValidate>
-              <div className="stitch-field"><label className="stitch-field-label" htmlFor="login-identifier">Username / Email</label><input id="login-identifier" className="stitch-phone-input" value={identifier} onChange={(event) => setIdentifier(event.target.value)} placeholder="Enter username or email" autoComplete="username" /></div>
-              <div className="stitch-field"><label className="stitch-field-label" htmlFor="login-password">Password</label><input id="login-password" type="password" className="stitch-phone-input" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter password" autoComplete="current-password" /></div>
-              {error && <p className="stitch-field-error">{error}</p>}
-              <button type="submit" className="stitch-primary-btn" disabled={isLoading}>{isLoading ? 'Checking...' : 'Next'}</button>
-              <p className="stitch-terms">Don't have an account? <button type="button" className="stitch-terms-link" onClick={() => { localStorage.removeItem('onboarding_state'); navigate('/onboarding?mode=signup'); }}>Create Account</button></p>
+            <form className="cg-form" onSubmit={handleNext} noValidate>
+              <div className="cg-field">
+                <label className="cg-field-label" htmlFor="login-identifier">Email or Username</label>
+                <input
+                  id="login-identifier"
+                  className={`cg-input ${error && !identifier.trim() ? 'cg-input--error' : ''}`}
+                  value={identifier}
+                  onChange={(event) => { setIdentifier(event.target.value); setError(''); }}
+                  placeholder="Enter your email"
+                  autoComplete="username"
+                />
+              </div>
+
+              <div className="cg-field">
+                <label className="cg-field-label" htmlFor="login-password">Password</label>
+                <div className="cg-input-wrap">
+                  <input
+                    id="login-password"
+                    type={showPassword ? 'text' : 'password'}
+                    className={`cg-input cg-input--with-icon ${error && !password ? 'cg-input--error' : ''}`}
+                    value={password}
+                    onChange={(event) => { setPassword(event.target.value); setError(''); }}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    className="cg-icon-btn"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    onClick={() => setShowPassword((value) => !value)}
+                  >
+                    <span className="material-symbols-outlined cg-icon">
+                      {showPassword ? 'visibility' : 'visibility_off'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {error && <p className="cg-error-text" role="alert">{error}</p>}
+
+              <button type="submit" className="cg-primary-btn" disabled={isLoading}>
+                {isLoading ? (
+                  <span className="cg-spinner" aria-hidden="true" />
+                ) : null}
+                <span>{isLoading ? 'Checking...' : 'Next'}</span>
+              </button>
+
+              <p className="cg-footnote">
+                Don&apos;t have an account?{' '}
+                <button
+                  type="button"
+                  className="cg-link"
+                  onClick={() => {
+                    localStorage.removeItem('onboarding_state');
+                    try { sessionStorage.removeItem('signup_pending_credentials'); } catch (e) { /* ignore */ }
+                    navigate('/signup');
+                  }}
+                >
+                  Create Account
+                </button>
+              </p>
             </form>
           )}
+
           {view === 'phone' && (
-            <form className="stitch-form" onSubmit={handleSendOtp} noValidate>
-              <div className="stitch-field"><label className="stitch-field-label" htmlFor="login-phone">Phone Number</label><input id="login-phone" type="tel" className="stitch-phone-input" value={phone} onChange={(event) => setPhone(event.target.value)} placeholder="+91 XXXXX XXXXX" />{phoneError && <p className="stitch-field-error">{phoneError}</p>}</div>
-              {error && <p className="stitch-field-error">{error}</p>}
-              <button type="submit" className="stitch-primary-btn" disabled={isLoading}>{isLoading ? 'Sending OTP...' : 'Send OTP'}</button>
-              <button type="button" className="stitch-back-btn" onClick={() => { setView('credentials'); setError(''); }}>Change credentials</button>
+            <form className="cg-form" onSubmit={handleSendOtp} noValidate>
+              <div className="cg-field">
+                <label className="cg-field-label" htmlFor="login-phone">Phone Number</label>
+                <input
+                  id="login-phone"
+                  type="tel"
+                  className={`cg-input ${phoneError ? 'cg-input--error' : ''}`}
+                  value={phone}
+                  onChange={(event) => { setPhone(event.target.value); setPhoneError(''); }}
+                  placeholder="+91 XXXXX XXXXX"
+                />
+                {phoneError && <p className="cg-error-text" role="alert">{phoneError}</p>}
+              </div>
+
+              {error && <p className="cg-error-text" role="alert">{error}</p>}
+
+              <button type="submit" className="cg-primary-btn" disabled={isLoading}>
+                {isLoading ? <span className="cg-spinner" aria-hidden="true" /> : null}
+                <span>{isLoading ? 'Sending OTP...' : 'Send OTP'}</span>
+              </button>
+
+              <button
+                type="button"
+                className="cg-back-link"
+                onClick={() => { setView('credentials'); setError(''); setPhoneError(''); }}
+              >
+                Change credentials
+              </button>
             </form>
           )}
+
           {view === 'otp' && (
-            <form className="stitch-form" onSubmit={handleVerifyOtp} noValidate>
-              <div className="stitch-otp-group">{otpDigits.map((digit, index) => <input key={index} ref={(element) => { otpInputRefs.current[index] = element; }} type="text" inputMode="numeric" maxLength={1} className="stitch-otp-input" value={digit} onChange={(event) => handleOtpChange(index, event.target.value)} />)}</div>
-              {error && <p className="stitch-field-error stitch-otp-error">{error}</p>}
-              <button type="submit" className="stitch-primary-btn" disabled={isLoading}>{isLoading ? 'Verifying...' : 'Verify OTP'}</button>
-              <div className="stitch-resend-wrap"><p className="stitch-resend-question">{timer > 0 ? `Resend OTP in 00:${String(timer).padStart(2, '0')}` : "Didn't receive the code?"}</p><button type="button" className="stitch-resend-btn stitch-resend-active" onClick={handleResend} disabled={timer > 0 || isLoading}>Resend OTP</button></div>
-              <button type="button" className="stitch-back-btn" onClick={() => setView('phone')}>Change phone number</button>
+            <form className="cg-form" onSubmit={handleVerifyOtp} noValidate>
+              <div className="cg-otp-row" role="group" aria-label="One time password">
+                {otpDigits.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={(element) => { otpInputRefs.current[index] = element; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    className={`cg-otp-digit ${error && !digit ? 'cg-input--error' : ''}`}
+                    value={digit}
+                    onChange={(event) => handleOtpChange(index, event.target.value)}
+                  />
+                ))}
+              </div>
+
+              {error && <p className="cg-error-text cg-error-text--center" role="alert">{error}</p>}
+
+              <button type="submit" className="cg-primary-btn" disabled={isLoading}>
+                {isLoading ? <span className="cg-spinner" aria-hidden="true" /> : null}
+                <span>{isLoading ? 'Verifying...' : 'Verify OTP'}</span>
+              </button>
+
+              <div className="cg-resend">
+                <p className="cg-resend-text">
+                  {timer > 0 ? `Resend OTP in 00:${String(timer).padStart(2, '0')}` : "Didn't receive the code?"}
+                </p>
+                <button
+                  type="button"
+                  className={`cg-link cg-resend-btn ${timer === 0 ? 'is-active' : ''}`}
+                  onClick={handleResend}
+                  disabled={timer > 0 || isLoading}
+                >
+                  Resend OTP
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="cg-back-link"
+                onClick={() => { setView('phone'); setError(''); }}
+              >
+                Change phone number
+              </button>
             </form>
           )}
         </div>
