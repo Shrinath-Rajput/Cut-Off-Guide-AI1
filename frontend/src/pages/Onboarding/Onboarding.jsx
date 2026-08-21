@@ -6,6 +6,8 @@ import { useAuth } from '../../context/AuthContext';
 import { registerUser, updateProfile } from '../../services/api';
 import './Onboarding.css';
 
+const SIGNUP_PENDING_KEY = 'signup_pending_credentials';
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const INDIAN_STATES = [
@@ -81,6 +83,20 @@ const Onboarding = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!isSignup) return;
+    try {
+      const raw = sessionStorage.getItem(SIGNUP_PENDING_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.password) setPassword(parsed.password);
+        if (parsed.confirmPassword) setConfirmPassword(parsed.confirmPassword);
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  }, [isSignup]);
 
   useEffect(() => {
     setPersonalLocal({
@@ -336,6 +352,7 @@ const Onboarding = () => {
         if (isSignup) {
           await registerUser({ ...payload, password });
           localStorage.removeItem('onboarding_state');
+          try { sessionStorage.removeItem(SIGNUP_PENDING_KEY); } catch (e) { /* ignore */ }
           toast.success('Account created successfully. Please sign in.');
           navigate('/login', { replace: true });
         } else {
