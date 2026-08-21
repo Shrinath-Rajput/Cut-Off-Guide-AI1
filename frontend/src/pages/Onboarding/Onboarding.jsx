@@ -205,7 +205,14 @@ const Onboarding = () => {
   };
 
   const handleAcademicChange = (field, value) => {
-    setAcademicLocal((prev) => ({ ...prev, [field]: value }));
+    setAcademicLocal((prev) => {
+      const next = { ...prev, [field]: value };
+      if (field === 'exam') {
+        next.careerOption = '';
+        next.preferredBranch = '';
+      }
+      return next;
+    });
     if (errors[field]) {
       // If changing exam, re-validate score if exists
       if (field === 'exam' && academic.examScore) {
@@ -377,6 +384,19 @@ const Onboarding = () => {
     return elements;
   };
 
+  const filteredCareerOptions = useMemo(() => {
+    if (!academic.exam) return CAREER_OPTIONS;
+    if (['JEE Main', 'JEE Advanced', 'MHT-CET', 'Diploma'].includes(academic.exam)) return ['Engineering', 'Architecture', 'Other'];
+    if (academic.exam === 'NEET') return ['Medical', 'Other'];
+    if (academic.exam.includes('Pharm')) return ['Pharmacy', 'Medical', 'Other'];
+    return CAREER_OPTIONS;
+  }, [academic.exam]);
+
+  const filteredBranches = useMemo(() => {
+    if (!academic.exam || !EXAM_CONFIG[academic.exam]) return STANDARD_BRANCHES;
+    return EXAM_CONFIG[academic.exam].courses;
+  }, [academic.exam]);
+
   const progress = (activeStep / steps.length) * 100;
 
   return (
@@ -547,7 +567,7 @@ const Onboarding = () => {
                     className={`field-input ${errors.careerOption ? 'field-input-error' : ''}`}
                   >
                     <option value="" disabled>Select a career option</option>
-                    {CAREER_OPTIONS.map((career) => (
+                    {filteredCareerOptions.map((career) => (
                       <option key={career} value={career}>{career}</option>
                     ))}
                   </select>
@@ -564,7 +584,7 @@ const Onboarding = () => {
                     className={`field-input ${errors.preferredBranch ? 'field-input-error' : ''}`}
                   >
                     <option value="" disabled>Select a branch</option>
-                    {STANDARD_BRANCHES.map((branch) => (
+                    {filteredBranches.map((branch) => (
                       <option key={branch} value={branch}>{branch}</option>
                     ))}
                   </select>
