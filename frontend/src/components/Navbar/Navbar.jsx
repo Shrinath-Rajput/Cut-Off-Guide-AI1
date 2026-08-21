@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bookmark, Bot, FileText, GitCompareArrows, GraduationCap, House, Mail, Menu, Search, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, Bot, FileText, GitCompareArrows, GraduationCap, House, LogOut, Mail, Menu, Search, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import './Navbar.css';
 
@@ -19,7 +19,13 @@ const navLinks = [
 const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', profileTo = '/profile' }) => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
+
+  const handleLogout = () => {
+    setMobileOpen(false);
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   useEffect(() => {
     if (!mobileOpen) return undefined;
@@ -97,6 +103,12 @@ const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', p
                 <span>Admin Panel</span>
               </Link>
             )}
+            {currentUser && (
+              <button type="button" onClick={handleLogout} tabIndex={mobileOpen ? 0 : -1}>
+                <LogOut size={19} strokeWidth={1.9} aria-hidden="true" />
+                <span>Logout</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -131,6 +143,17 @@ const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', p
           <Link to="/admin/login" className="navbar-icon" aria-label="Admin Panel" title="Admin Panel">
             <span className="material-symbols-outlined">admin_panel_settings</span>
           </Link>
+          {currentUser && (
+            <button
+              className="navbar-icon"
+              type="button"
+              aria-label="Logout"
+              title="Logout"
+              onClick={handleLogout}
+            >
+              <span className="material-symbols-outlined">logout</span>
+            </button>
+          )}
           <button type="button" className="mobile-toggle" aria-label="Open navigation menu" aria-expanded={mobileOpen} onClick={() => setMobileOpen((prev) => !prev)}>
             {mobileOpen ? <X /> : <Menu />}
           </button>

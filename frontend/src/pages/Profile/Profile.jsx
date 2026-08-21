@@ -60,9 +60,9 @@ const Profile = () => {
     }
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/home', { replace: true });
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
   };
 
   return (

@@ -130,7 +130,7 @@ const Login = () => {
           <span className="material-symbols-outlined stitch-auth-brand-icon">school</span>
           <span className="stitch-auth-brand-text">Cutoff Guide AI</span>
         </div>
-        <button type="button" className="stitch-auth-close-btn" onClick={() => navigate('/home')} aria-label="Close">
+        <button type="button" className="stitch-auth-close-btn" onClick={() => navigate('/welcome')} aria-label="Close">
           <span className="material-symbols-outlined stitch-auth-close-icon">close</span>
         </button>
       </header>

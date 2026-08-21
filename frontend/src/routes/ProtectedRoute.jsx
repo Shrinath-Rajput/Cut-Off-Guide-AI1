@@ -9,7 +9,11 @@ const ProtectedRoute = ({ children }) => {
     return null;
   }
 
-  if (!isAuthenticated) {
+  const hasToken = !!localStorage.getItem('auth_token');
+  const hasUser = !!localStorage.getItem('auth_user');
+  const authed = isAuthenticated || (hasToken && hasUser);
+
+  if (!authed) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
