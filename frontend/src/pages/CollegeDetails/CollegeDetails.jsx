@@ -96,16 +96,39 @@ const CollegeDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('Overview');
-  const [college, setCollege] = useState(collegeDetails[id] || collegeDetails.mit);
+  const [college, setCollege] = useState(collegeDetails[id] || {
+    name: 'College Information',
+    location: 'India',
+    rating: '4.5/5',
+    reviews: '500+ Reviews',
+    ranking: '#10 in State',
+    badges: ['Top Engineering', 'NAAC Accredited'],
+    heroImage: heroImage,
+  });
 
   useEffect(() => {
     let mounted = true;
-    getCollegeById(id)
-      .then((data) => {
-        if (mounted) setCollege((previous) => ({ ...previous, ...data }));
-      })
-      .catch(() => {})
-      .finally(() => {});
+    if (id) {
+      getCollegeById(id)
+        .then((data) => {
+          if (mounted && data) {
+            setCollege((previous) => ({
+              ...previous,
+              ...data,
+              name: data.name || previous.name,
+              location: data.location || `${data.city || ''}, ${data.state || 'India'}`,
+              rating: data.rating ? `${data.rating}/5` : previous.rating,
+              reviews: data.reviews || previous.reviews,
+              ranking: data.nirf_rank ? `NIRF #${data.nirf_rank}` : (data.ranking || previous.ranking),
+              badges: Array.isArray(data.badges) && data.badges.length > 0
+                ? data.badges
+                : [data.type || 'Autonomous', data.state || 'India'],
+            }));
+          }
+        })
+        .catch(() => {})
+        .finally(() => {});
+    }
     return () => {
       mounted = false;
     };
@@ -116,7 +139,7 @@ const CollegeDetails = () => {
       <main className="college-details-page">
         <section className="college-hero">
           <img
-            src={collegeImage(college.image || college.heroImage)}
+            src={collegeImage(college.image || college.heroImage, 'banner', college.name)}
             alt={college.name}
             className="college-hero-image"
             onError={handleCollegeImageError}
@@ -128,7 +151,7 @@ const CollegeDetails = () => {
           <div className="college-profile-card">
             <div>
               <div className="college-badges">
-                {college.badges.map((badge) => (
+                {(college.badges || ['Top Engineering', 'NAAC Accredited']).map((badge) => (
                   <span key={badge} className="college-badge">{badge}</span>
                 ))}
               </div>
@@ -136,15 +159,15 @@ const CollegeDetails = () => {
               <div className="college-meta-row">
                 <div className="college-meta-item">
                   <span className="material-symbols-outlined">location_on</span>
-                  <span>{college.location}</span>
+                  <span>{college.location || 'India'}</span>
                 </div>
                 <div className="college-meta-item">
                   <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>star</span>
-                  <span>{college.rating} ({college.reviews})</span>
+                  <span>{college.rating || '4.5/5'} ({college.reviews || '500+ Reviews'})</span>
                 </div>
                 <div className="college-meta-item">
                   <span className="material-symbols-outlined">workspace_premium</span>
-                  <span>{college.ranking}</span>
+                  <span>{college.ranking || 'Premier Institute'}</span>
                 </div>
               </div>
             </div>

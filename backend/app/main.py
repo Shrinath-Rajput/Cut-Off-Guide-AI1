@@ -62,6 +62,23 @@ app.include_router(profile.router)
 app.include_router(saved.router)
 app.include_router(assistant.router)
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc: Exception):
+    import traceback
+    traceback.print_exc()
+    origin = request.headers.get("origin") or "*"
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=500,
+        content={"status": "error", "message": str(exc)},
+        headers={
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Methods": "*",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
+
 @app.get("/api/health", tags=["Health"])
 async def health_check():
     db = get_db()

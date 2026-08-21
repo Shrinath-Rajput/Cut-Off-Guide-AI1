@@ -1,7 +1,16 @@
 import axios from 'axios';
 
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const cleanUrl = envUrl.replace(':5000', ':8000');
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return cleanUrl.replace(/localhost|127\.0\.0\.1/, window.location.hostname);
+  }
+  return cleanUrl;
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -54,6 +63,26 @@ export const searchCutoffs = async (payload) => {
 
 export const getCollegeById = async (id) => {
   const response = await api.get(`/api/colleges/${id}`);
+  return response.data;
+};
+
+export const lookupCollegeAI = async (query) => {
+  const response = await api.get('/api/colleges/ai/lookup', { params: { q: query } });
+  return response.data;
+};
+
+export const getSavedColleges = async () => {
+  const response = await api.get('/api/saved');
+  return response.data;
+};
+
+export const saveCollege = async (payload) => {
+  const response = await api.post('/api/saved', payload);
+  return response.data;
+};
+
+export const removeSavedCollege = async (id) => {
+  const response = await api.delete(`/api/saved/${id}`);
   return response.data;
 };
 
