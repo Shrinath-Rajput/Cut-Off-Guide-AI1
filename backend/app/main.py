@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import connect_to_mongo, close_mongo_connection, get_db
-from app.routes import assistant, auth, users, admin, colleges, cutoffs, profile, saved
+from app.routes import assistant, auth, users, admin, colleges, cutoffs, profile, saved, contact
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -61,6 +61,7 @@ app.include_router(cutoffs.router)
 app.include_router(profile.router)
 app.include_router(saved.router)
 app.include_router(assistant.router)
+app.include_router(contact.router)
 
 @app.get("/api/health", tags=["Health"])
 async def health_check():
