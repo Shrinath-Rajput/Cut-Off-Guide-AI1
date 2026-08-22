@@ -12,16 +12,24 @@ const getErrorMessage = (error, fallback) => {
 };
 
 const INITIAL_COUNTDOWN = 60;
+const OTP_LENGTH = 6;
 
 const OTP = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [timer, setTimer] = useState(INITIAL_COUNTDOWN);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const inputRefs = useRef([]);
+
+  const focusInput = (index) => {
+    if (index < 0 || index >= OTP_LENGTH) return;
+    requestAnimationFrame(() => {
+      inputRefs.current[index]?.focus();
+    });
+  };
 
   const pendingUser = sessionStorage.getItem('auth_pending_user');
   const pendingPhone = sessionStorage.getItem('auth_pending_phone');
@@ -33,9 +41,8 @@ const OTP = () => {
       navigate('/login', { replace: true });
       return;
     }
-    const focusTimer = setTimeout(() => inputRefs.current[0]?.focus(), 50);
-    return () => clearTimeout(focusTimer);
-  }, [navigate, parsedUser, pendingPhone]);
+    requestAnimationFrame(() => inputRefs.current[0]?.focus());
+  }, [navigate, pendingPhone, pendingUser]);
 
   useEffect(() => {
     if (timer <= 0) return undefined;
@@ -50,62 +57,76 @@ const OTP = () => {
     return `*** *** ${digits.slice(-4)}`;
   };
 
-  const fillAllDigits = (raw) => {
-    const sanitized = String(raw).replace(/\D/g, '').slice(0, 6);
-    const next = Array.from({ length: 6 }, (_, index) => sanitized[index] || '');
-    setOtpDigits(next);
-    setError('');
-    const focusIndex = Math.min(sanitized.length, 5);
-    setTimeout(() => inputRefs.current[focusIndex]?.focus(), 0);
-  };
-
   const handleDigitChange = (index, rawValue) => {
+    const digit = String(rawValue || '').replace(/\D/g, '').slice(-1);
     setError('');
-    const value = String(rawValue).replace(/\D/g, '');
-    if (value.length > 1) {
-      fillAllDigits(value);
-      return;
-    }
-    const digit = value.slice(-1);
-    setOtpDigits((current) => current.map((item, itemIndex) => (itemIndex === index ? digit : item)));
-    if (digit && index < 5) {
-      setTimeout(() => inputRefs.current[index + 1]?.focus(), 0);
+    setOtp((current) => {
+      const next = [...current];
+      next[index] = digit;
+      return next;
+    });
+
+    if (digit && index < OTP_LENGTH - 1) {
+      requestAnimationFrame(() => inputRefs.current[index + 1]?.focus());
     }
   };
 
   const handleKeyDown = (event, index) => {
     if (event.key === 'Backspace') {
       setError('');
-      const current = otpDigits[index];
-      if (!current && index > 0) {
+      if (otp[index]) {
         event.preventDefault();
-        setOtpDigits((currentDigits) =>
-          currentDigits.map((item, itemIndex) => (itemIndex === index - 1 ? '' : item)),
-        );
-        setTimeout(() => inputRefs.current[index - 1]?.focus(), 0);
+        setOtp((current) => {
+          const next = [...current];
+          next[index] = '';
+          return next;
+        });
+        return;
       }
-    } else if (event.key === 'ArrowLeft' && index > 0) {
+
+      if (index > 0) {
+        event.preventDefault();
+        setOtp((current) => {
+          const next = [...current];
+          next[index - 1] = '';
+          return next;
+        });
+        focusInput(index - 1);
+      }
+      return;
+    }
+
+    if (event.key === 'ArrowLeft' && index > 0) {
       event.preventDefault();
-      inputRefs.current[index - 1]?.focus();
-    } else if (event.key === 'ArrowRight' && index < 5) {
+      focusInput(index - 1);
+      return;
+    }
+
+    if (event.key === 'ArrowRight' && index < OTP_LENGTH - 1) {
       event.preventDefault();
-      inputRefs.current[index + 1]?.focus();
+      focusInput(index + 1);
     }
   };
 
-  const handlePaste = (event) => {
-    const pasted = (event.clipboardData || window.clipboardData)?.getData('text') || '';
-    if (!pasted) return;
-    const digits = pasted.replace(/\D/g, '');
-    if (!digits) return;
+  const handlePaste = (event, index) => {
     event.preventDefault();
-    fillAllDigits(digits);
+    const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
+    if (!pasted) return;
+    setError('');
+    setOtp((current) => {
+      const next = [...current];
+      pasted.split('').forEach((digit, offset) => {
+        if (index + offset < OTP_LENGTH) next[index + offset] = digit;
+      });
+      return next;
+    });
+    requestAnimationFrame(() => inputRefs.current[Math.min(index + pasted.length - 1, OTP_LENGTH - 1)]?.focus());
   };
 
   const handleVerify = async (event) => {
     event.preventDefault();
-    const otp = otpDigits.join('');
-    if (otp.length !== 6) {
+    const otpValue = otp.join('');
+    if (otpValue.length !== 6) {
       setError('Please enter all 6 digits.');
       return;
     }
@@ -114,7 +135,7 @@ const OTP = () => {
     try {
       const response = await verifyOtp({
         phone: pendingPhone,
-        otp,
+        otp: otpValue,
         name: parsedUser?.name || '',
         email: parsedUser?.email || '',
         sessionId: pendingOtpSessionId,
@@ -150,10 +171,10 @@ const OTP = () => {
       if (response?.sessionId) {
         sessionStorage.setItem('auth_pending_otp_session_id', response.sessionId);
       }
-      setOtpDigits(['', '', '', '', '', '']);
+      setOtp(['', '', '', '', '', '']);
       setTimer(INITIAL_COUNTDOWN);
       toast.success('OTP sent successfully.');
-      setTimeout(() => inputRefs.current[0]?.focus(), 0);
+      focusInput(0);
     } catch (requestError) {
       const message = getErrorMessage(requestError, 'Unable to resend OTP. Please try again.');
       setError(message);
@@ -201,25 +222,22 @@ const OTP = () => {
           </div>
 
           <form className="cg-otp-form" onSubmit={handleVerify} noValidate>
-            <div
-              className="cg-otp-row"
-              role="group"
-              aria-label="One-time password"
-              onPaste={handlePaste}
-            >
-              {otpDigits.map((digit, index) => (
+            <div className="cg-otp-row" role="group" aria-label="One-time password">
+              {otp.map((digit, index) => (
                 <input
                   key={index}
                   ref={(element) => { inputRefs.current[index] = element; }}
                   type="text"
                   inputMode="numeric"
-                  autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                  pattern="[0-9]*"
+                  autoComplete="one-time-code"
                   maxLength={1}
                   className={`cg-otp-digit ${error && !digit ? 'cg-otp-digit--error' : ''}`}
                   value={digit}
                   aria-label={`OTP digit ${index + 1}`}
                   onChange={(event) => handleDigitChange(index, event.target.value)}
                   onKeyDown={(event) => handleKeyDown(event, index)}
+                  onPaste={(event) => handlePaste(event, index)}
                 />
               ))}
             </div>

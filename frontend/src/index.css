@@ -1,43 +1,90 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700&family=Hanken+Grotesk:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 :root {
   color-scheme: light;
-  font-family: 'Inter', 'Hanken Grotesk', 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
   font-weight: 400;
   font-size: 16px;
-  line-height: 1.6;
-  color: #1a1c1a;
-  background-color: #faf9f6;
-  --background: #faf9f6;
-  --background-soft: #f4f3f0;
-  --surface: #ffffff;
-  --surface-muted: #fffbf5;
-  --border: #e2bfb0;
-  --shadow-soft: 0 18px 40px rgba(17, 17, 17, 0.08);
-  --shadow-strong: 0 12px 24px rgba(20, 33, 61, 0.08);
-  --accent: #a04100;
-  --accent-strong: #ff6b00;
-  --accent-soft: #ffdbcc;
-  --text: #1a1c1a;
-  --text-secondary: #5a4136;
-  --text-muted: #525e7d;
-  --text-inverse: #ffffff;
-  --radius: 28px;
+  line-height: 1.5;
+  color: #2a170f;
+  background-color: #fff8f6;
+
+  --surface: #fff8f6;
+  --surface-dim: #f8d2c4;
+  --surface-bright: #fff8f6;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #fff1ec;
+  --surface-container: #ffe9e2;
+  --surface-container-high: #ffe2d8;
+  --surface-container-highest: #ffdbce;
+  --on-surface: #2a170f;
+  --on-surface-variant: #564337;
+  --inverse-surface: #422b22;
+  --inverse-on-surface: #ffede7;
+  --outline: #897365;
+  --outline-variant: #dcc1b1;
+  --surface-tint: #944a00;
+  --primary: #944a00;
+  --on-primary: #ffffff;
+  --primary-container: #e67e22;
+  --on-primary-container: #502600;
+  --inverse-primary: #ffb783;
+  --secondary: #4646d8;
+  --on-secondary: #ffffff;
+  --secondary-container: #6062f2;
+  --on-secondary-container: #fffbff;
+  --tertiary: #635e53;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #9f998c;
+  --on-tertiary-container: #353127;
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
+  --primary-fixed: #ffdcc5;
+  --primary-fixed-dim: #ffb783;
+  --on-primary-fixed: #301400;
+  --on-primary-fixed-variant: #713700;
+  --secondary-fixed: #e1e0ff;
+  --secondary-fixed-dim: #c1c1ff;
+  --on-secondary-fixed: #07006c;
+  --on-secondary-fixed-variant: #2e2bc2;
+  --tertiary-fixed: #e9e2d3;
+  --tertiary-fixed-dim: #cdc6b8;
+  --on-tertiary-fixed: #1e1b13;
+  --on-tertiary-fixed-variant: #4b463c;
+  --background: #fff8f6;
+  --on-background: #2a170f;
+  --surface-variant: #ffdbce;
+
+  --shadow-base: rgba(42, 23, 15, 0.08);
+  --shadow-soft: 0 20px 32px rgba(42, 23, 15, 0.06);
+  --shadow-strong: 0 12px 24px rgba(42, 23, 15, 0.1);
+
+  --rounded-sm: 0.125rem;
+  --rounded: 0.25rem;
+  --rounded-md: 0.375rem;
+  --rounded-lg: 0.5rem;
+  --rounded-xl: 0.75rem;
+  --rounded-full: 9999px;
+
+  --container-max: 1280px;
+  --gutter: 24px;
+  --desktop-margin: 64px;
+  --mobile-margin: 20px;
+  --stack-sm: 8px;
+  --stack-md: 16px;
+  --stack-lg: 32px;
 }
 
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-}
-
-.material-symbols-outlined.fill-icon {
-  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   min-height: 100vh;
-  background: linear-gradient(180deg, #faf9f6 0%, #fffdf9 100%);
-  color: var(--text);
+  background: linear-gradient(180deg, #fff8f6 0%, #fffdfb 100%);
+  color: var(--on-surface);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -58,17 +105,6 @@ body,
   width: 100%;
 }
 
-body {
-  min-height: 100vh;
-  background: linear-gradient(180deg, #ffffff 0%, #fff9f2 100%);
-  color: var(--text);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
-}
-
 button,
 input,
 textarea,
@@ -86,8 +122,38 @@ img {
   display: block;
 }
 
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+p,
+span,
+label,
+button,
+a,
+input,
+textarea,
+select {
+  font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
+}
+
 ::selection {
-  background: rgba(249, 115, 22, 0.18);
+  background: rgba(148, 74, 0, 0.14);
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+.material-symbols-outlined.fill-icon {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
 .page-shell {
@@ -105,8 +171,8 @@ img {
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(circle at top left, rgba(249, 115, 22, 0.08), transparent 18%),
-    radial-gradient(circle at bottom right, rgba(249, 115, 22, 0.05), transparent 24%);
+  background: radial-gradient(circle at top left, rgba(148, 74, 0, 0.08), transparent 18%),
+    radial-gradient(circle at bottom right, rgba(148, 74, 0, 0.05), transparent 24%);
   pointer-events: none;
   z-index: -1;
 }
@@ -114,9 +180,9 @@ img {
 .auth-card {
   width: min(100%, 40rem);
   padding: 2rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--surface-container-lowest);
+  border: 1px solid var(--outline-variant);
+  border-radius: var(--rounded-lg);
   box-shadow: var(--shadow-soft);
 }
 

@@ -13,6 +13,8 @@ const getErrorMessage = (error, fallback) => {
   return detail;
 };
 
+const OTP_LENGTH = 6;
+
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -21,13 +23,20 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [phone, setPhone] = useState('');
-  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [pendingLogin, setPendingLogin] = useState(null);
   const otpInputRefs = useRef([]);
+
+  const focusOtpInput = (index) => {
+    if (index < 0 || index >= OTP_LENGTH) return;
+    requestAnimationFrame(() => {
+      otpInputRefs.current[index]?.focus();
+    });
+  };
 
   useEffect(() => {
     if (timer <= 0) return undefined;
@@ -69,7 +78,7 @@ const Login = () => {
       const response = await sendLoginOtp({ uid: pendingLogin.uid, phone: normalizedPhone });
       sessionStorage.setItem('auth_pending_otp_session_id', response.sessionId);
       setPhone(normalizedPhone);
-      setOtpDigits(['', '', '', '', '', '']);
+      setOtp(['', '', '', '', '', '']);
       setTimer(30);
       setView('otp');
       toast.success('OTP sent successfully');
@@ -83,8 +92,8 @@ const Login = () => {
 
   const handleVerifyOtp = async (event) => {
     event.preventDefault();
-    const otp = otpDigits.join('');
-    if (otp.length !== 6) {
+    const otpValue = otp.join('');
+    if (otpValue.length !== 6) {
       setError('Enter the 6-digit OTP.');
       return;
     }
@@ -94,7 +103,7 @@ const Login = () => {
       const response = await verifyLoginOtp({
         uid: pendingLogin.uid,
         phone,
-        otp,
+        otp: otpValue,
         sessionId: sessionStorage.getItem('auth_pending_otp_session_id'),
       });
       login(response.user, response.token);
@@ -108,11 +117,70 @@ const Login = () => {
     }
   };
 
-  const handleOtpChange = (index, value) => {
-    const digit = value.replace(/\D/g, '').slice(-1);
+  const handleOtpChange = (index, rawValue) => {
+    const digit = String(rawValue || '').replace(/\D/g, '').slice(-1);
     setError('');
-    setOtpDigits((current) => current.map((item, itemIndex) => (itemIndex === index ? digit : item)));
-    if (digit) otpInputRefs.current[index + 1]?.focus();
+    setOtp((current) => {
+      const next = [...current];
+      next[index] = digit;
+      return next;
+    });
+
+    if (digit && index < OTP_LENGTH - 1) {
+      requestAnimationFrame(() => otpInputRefs.current[index + 1]?.focus());
+    }
+  };
+
+  const handleOtpKeyDown = (event, index) => {
+    if (event.key === 'Backspace') {
+      setError('');
+      if (otp[index]) {
+        event.preventDefault();
+        setOtp((current) => {
+          const next = [...current];
+          next[index] = '';
+          return next;
+        });
+        return;
+      }
+
+      if (index > 0) {
+        event.preventDefault();
+        setOtp((current) => {
+          const next = [...current];
+          next[index - 1] = '';
+          return next;
+        });
+        focusOtpInput(index - 1);
+      }
+      return;
+    }
+
+    if (event.key === 'ArrowLeft' && index > 0) {
+      event.preventDefault();
+      focusOtpInput(index - 1);
+      return;
+    }
+
+    if (event.key === 'ArrowRight' && index < OTP_LENGTH - 1) {
+      event.preventDefault();
+      focusOtpInput(index + 1);
+    }
+  };
+
+  const handleOtpPaste = (event, index) => {
+    event.preventDefault();
+    const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
+    if (!pasted) return;
+    setError('');
+    setOtp((current) => {
+      const next = [...current];
+      pasted.split('').forEach((digit, offset) => {
+        if (index + offset < OTP_LENGTH) next[index + offset] = digit;
+      });
+      return next;
+    });
+    requestAnimationFrame(() => otpInputRefs.current[Math.min(index + pasted.length - 1, OTP_LENGTH - 1)]?.focus());
   };
 
   const handleResend = () => {
@@ -250,16 +318,20 @@ const Login = () => {
           {view === 'otp' && (
             <form className="cg-form" onSubmit={handleVerifyOtp} noValidate>
               <div className="cg-otp-row" role="group" aria-label="One time password">
-                {otpDigits.map((digit, index) => (
+                {otp.map((digit, index) => (
                   <input
                     key={index}
                     ref={(element) => { otpInputRefs.current[index] = element; }}
                     type="text"
                     inputMode="numeric"
+                    pattern="[0-9]*"
                     maxLength={1}
+                    autoComplete="one-time-code"
                     className={`cg-otp-digit ${error && !digit ? 'cg-input--error' : ''}`}
                     value={digit}
                     onChange={(event) => handleOtpChange(index, event.target.value)}
+                    onKeyDown={(event) => handleOtpKeyDown(event, index)}
+                    onPaste={(event) => handleOtpPaste(event, index)}
                   />
                 ))}
               </div>
