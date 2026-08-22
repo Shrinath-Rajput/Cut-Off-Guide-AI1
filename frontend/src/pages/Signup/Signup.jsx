@@ -122,6 +122,10 @@ const Signup = () => {
             phone: normalizedPhone,
             password,
             confirmPassword,
+            fullName: studentProfile?.fullName || '',
+            domicile: studentProfile?.domicile || '',
+            locationZone: studentProfile?.domicile || '',
+            name: studentProfile?.fullName || '',
           })
         );
       } catch (e) {
