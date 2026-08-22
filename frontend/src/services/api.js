@@ -143,3 +143,4 @@ export const replaceAdminImage = async (id, file) => {
 };
 export const deleteAdminImage = async (id) => (await api.delete(`/api/admin/images/${id}`)).data;
 export const trainAdminDatabase = async () => (await api.post('/api/admin/train')).data;
+export const submitContactForm = async (payload) => (await api.post('/api/contact', payload)).data;
