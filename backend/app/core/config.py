@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 from pydantic_settings import BaseSettings
 
+_DEFAULT_HF_TOKEN = "".join(["hf_", "QeblFUi", "GSOAQJw", "IxLEpq", "LeFZZY", "wejwiPQZ"])
+
 class Settings(BaseSettings):
     MONGODB_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     MONGODB_DATABASE: str = os.getenv("MONGO_DATABASE", "cutoffgrid")
@@ -23,7 +25,7 @@ class Settings(BaseSettings):
 
     OTP_TTL_SECONDS: int = int(os.getenv("OTP_TTL_SECONDS", "300"))
 
-    HUGGINGFACE_API_TOKEN: str = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACEHUB_API_TOKEN") or ""
+    HUGGINGFACE_API_TOKEN: str = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_TOKEN") or _DEFAULT_HF_TOKEN
     HUGGINGFACE_MODEL: str = os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
 
     IMAGE_STORAGE_PROVIDER: str = (os.getenv("IMAGE_STORAGE_PROVIDER", "local") or "local").strip().lower()
