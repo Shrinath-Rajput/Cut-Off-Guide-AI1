@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { useAuth } from '../../context/AuthContext';
-import { updateProfile, sendOtp, registerUser } from '../../services/api';
-import { SIGNUP_PENDING_KEY } from '../Signup/Signup';
+import { updateProfile } from '../../services/api';
 import './Onboarding.css';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -29,40 +28,6 @@ const CAREER_OPTIONS = [
 
 const COLLEGE_TYPES = ['Government', 'Private', 'Deemed'];
 
-const ROLE_OPTIONS = [
-  {
-    value: 'student',
-    label: 'Student',
-    icon: 'person',
-    description: 'Looking for university admissions data and cutoffs.',
-  },
-  {
-    value: 'parent',
-    label: 'Parent / Guardian',
-    icon: 'family_restroom',
-    description: 'Researching options for a dependent.',
-  },
-  {
-    value: 'counselor',
-    label: 'Counselor',
-    icon: 'support_agent',
-    description: 'Guiding multiple students through admissions.',
-  },
-  {
-    value: 'exploring',
-    label: 'Just Exploring',
-    icon: 'explore',
-    description: 'Browsing academic data out of curiosity.',
-  },
-];
-
-const GOAL_OPTIONS = [
-  'Find Universities',
-  'Compare Cutoffs',
-  'Research Scholarships',
-  'Analyze Trends',
-];
-
 const Onboarding = () => {
   const navigate = useNavigate();
   const {
@@ -72,17 +37,9 @@ const Onboarding = () => {
     setAcademic,
     setPreferences,
     nextStep,
-    prevStep,
     goToStep,
   } = useOnboarding();
-  const { login, isAuthenticated } = useAuth();
-
-  useEffect(() => {
-    const hasPending = !!sessionStorage.getItem(SIGNUP_PENDING_KEY);
-    if (!isAuthenticated && !hasPending) {
-      navigate('/signup', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
+  const { login } = useAuth();
 
   const steps = useMemo(() => ['Personal', 'Academic', 'Prefs', 'Predict'], []);
   const stepIcons = useMemo(
@@ -119,8 +76,6 @@ const Onboarding = () => {
   });
 
   const [errors, setErrors] = useState({});
-  const [selectedRole, setSelectedRole] = useState(studentProfile?.userType || 'student');
-  const [selectedGoals, setSelectedGoals] = useState(Array.isArray(studentProfile?.goals) ? studentProfile.goals : []);
 
   useEffect(() => {
     setPersonalLocal({
@@ -131,8 +86,6 @@ const Onboarding = () => {
       phone: studentProfile?.phone || '',
       domicile: studentProfile?.domicile || '',
     });
-    setSelectedRole(studentProfile?.userType || 'student');
-    setSelectedGoals(Array.isArray(studentProfile?.goals) ? studentProfile.goals : []);
   }, [
     studentProfile?.fullName,
     studentProfile?.email,
@@ -140,8 +93,6 @@ const Onboarding = () => {
     studentProfile?.pwdCrossCategory,
     studentProfile?.phone,
     studentProfile?.domicile,
-    studentProfile?.userType,
-    studentProfile?.goals,
   ]);
 
   useEffect(() => {
@@ -254,14 +205,7 @@ const Onboarding = () => {
   };
 
   const handleAcademicChange = (field, value) => {
-    setAcademicLocal((prev) => {
-      const next = { ...prev, [field]: value };
-      if (field === 'exam') {
-        next.careerOption = '';
-        next.preferredBranch = '';
-      }
-      return next;
-    });
+    setAcademicLocal((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
       // If changing exam, re-validate score if exists
       if (field === 'exam' && academic.examScore) {
@@ -306,41 +250,11 @@ const Onboarding = () => {
     handlePreferencesChange('collegeType', newValue);
   };
 
-  const validateFinalReview = () => {
-    const missing = [];
-    if (!studentProfile.fullName) missing.push('Full Name');
-    if (!studentProfile.email) missing.push('Email');
-    if (!studentProfile.phone) missing.push('Phone');
-    if (!studentProfile.domicile) missing.push('State of Domicile');
-    if (!studentProfile.category) missing.push('Student Category');
-    if (!studentProfile.academic?.exam) missing.push('Primary Exam');
-    if (!studentProfile.academic?.examScore) missing.push('Exam Score');
-    if (!studentProfile.academic?.careerOption) missing.push('Career Option');
-    if (!studentProfile.academic?.preferredBranch) missing.push('Preferred Branch');
-    if (!studentProfile.preferences?.preferredLocation) missing.push('Preferred Location');
-    if (!studentProfile.preferences?.collegeType) missing.push('College Type');
-    return missing;
-  };
-
-  const toggleGoal = (goal) => {
-    setSelectedGoals((prev) => {
-      const next = prev.includes(goal) ? prev.filter((item) => item !== goal) : [...prev, goal];
-      return next;
-    });
-  };
-
-  const validateStepOne = () => {
-    const next = {};
-    if (!selectedRole) next.role = 'Please select an option';
-    if (!selectedGoals.length) next.goals = 'Please select at least one goal';
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  };
-
   const handleContinue = async () => {
+    console.log('handleContinue called, activeStep:', activeStep);
     if (activeStep === 1) {
-      if (!validateStepOne()) {
-        toast.error(selectedGoals.length ? 'Please select your role.' : 'Please select at least one goal.');
+      if (!validatePersonal()) {
+        toast.error('Please complete all required fields');
         return;
       }
       setPersonal({
@@ -350,8 +264,6 @@ const Onboarding = () => {
         pwdCrossCategory: personal.pwdCrossCategory,
         phone: personal.phone.trim(),
         domicile: personal.domicile,
-        userType: selectedRole,
-        goals: selectedGoals,
       });
       nextStep();
       return;
@@ -392,28 +304,14 @@ const Onboarding = () => {
     }
 
     if (activeStep === 4) {
-      const missingFields = validateFinalReview();
-      if (missingFields.length > 0) {
-        toast.error(`Please complete: ${missingFields.join(', ')}`);
-        setErrors((prev) => ({ ...prev, finalReview: missingFields }));
-        return;
-      }
-
       try {
-        const pendingRaw = sessionStorage.getItem(SIGNUP_PENDING_KEY);
-        const pendingCreds = pendingRaw ? JSON.parse(pendingRaw) : {};
-
-        const completePayload = {
+        const payload = {
           name: studentProfile.fullName,
-          fullName: studentProfile.fullName,
           email: studentProfile.email,
-          phone: studentProfile.phone,
-          password: pendingCreds.password,
-          userType: 'student',
           category: studentProfile.category,
           pwdCrossCategory: studentProfile.pwdCrossCategory,
+          phone: studentProfile.phone,
           domicile: studentProfile.domicile,
-          locationZone: studentProfile.domicile,
           exam: studentProfile.academic?.exam,
           examScore: studentProfile.academic?.examScore,
           careerOption: studentProfile.academic?.careerOption,
@@ -423,36 +321,12 @@ const Onboarding = () => {
           collegeType: studentProfile.preferences?.collegeType,
           hostelRequired: studentProfile.preferences?.hostelRequired,
         };
-
-        sessionStorage.setItem('signup_complete_payload', JSON.stringify(completePayload));
-        sessionStorage.setItem('auth_pending_user', JSON.stringify({
-          name: completePayload.name,
-          email: completePayload.email,
-          phone: completePayload.phone,
-        }));
-        sessionStorage.setItem('auth_pending_phone', completePayload.phone);
-        sessionStorage.setItem('signup_from_onboarding', 'true');
-
-        const otpResponse = await sendOtp({
-          name: completePayload.name,
-          email: completePayload.email,
-          phone: completePayload.phone,
-        });
-
-        if (otpResponse?.sessionId) {
-          sessionStorage.setItem('auth_pending_otp_session_id', otpResponse.sessionId);
-        }
-
-        if (otpResponse?.dev_otp) {
-          toast.success(`OTP sent. Dev OTP: ${otpResponse.dev_otp}`);
-        } else {
-          toast.success('OTP sent to your phone number.');
-        }
-
-        navigate('/otp', { replace: true });
+        const updatedUser = await updateProfile(payload);
+        login(updatedUser, localStorage.getItem('auth_token'));
+        toast.success('Onboarding complete! Welcome to Cutoff Guide AI.');
+        navigate('/home');
       } catch (error) {
-        const detail = error?.response?.data?.detail || error?.response?.data?.message || error?.message || 'Failed to send OTP. Please try again.';
-        toast.error(detail);
+        toast.error('Failed to save profile. Please try again.');
       }
     }
   };
@@ -461,12 +335,7 @@ const Onboarding = () => {
     if (activeStep === 1) return 'Continue to Academic Details';
     if (activeStep === 2) return 'Continue to Preferences';
     if (activeStep === 3) return 'Continue to Prediction';
-    return 'Create Account';
-  };
-
-  const handleBack = () => {
-    setErrors({});
-    prevStep();
+    return 'Complete Onboarding';
   };
 
   const handleStepClick = (stepNumber) => {
@@ -508,134 +377,129 @@ const Onboarding = () => {
     return elements;
   };
 
-  const renderStepOneProgress = () => (
-    <div className="onboarding-progress-wrap onboarding-progress-wrap-step-one">
-      <div className="onboarding-step-label">Step 1 of 4</div>
-      <div className="onboarding-progress onboarding-progress-simple" aria-label="Progress 1 of 4">
-        {steps.map((_, index) => {
-          const stepNumber = index + 1;
-          const isActive = stepNumber === 1;
-          return (
-            <span
-              key={`step-one-${stepNumber}`}
-              className={`progress-segment ${isActive ? 'active' : ''}`}
-              aria-hidden="true"
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const filteredCareerOptions = useMemo(() => {
-    if (!academic.exam) return CAREER_OPTIONS;
-    if (['JEE Main', 'JEE Advanced', 'MHT-CET', 'Diploma'].includes(academic.exam)) return ['Engineering', 'Architecture', 'Other'];
-    if (academic.exam === 'NEET') return ['Medical', 'Other'];
-    if (academic.exam.includes('Pharm')) return ['Pharmacy', 'Medical', 'Other'];
-    return CAREER_OPTIONS;
-  }, [academic.exam]);
-
-  const filteredBranches = useMemo(() => {
-    if (!academic.exam || !EXAM_CONFIG[academic.exam]) return STANDARD_BRANCHES;
-    return EXAM_CONFIG[academic.exam].courses;
-  }, [academic.exam]);
-
   const progress = (activeStep / steps.length) * 100;
 
   return (
     <div className="onboarding-wrapper">
-      <header className={`onboarding-brand-header ${activeStep === 4 ? 'onboarding-brand-header-summary' : ''}`}>
-        <div className={`onboarding-brand-center ${activeStep === 4 ? 'onboarding-brand-center-summary' : ''}`}>
-          <span className="material-symbols-outlined onboarding-brand-icon">school</span>
-          {activeStep !== 4 && <span className="onboarding-brand-name">Cutoff Guide AI</span>}
+      <header className="onboarding-header-section">
+        <h1 className="onboarding-title">Welcome to Cutoff Guide AI</h1>
+        <p className="onboarding-subtitle">Let's personalize your college prediction experience.</p>
+
+        <div className="progress-bar-container">
+          <div className="progress-bar">
+            <div className="progress-fill" style={{ width: `${progress}%` }}></div>
+          </div>
         </div>
+
+        <div className="step-indicator">{renderStepIndicator()}</div>
       </header>
 
-      <section className="onboarding-main-shell">
-        {activeStep === 4 ? (
-          <div className="onboarding-progress-wrap onboarding-progress-wrap-summary">
-            <div className="onboarding-progress-summary-row">
-              <span className="onboarding-step-label onboarding-step-label-summary">STEP 4 OF 4</span>
-              <span className="onboarding-step-label onboarding-step-label-summary onboarding-step-label-right">FINAL REVIEW</span>
-            </div>
-            <div className="onboarding-progress-summary-bar" aria-label="Progress 4 of 4">
-              <span className="onboarding-progress-summary-fill" />
-            </div>
-          </div>
-        ) : activeStep === 1 ? (
-          renderStepOneProgress()
-        ) : (
-          <div className="onboarding-progress-wrap">
-            <div className="onboarding-step-label">STEP {activeStep} OF {steps.length}</div>
-            <div className="onboarding-progress" aria-label={`Progress ${activeStep} of ${steps.length}`}>
-              {renderStepIndicator()}
-            </div>
-          </div>
-        )}
+      <section className="form-section">
+        <div className="form-card">
+          <h2 className="form-title">
+            {activeStep === 1 && 'Personal Details'}
+            {activeStep === 2 && 'Academic Details'}
+            {activeStep === 3 && 'Preferences'}
+            {activeStep === 4 && 'Prediction Profile'}
+          </h2>
 
-        <div className="form-card onboarding-step-card">
           <form className="personal-form" onSubmit={(e) => e.preventDefault()}>
             {activeStep === 1 && (
               <>
-                <div className="onboarding-intro onboarding-step-one-intro">
-                  <h1 className="onboarding-page-heading">Let's personalize your journey</h1>
-                  <p className="onboarding-page-subheading">
-                    Tell us a bit about yourself so we can tailor the academic data to your specific needs.
-                  </p>
+                <div className="form-field">
+                  <label className="field-label" htmlFor="fullName">Full Name</label>
+                  <input
+                    type="text"
+                    id="fullName"
+                    name="fullName"
+                    value={personal.fullName}
+                    onChange={(e) => handlePersonalChange('fullName', e.target.value)}
+                    placeholder="Enter your full name"
+                    className={`field-input ${errors.fullName ? 'field-input-error' : ''}`}
+                  />
+                  {errors.fullName && <div className="field-error-text">{errors.fullName}</div>}
                 </div>
 
-                <div className="onboarding-question-block">
-                  <h2 className="onboarding-question-label">I am a...</h2>
-                  <div className="user-type-grid">
-                    {ROLE_OPTIONS.map((option) => {
-                      const isSelected = selectedRole === option.value;
-                      return (
-                        <label key={option.value} className={`user-type-option ${isSelected ? 'selected' : ''}`}>
-                          <input
-                            type="radio"
-                            name="user-role"
-                            value={option.value}
-                            checked={isSelected}
-                            onChange={() => setSelectedRole(option.value)}
-                            className="sr-only-radio"
-                          />
-                          <div className="user-type-card" aria-pressed={isSelected}>
-                            <div className="user-type-icon-wrap">
-                              <span className="material-symbols-outlined user-type-icon">{option.icon}</span>
-                            </div>
-                            <div className="user-type-copy">
-                              <span className="user-type-title">{option.label}</span>
-                              <span className="user-type-description">{option.description}</span>
-                            </div>
-                          </div>
-                        </label>
-                      );
-                    })}
-                  </div>
+                <div className="form-field">
+                  <label className="field-label" htmlFor="email">Email Address</label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={personal.email}
+                    onChange={(e) => handlePersonalChange('email', e.target.value)}
+                    placeholder="Enter your email"
+                    className={`field-input ${errors.email ? 'field-input-error' : ''}`}
+                  />
+                  {errors.email && <div className="field-error-text">{errors.email}</div>}
                 </div>
 
-                <div className="onboarding-goal-block">
-                  <div className="onboarding-goal-header">
-                    <h2 className="onboarding-question-label">What is your primary goal?</h2>
-                    <div className="onboarding-goal-subtext">Select all that apply.</div>
-                  </div>
-                  <div className="goal-chip-group">
-                    {GOAL_OPTIONS.map((goal) => {
-                      const isSelected = selectedGoals.includes(goal);
-                      return (
-                        <button
-                          type="button"
-                          key={goal}
-                          className={`goal-chip ${isSelected ? 'selected' : ''}`}
-                          onClick={() => toggleGoal(goal)}
-                          aria-pressed={isSelected}
+                <div className="form-field">
+                  <label className="field-label" htmlFor="phone">Phone Number</label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={personal.phone}
+                    onChange={(e) => handlePersonalChange('phone', e.target.value)}
+                    placeholder="Enter your 10-digit phone number"
+                    className={`field-input ${errors.phone ? 'field-input-error' : ''}`}
+                  />
+                  {errors.phone && <div className="field-error-text">{errors.phone}</div>}
+                </div>
+
+                <div className="form-field">
+                  <label className="field-label" htmlFor="domicile">State of Domicile</label>
+                  <select
+                    id="domicile"
+                    name="domicile"
+                    value={personal.domicile}
+                    onChange={(e) => handlePersonalChange('domicile', e.target.value)}
+                    className={`field-input ${errors.domicile ? 'field-input-error' : ''}`}
+                  >
+                    <option value="" disabled>Select your state</option>
+                    {INDIAN_STATES.map((state) => (
+                      <option key={state} value={state}>{state}</option>
+                    ))}
+                  </select>
+                  {errors.domicile && <div className="field-error-text">{errors.domicile}</div>}
+                </div>
+
+                <div className="form-field category-field">
+                  <label className="field-label">Student Category</label>
+                  <div className="category-options">
+                    {['General', 'OBC', 'SC', 'ST', 'EWS', 'PWD', 'Defence/Ex-Servicemen', 'Minority', 'Kashmiri Migrant'].map((option) => (
+                      <label key={option} className="category-label">
+                        <input
+                          type="checkbox"
+                          name="category"
+                          value={option}
+                          checked={personal.category.includes(option)}
+                          onChange={() => toggleCategory(option)}
+                          className="radio-input"
+                        />
+                        <span
+                          className={`category-text ${errors.category ? 'category-text-error' : ''}`}
                         >
-                          {goal}
-                        </button>
-                      );
-                    })}
+                          {option}
+                        </span>
+                      </label>
+                    ))}
                   </div>
-                  {errors.goals && <div className="field-error-text onboarding-error">{errors.goals}</div>}
+                  {errors.category && <div className="field-error-text">{errors.category}</div>}
+                </div>
+                
+                <div className="form-field category-field" style={{ marginTop: '1rem' }}>
+                  <label className="category-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      name="pwdCrossCategory"
+                      checked={personal.pwdCrossCategory}
+                      onChange={(e) => handlePersonalChange('pwdCrossCategory', e.target.checked)}
+                      className="radio-input"
+                    />
+                    <span className="category-text">PWD (Cross-category applicant)</span>
+                  </label>
                 </div>
               </>
             )}
@@ -683,7 +547,7 @@ const Onboarding = () => {
                     className={`field-input ${errors.careerOption ? 'field-input-error' : ''}`}
                   >
                     <option value="" disabled>Select a career option</option>
-                    {filteredCareerOptions.map((career) => (
+                    {CAREER_OPTIONS.map((career) => (
                       <option key={career} value={career}>{career}</option>
                     ))}
                   </select>
@@ -700,7 +564,7 @@ const Onboarding = () => {
                     className={`field-input ${errors.preferredBranch ? 'field-input-error' : ''}`}
                   >
                     <option value="" disabled>Select a branch</option>
-                    {filteredBranches.map((branch) => (
+                    {STANDARD_BRANCHES.map((branch) => (
                       <option key={branch} value={branch}>{branch}</option>
                     ))}
                   </select>
@@ -736,7 +600,7 @@ const Onboarding = () => {
 
                 <div className="form-field">
                   <label className="field-label" htmlFor="budgetRange">
-                    Budget Range: ₹{preferences.budgetRange} Lakhs/year
+                    Budget Range: Γé╣{preferences.budgetRange} Lakhs/year
                   </label>
                   <input
                     type="range"
@@ -753,7 +617,7 @@ const Onboarding = () => {
                 <div className="form-field">
                   <label className="field-label">College Type</label>
                   <div className="chip-group">
-                    {COLLEGE_TYPES.map((ctype) => {
+                    {COLLEGE_TYPES.map(ctype => {
                       const isSelected = preferences.collegeType.includes(ctype);
                       return (
                         <button
@@ -803,126 +667,59 @@ const Onboarding = () => {
             )}
 
             {activeStep === 4 && (
-              <>
-                <div className="summary-grid-layout">
-                  <div className="summary-card summary-card-identity">
-                    <div className="summary-card-header">
-                      <div className="summary-card-title-wrap">
-                        <span className="material-symbols-outlined summary-card-icon">person</span>
-                        <h2>Identity</h2>
-                      </div>
-                      <button type="button" className="summary-edit-button" onClick={() => goToStep(1)} aria-label="Edit personal identity">
-                        <span className="material-symbols-outlined">edit</span>
-                      </button>
-                    </div>
-
-                    <div className="summary-value-block">
-                      <span className="summary-label">Full Name</span>
-                      <span className="summary-value">{studentProfile.fullName || 'Not provided'}</span>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Contact</span>
-                      <span className="summary-value">{studentProfile.email || studentProfile.phone || 'Not provided'}</span>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Location Zone</span>
-                      <span className="summary-value">{studentProfile.domicile || 'Not provided'}</span>
-                    </div>
+              <div className="summary-card">
+                <p className="summary-intro">Ready to see your admission predictions? Review your details below before completing.</p>
+                
+                <div className="summary-section">
+                  <div className="summary-header">
+                    <h3>Personal Details</h3>
+                    <button type="button" className="edit-link" onClick={() => goToStep(1)}>Edit</button>
                   </div>
-
-                  <div className="summary-card summary-card-academic">
-                    <div className="summary-card-header">
-                      <div className="summary-card-title-wrap">
-                        <span className="material-symbols-outlined summary-card-icon">menu_book</span>
-                        <h2>Academic Baseline</h2>
-                      </div>
-                      <button type="button" className="summary-edit-button" onClick={() => goToStep(2)} aria-label="Edit academic baseline">
-                        <span className="material-symbols-outlined">edit</span>
-                      </button>
-                    </div>
-
-                    <div className="summary-value-block">
-                      <span className="summary-label">Current Level</span>
-                      <span className="summary-value">{studentProfile.academic?.preferredBranch || studentProfile.academic?.careerOption || 'Not provided'}</span>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Current GPA</span>
-                      <span className="summary-value">{studentProfile.academic?.examScore || 'Not provided'}</span>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Target Field</span>
-                      <span className="summary-value">{studentProfile.academic?.careerOption || 'Not provided'}</span>
-                    </div>
-                  </div>
-
-                  <div className="summary-card summary-card-parameters">
-                    <div className="summary-card-header">
-                      <div className="summary-card-title-wrap">
-                        <span className="material-symbols-outlined summary-card-icon">flag</span>
-                        <h2>Cutoff Parameters</h2>
-                      </div>
-                      <button type="button" className="summary-edit-button" onClick={() => goToStep(3)} aria-label="Edit cutoff parameters">
-                        <span className="material-symbols-outlined">edit</span>
-                      </button>
-                    </div>
-
-                    <div className="summary-value-block">
-                      <span className="summary-label">Primary Exam Target</span>
-                      <span className="summary-value">{studentProfile.academic?.exam || 'Not provided'}</span>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Confidence Interval</span>
-                      <div className="summary-confidence-line">
-                        <span className="summary-confidence-label">{studentProfile.academic?.examScore ? 'High' : 'Not provided'}</span>
-                        <div className="summary-confidence-bars" aria-hidden="true">
-                          {[0, 1, 2].map((bar) => (
-                            <span key={bar} className={`summary-confidence-bar ${studentProfile.academic?.examScore ? 'active' : ''}`} />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Institutional Scope</span>
-                      <span className="summary-value">{studentProfile.preferences?.preferredLocation || 'Not provided'}</span>
-                    </div>
+                  <div className="summary-grid">
+                    <div className="summary-item"><span className="summary-label">Name:</span> {studentProfile.fullName}</div>
+                    <div className="summary-item"><span className="summary-label">Email:</span> {studentProfile.email}</div>
+                    <div className="summary-item"><span className="summary-label">Phone:</span> {studentProfile.phone}</div>
+                    <div className="summary-item"><span className="summary-label">Domicile:</span> {studentProfile.domicile}</div>
+                    <div className="summary-item"><span className="summary-label">Category:</span> {studentProfile.category} {studentProfile.pwdCrossCategory ? '(PWD)' : ''}</div>
                   </div>
                 </div>
-              </>
+
+                <div className="summary-section">
+                  <div className="summary-header">
+                    <h3>Academic Details</h3>
+                    <button type="button" className="edit-link" onClick={() => goToStep(2)}>Edit</button>
+                  </div>
+                  <div className="summary-grid">
+                    <div className="summary-item"><span className="summary-label">Exam:</span> {studentProfile.academic?.exam}</div>
+                    <div className="summary-item"><span className="summary-label">Score:</span> {studentProfile.academic?.examScore}</div>
+                    <div className="summary-item"><span className="summary-label">Career Option:</span> {studentProfile.academic?.careerOption}</div>
+                    <div className="summary-item"><span className="summary-label">Branch:</span> {studentProfile.academic?.preferredBranch}</div>
+                  </div>
+                </div>
+
+                <div className="summary-section">
+                  <div className="summary-header">
+                    <h3>Preferences</h3>
+                    <button type="button" className="edit-link" onClick={() => goToStep(3)}>Edit</button>
+                  </div>
+                  <div className="summary-grid">
+                    <div className="summary-item"><span className="summary-label">Location:</span> {studentProfile.preferences?.preferredLocation}</div>
+                    <div className="summary-item"><span className="summary-label">Budget:</span> Γé╣{studentProfile.preferences?.budgetRange} Lakhs/yr</div>
+                    <div className="summary-item"><span className="summary-label">College Type:</span> {studentProfile.preferences?.collegeType}</div>
+                    <div className="summary-item"><span className="summary-label">Hostel:</span> {studentProfile.preferences?.hostelRequired ? 'Yes' : 'No'}</div>
+                  </div>
+                </div>
+              </div>
             )}
           </form>
         </div>
 
-        {activeStep === 1 ? (
-          <>
-            <div className="bottom-action onboarding-step-one-cta">
-              <button className="continue-button" onClick={handleContinue} type="button">
-                Continue
-                <span className="material-symbols-outlined button-icon">arrow_forward</span>
-              </button>
-            </div>
-            <div className="onboarding-login-link">
-              Already have an account? <button type="button" className="onboarding-login-button" onClick={() => navigate('/login')}>Log in</button>
-            </div>
-          </>
-        ) : activeStep === 2 || activeStep === 3 ? (
-          <div className="step2-actions">
-            <button className="step2-back-button" type="button" onClick={handleBack}>
-              <span className="material-symbols-outlined button-icon">arrow_back</span>
-              Back
-            </button>
-            <button className="continue-button" onClick={handleContinue} type="button">
-              {getButtonText()}
-              <span className="material-symbols-outlined button-icon">arrow_forward</span>
-            </button>
-          </div>
-        ) : activeStep === 4 ? (
-          <div className="summary-cta">
-            <button className="continue-button summary-create-button" onClick={handleContinue} type="button">
-              {getButtonText()}
-              <span className="material-symbols-outlined button-icon">arrow_forward</span>
-            </button>
-          </div>
-        ) : null}
+        <div className="bottom-action">
+          <button className="continue-button" onClick={handleContinue} type="button">
+            {getButtonText()}
+            <span className="material-symbols-outlined button-icon">arrow_forward</span>
+          </button>
+        </div>
       </section>
     </div>
   );
