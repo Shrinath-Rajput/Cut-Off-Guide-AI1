@@ -3,25 +3,32 @@
 This project historically exposes a Flask-style app factory for legacy tests and
 scripts. The main FastAPI app is still available under app.main, but the package
 root must return a Flask app for compatibility with the existing test suite.
+
+If Flask is not installed (production FastAPI deployments), the legacy factory
+falls back to a stub so the package itself can still be imported.
 """
 
 from __future__ import annotations
 
-from flask import Flask
-
 __all__ = ["app", "create_app"]
 
+try:
+    from flask import Flask
 
-def create_app():
-    """Create and return the legacy Flask application used by the backend tests."""
-    app = Flask(__name__)
-    app.config["JSON_SORT_KEYS"] = False
-    app.config["TESTING"] = True
+    def create_app():
+        """Create and return the legacy Flask application used by the backend tests."""
+        app = Flask(__name__)
+        app.config["JSON_SORT_KEYS"] = False
+        app.config["TESTING"] = True
 
-    from routes import register_routes
+        from routes import register_routes
 
-    register_routes(app)
-    return app
+        register_routes(app)
+        return app
 
+    app = create_app()
+except ModuleNotFoundError:
+    def create_app():  # type: ignore[misc]
+        raise RuntimeError("Flask is not installed; legacy Flask tests cannot run. Use the FastAPI entry point in app.main instead.")
 
-app = create_app()
+    app = None  # type: ignore[assignment]

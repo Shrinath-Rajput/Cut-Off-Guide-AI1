@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { useAuth } from '../../context/AuthContext';
-import { updateProfile } from '../../services/api';
+import { updateProfile, sendOtp, registerUser } from '../../services/api';
+import { SIGNUP_PENDING_KEY } from '../Signup/Signup';
 import './Onboarding.css';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,7 +40,14 @@ const Onboarding = () => {
     nextStep,
     goToStep,
   } = useOnboarding();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    const hasPending = !!sessionStorage.getItem(SIGNUP_PENDING_KEY);
+    if (!isAuthenticated && !hasPending) {
+      navigate('/signup', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
 
   const steps = useMemo(() => ['Personal', 'Academic', 'Prefs', 'Predict'], []);
   const stepIcons = useMemo(
@@ -257,8 +265,23 @@ const Onboarding = () => {
     handlePreferencesChange('collegeType', newValue);
   };
 
+  const validateFinalReview = () => {
+    const missing = [];
+    if (!studentProfile.fullName) missing.push('Full Name');
+    if (!studentProfile.email) missing.push('Email');
+    if (!studentProfile.phone) missing.push('Phone');
+    if (!studentProfile.domicile) missing.push('State of Domicile');
+    if (!studentProfile.category) missing.push('Student Category');
+    if (!studentProfile.academic?.exam) missing.push('Primary Exam');
+    if (!studentProfile.academic?.examScore) missing.push('Exam Score');
+    if (!studentProfile.academic?.careerOption) missing.push('Career Option');
+    if (!studentProfile.academic?.preferredBranch) missing.push('Preferred Branch');
+    if (!studentProfile.preferences?.preferredLocation) missing.push('Preferred Location');
+    if (!studentProfile.preferences?.collegeType) missing.push('College Type');
+    return missing;
+  };
+
   const handleContinue = async () => {
-    console.log('handleContinue called, activeStep:', activeStep);
     if (activeStep === 1) {
       if (!validatePersonal()) {
         toast.error('Please complete all required fields');
@@ -311,14 +334,28 @@ const Onboarding = () => {
     }
 
     if (activeStep === 4) {
+      const missingFields = validateFinalReview();
+      if (missingFields.length > 0) {
+        toast.error(`Please complete: ${missingFields.join(', ')}`);
+        setErrors((prev) => ({ ...prev, finalReview: missingFields }));
+        return;
+      }
+
       try {
-        const payload = {
+        const pendingRaw = sessionStorage.getItem(SIGNUP_PENDING_KEY);
+        const pendingCreds = pendingRaw ? JSON.parse(pendingRaw) : {};
+
+        const completePayload = {
           name: studentProfile.fullName,
+          fullName: studentProfile.fullName,
           email: studentProfile.email,
+          phone: studentProfile.phone,
+          password: pendingCreds.password,
+          userType: 'student',
           category: studentProfile.category,
           pwdCrossCategory: studentProfile.pwdCrossCategory,
-          phone: studentProfile.phone,
           domicile: studentProfile.domicile,
+          locationZone: studentProfile.domicile,
           exam: studentProfile.academic?.exam,
           examScore: studentProfile.academic?.examScore,
           careerOption: studentProfile.academic?.careerOption,
@@ -328,12 +365,36 @@ const Onboarding = () => {
           collegeType: studentProfile.preferences?.collegeType,
           hostelRequired: studentProfile.preferences?.hostelRequired,
         };
-        const updatedUser = await updateProfile(payload);
-        login(updatedUser, localStorage.getItem('auth_token'));
-        toast.success('Onboarding complete! Welcome to Cutoff Guide AI.');
-        navigate('/home');
+
+        sessionStorage.setItem('signup_complete_payload', JSON.stringify(completePayload));
+        sessionStorage.setItem('auth_pending_user', JSON.stringify({
+          name: completePayload.name,
+          email: completePayload.email,
+          phone: completePayload.phone,
+        }));
+        sessionStorage.setItem('auth_pending_phone', completePayload.phone);
+        sessionStorage.setItem('signup_from_onboarding', 'true');
+
+        const otpResponse = await sendOtp({
+          name: completePayload.name,
+          email: completePayload.email,
+          phone: completePayload.phone,
+        });
+
+        if (otpResponse?.sessionId) {
+          sessionStorage.setItem('auth_pending_otp_session_id', otpResponse.sessionId);
+        }
+
+        if (otpResponse?.dev_otp) {
+          toast.success(`OTP sent. Dev OTP: ${otpResponse.dev_otp}`);
+        } else {
+          toast.success('OTP sent to your phone number.');
+        }
+
+        navigate('/otp', { replace: true });
       } catch (error) {
-        toast.error('Failed to save profile. Please try again.');
+        const detail = error?.response?.data?.detail || error?.response?.data?.message || error?.message || 'Failed to send OTP. Please try again.';
+        toast.error(detail);
       }
     }
   };

@@ -133,21 +133,41 @@ const OTP = () => {
     setIsVerifying(true);
     setError('');
     try {
-      const response = await verifyOtp({
+      const isSignupFlow = sessionStorage.getItem('signup_from_onboarding') === 'true';
+      const completePayloadRaw = sessionStorage.getItem('signup_complete_payload');
+      const completePayload = completePayloadRaw ? JSON.parse(completePayloadRaw) : null;
+
+      const verifyPayload = {
         phone: pendingPhone,
         otp: otpValue,
         name: parsedUser?.name || '',
         email: parsedUser?.email || '',
         sessionId: pendingOtpSessionId,
-      });
+      };
+
+      if (isSignupFlow && completePayload) {
+        verifyPayload.registerPayload = completePayload;
+      }
+
+      const response = await verifyOtp(verifyPayload);
       const backendUser = response?.user;
       const token = response?.token;
       if (!backendUser || !token) throw new Error(response?.message || 'OTP verification failed');
       login(backendUser, token);
+
       sessionStorage.removeItem('auth_pending_otp_session_id');
       sessionStorage.removeItem('auth_pending_user');
       sessionStorage.removeItem('auth_pending_phone');
-      toast.success('Signed in successfully');
+      sessionStorage.removeItem('signup_from_onboarding');
+      sessionStorage.removeItem('signup_complete_payload');
+      sessionStorage.removeItem('signup_pending_credentials');
+      localStorage.removeItem('onboarding_state');
+
+      if (response?.newAccount) {
+        toast.success('Account created successfully! Welcome to Cutoff Guide AI.', { icon: '🎉' });
+      } else {
+        toast.success('Signed in successfully');
+      }
       navigate('/home', { replace: true });
     } catch (requestError) {
       const message = getErrorMessage(requestError, 'Invalid code. Please try again.');

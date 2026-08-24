@@ -103,70 +103,43 @@ const Signup = () => {
 
       const normalizedEmail = email.trim().toLowerCase();
       const normalizedPhone = normalizePhone(phone);
-      const generatedName = (studentProfile?.fullName || email.split('@')[0] || 'Student')
+      const generatedName = (email.split('@')[0] || 'Student')
         .trim()
         .replace(/\s+/g, ' ')
         .replace(/(^\w|\s\w)/g, (match) => match.toUpperCase());
 
       resetOnboarding();
 
-      const registerResponse = await registerUser({
-        name: generatedName,
+      const pendingCreds = {
         email: normalizedEmail,
         phone: normalizedPhone,
         password,
-      });
-
-      const registeredUser = registerResponse?.user || {
+        confirmPassword,
+        fullName: generatedName,
+        domicile: '',
+        locationZone: '',
         name: generatedName,
-        email: normalizedEmail,
-        phone: normalizedPhone,
       };
-
-      sessionStorage.setItem('auth_pending_user', JSON.stringify(registeredUser));
-      sessionStorage.setItem('auth_pending_phone', normalizedPhone);
-      sessionStorage.setItem(
-        PENDING_KEY,
-        JSON.stringify({
-          email: normalizedEmail,
-          phone: normalizedPhone,
-          password,
-          confirmPassword,
-          fullName: generatedName,
-          domicile: studentProfile?.domicile || '',
-          locationZone: studentProfile?.domicile || '',
-          name: generatedName,
-        })
-      );
+      sessionStorage.setItem(PENDING_KEY, JSON.stringify(pendingCreds));
 
       setPersonal({
         fullName: generatedName,
         email: normalizedEmail,
-        category: studentProfile?.category || '',
-        pwdCrossCategory: studentProfile?.pwdCrossCategory || false,
+        category: '',
+        pwdCrossCategory: false,
         phone: normalizedPhone,
-        domicile: studentProfile?.domicile || '',
+        domicile: '',
       });
 
-      const otpResponse = await sendOtp({
-        name: generatedName,
-        email: normalizedEmail,
-        phone: normalizedPhone,
-      });
-
-      if (otpResponse?.sessionId) {
-        sessionStorage.setItem('auth_pending_otp_session_id', otpResponse.sessionId);
-      }
-
-      toast.success('Account created. Please verify your phone number.', {
+      toast.success('Signup data saved. Please complete onboarding.', {
         icon: '✅',
       });
 
-      navigate('/otp', { replace: true });
+      navigate('/onboarding', { replace: true });
     } catch (error) {
       const detail = error?.response?.data?.detail || error?.response?.data?.message || error?.message || 'Something went wrong. Please try again.';
       toast.error(detail);
-      setError(detail);
+      setErrors((prev) => ({ ...prev, submit: detail }));
     } finally {
       setIsLoading(false);
     }
