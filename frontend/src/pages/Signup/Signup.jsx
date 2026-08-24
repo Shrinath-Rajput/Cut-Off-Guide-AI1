@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { registerUser, sendOtp } from '../../services/api';
 import { useOnboarding } from '../../context/OnboardingContext';
 import './Signup.css';
 
@@ -102,11 +103,44 @@ const Signup = () => {
 
       const normalizedEmail = email.trim().toLowerCase();
       const normalizedPhone = normalizePhone(phone);
+      const generatedName = (studentProfile?.fullName || email.split('@')[0] || 'Student')
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/(^\w|\s\w)/g, (match) => match.toUpperCase());
 
       resetOnboarding();
 
+      const registerResponse = await registerUser({
+        name: generatedName,
+        email: normalizedEmail,
+        phone: normalizedPhone,
+        password,
+      });
+
+      const registeredUser = registerResponse?.user || {
+        name: generatedName,
+        email: normalizedEmail,
+        phone: normalizedPhone,
+      };
+
+      sessionStorage.setItem('auth_pending_user', JSON.stringify(registeredUser));
+      sessionStorage.setItem('auth_pending_phone', normalizedPhone);
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({
+          email: normalizedEmail,
+          phone: normalizedPhone,
+          password,
+          confirmPassword,
+          fullName: generatedName,
+          domicile: studentProfile?.domicile || '',
+          locationZone: studentProfile?.domicile || '',
+          name: generatedName,
+        })
+      );
+
       setPersonal({
-        fullName: studentProfile?.fullName || '',
+        fullName: generatedName,
         email: normalizedEmail,
         category: studentProfile?.category || '',
         pwdCrossCategory: studentProfile?.pwdCrossCategory || false,
@@ -114,31 +148,25 @@ const Signup = () => {
         domicile: studentProfile?.domicile || '',
       });
 
-      try {
-        sessionStorage.setItem(
-          PENDING_KEY,
-          JSON.stringify({
-            email: normalizedEmail,
-            phone: normalizedPhone,
-            password,
-            confirmPassword,
-            fullName: studentProfile?.fullName || '',
-            domicile: studentProfile?.domicile || '',
-            locationZone: studentProfile?.domicile || '',
-            name: studentProfile?.fullName || '',
-          })
-        );
-      } catch (e) {
-        /* ignore */
-      }
-
-      toast('Continue filling your profile details.', {
-        icon: '📝',
+      const otpResponse = await sendOtp({
+        name: generatedName,
+        email: normalizedEmail,
+        phone: normalizedPhone,
       });
 
-      navigate('/onboarding?mode=signup', { replace: false });
+      if (otpResponse?.sessionId) {
+        sessionStorage.setItem('auth_pending_otp_session_id', otpResponse.sessionId);
+      }
+
+      toast.success('Account created. Please verify your phone number.', {
+        icon: '✅',
+      });
+
+      navigate('/otp', { replace: true });
     } catch (error) {
-      toast.error(error?.message || 'Something went wrong. Please try again.');
+      const detail = error?.response?.data?.detail || error?.response?.data?.message || error?.message || 'Something went wrong. Please try again.';
+      toast.error(detail);
+      setError(detail);
     } finally {
       setIsLoading(false);
     }

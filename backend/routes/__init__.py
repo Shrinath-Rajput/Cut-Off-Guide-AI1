@@ -169,10 +169,16 @@ def validate_fast2sms_production_config():
     if not FAST_TO_SMS_API_KEY:
         raise RuntimeError("FAST_TO_SMS_API_KEY is not configured")
 
-    if SMS_ROUTE == "otp" and not SMS_TEMPLATE_ID:
+    if SMS_ROUTE == "otp":
+        if not SMS_TEMPLATE_ID:
+            raise RuntimeError(
+                "SMS_ROUTE=otp requires SMS_TEMPLATE_ID to be set in backend/.env. "
+                "Register an approved OTP template on Fast2SMS and paste its ID into the .env file."
+            )
+    elif not SMS_TEMPLATE_ID and not SMS_ENTITY_ID:
         raise RuntimeError(
-            "SMS_ROUTE=otp requires SMS_TEMPLATE_ID to be set in backend/.env. "
-            "Register an approved OTP template on Fast2SMS and paste its ID into the .env file."
+            "Production Fast2SMS configuration is incomplete: configure either SMS_TEMPLATE_ID or "
+            "SMS_ENTITY_ID in backend/.env for the selected SMS route."
         )
 
     if SMS_SENDER_ID.upper() == "FSTSMS":
