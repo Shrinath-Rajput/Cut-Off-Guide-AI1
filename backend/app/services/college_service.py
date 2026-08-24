@@ -1170,3 +1170,150 @@ def generate_college_ai_info(college_name: str) -> Dict[str, Any]:
         ],
         "highlights": clean_web_reference,
     }
+
+
+def parse_currency_amount(val: Any) -> float:
+    if not val:
+        return 0.0
+    text = str(val).lower().replace(",", "")
+    match = re.search(r"(\d+(?:\.\d+)?)", text)
+    if not match:
+        return 0.0
+    num = float(match.group(1))
+    if "crore" in text or "cr" in text:
+        return num * 100
+    if "lpa" in text or "lakh" in text or "l" in text:
+        return num
+    if num > 100000:
+        return round(num / 100000, 2)
+    return num
+
+
+def compare_two_colleges_ai(college1_query: str, college2_query: str) -> Dict[str, Any]:
+    """Side-by-side AI Comparison Engine for two colleges using open-source hosted LLM (Llama-3.1-8B-Instruct)."""
+    c1_data = generate_college_ai_info(college1_query)
+    c2_data = generate_college_ai_info(college2_query)
+
+    c1_name = c1_data.get("name", college1_query)
+    c2_name = c2_data.get("name", college2_query)
+
+    c1_pkg = c1_data.get("placement_avg") or c1_data.get("averagePackage") or "₹7.5 LPA"
+    c2_pkg = c2_data.get("placement_avg") or c2_data.get("averagePackage") or "₹7.0 LPA"
+    c1_high = c1_data.get("highest_package") or c1_data.get("highestPackage") or "₹42.0 LPA"
+    c2_high = c2_data.get("highest_package") or c2_data.get("highestPackage") or "₹38.0 LPA"
+    c1_fee = c1_data.get("fee_display") or c1_data.get("feeLabel") or "₹1.4 Lakh / yr"
+    c2_fee = c2_data.get("fee_display") or c2_data.get("feeLabel") or "₹1.5 Lakh / yr"
+    c1_rank = c1_data.get("nirf_rank") or c1_data.get("rank") or 75
+    c2_rank = c2_data.get("nirf_rank") or c2_data.get("rank") or 85
+    c1_loc = c1_data.get("location", "India")
+    c2_loc = c2_data.get("location", "India")
+
+    c1_pkg_val = parse_currency_amount(c1_pkg)
+    c2_pkg_val = parse_currency_amount(c2_pkg)
+    c1_fee_val = parse_currency_amount(c1_fee)
+    c2_fee_val = parse_currency_amount(c2_fee)
+
+    winner_pkg = c1_name if c1_pkg_val >= c2_pkg_val else c2_name
+    winner_afford = c1_name if (c1_fee_val > 0 and (c1_fee_val <= c2_fee_val or c2_fee_val == 0)) else c2_name
+    winner_rank = c1_name if int(c1_rank) <= int(c2_rank) else c2_name
+
+    default_verdict = (
+        f"When comparing {c1_name} and {c2_name}, both are reputable institutions with established engineering and degree curricula. "
+        f"{winner_pkg} leads in placement outcomes ({c1_pkg if winner_pkg == c1_name else c2_pkg} average CTC), "
+        f"while {winner_afford} delivers high return on investment with tuition fees around {c1_fee if winner_afford == c1_name else c2_fee}. "
+        f"Students looking for high placement velocity should prioritize {winner_pkg}, whereas students seeking better location synergy should evaluate {c1_loc} vs {c2_loc}."
+    )
+
+    fallback_comparison = {
+        "college1": c1_data,
+        "college2": c2_data,
+        "verdict": default_verdict,
+        "winner_category": {
+            "placements": winner_pkg,
+            "affordability": winner_afford,
+            "reputation_rank": winner_rank,
+            "industry_hub": c1_name if any(city in c1_loc.lower() for city in ["mumbai", "pune", "bengaluru", "delhi", "hyderabad"]) else c2_name,
+        },
+        "pros_college1": [
+            f"Strong placement record with average package around {c1_pkg} and highest package up to {c1_high}.",
+            f"Strategically located in {c1_loc} with strong access to industrial hubs and internships.",
+            f"Accredited faculty curriculum and active student technical clubs.",
+        ],
+        "pros_college2": [
+            f"Competitive academic infrastructure with average CTC around {c2_pkg}.",
+            f"Balanced fee structure ({c2_fee}) offering solid educational ROI.",
+            f"Dedicated campus facilities in {c2_loc} with extensive alumni guidance.",
+        ],
+        "key_differences": [
+            f"Placement CTC: {c1_name} ({c1_pkg} avg) vs {c2_name} ({c2_pkg} avg).",
+            f"Tuition Investment: {c1_name} ({c1_fee}) vs {c2_name} ({c2_fee}).",
+            f"Location & Ecosystem: {c1_name} ({c1_loc}) vs {c2_name} ({c2_loc}).",
+        ],
+    }
+
+    # Prompt open-source hosted LLM (Llama 3.1) for deep comparative reasoning
+    if settings.HUGGINGFACE_API_TOKEN:
+        prompt = (
+            f"You are an expert Indian engineering admissions counselor. Compare '{c1_name}' vs '{c2_name}'.\n"
+            f"College 1 Facts: Name: {c1_name}, Location: {c1_loc}, NIRF: #{c1_rank}, Avg Package: {c1_pkg}, Highest: {c1_high}, Fees: {c1_fee}, Type: {c1_data.get('type')}\n"
+            f"College 2 Facts: Name: {c2_name}, Location: {c2_loc}, NIRF: #{c2_rank}, Avg Package: {c2_pkg}, Highest: {c2_high}, Fees: {c2_fee}, Type: {c2_data.get('type')}\n\n"
+            "Instructions:\n"
+            "1. Output a professional, unbiased comparison without bracket citations or raw Wikipedia tags.\n"
+            "2. Provide a 3-sentence definitive 'verdict' guiding which student profile should choose which college.\n"
+            "3. Return ONLY a parseable JSON object with these EXACT keys:\n"
+            "{\n"
+            '  "verdict": "Clear 3-sentence advice on which college is better for which type of student.",\n'
+            '  "winner_category": {\n'
+            f'    "placements": "{winner_pkg}",\n'
+            f'    "affordability": "{winner_afford}",\n'
+            f'    "reputation_rank": "{winner_rank}",\n'
+            f'    "industry_hub": "{c1_name}"\n'
+            '  },\n'
+            '  "pros_college1": ["Point 1", "Point 2", "Point 3"],\n'
+            '  "pros_college2": ["Point 1", "Point 2", "Point 3"],\n'
+            '  "key_differences": ["Difference 1", "Difference 2", "Difference 3"]\n'
+            "}"
+        )
+
+        payload = {
+            "model": settings.HUGGINGFACE_MODEL,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are a professional educational counselor comparing Indian engineering colleges. Return ONLY valid JSON.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": 500,
+            "temperature": 0.1,
+        }
+
+        try:
+            req = urllib_request.Request(
+                "https://router.huggingface.co/v1/chat/completions",
+                data=json.dumps(payload).encode("utf-8"),
+                headers={
+                    "Authorization": f"Bearer {settings.HUGGINGFACE_API_TOKEN}",
+                    "Content-Type": "application/json",
+                },
+                method="POST",
+            )
+            with urllib_request.urlopen(req, timeout=8) as response:
+                res_data = json.loads(response.read().decode("utf-8"))
+                raw_text = res_data["choices"][0]["message"]["content"].strip()
+                json_match = re.search(r"\{[\s\S]*\}", raw_text)
+                if json_match:
+                    parsed_llm = json.loads(json_match.group(0))
+                    return {
+                        "college1": c1_data,
+                        "college2": c2_data,
+                        "verdict": clean_highlights_text(parsed_llm.get("verdict", default_verdict)),
+                        "winner_category": parsed_llm.get("winner_category", fallback_comparison["winner_category"]),
+                        "pros_college1": parsed_llm.get("pros_college1", fallback_comparison["pros_college1"]),
+                        "pros_college2": parsed_llm.get("pros_college2", fallback_comparison["pros_college2"]),
+                        "key_differences": parsed_llm.get("key_differences", fallback_comparison["key_differences"]),
+                    }
+        except Exception as e:
+            print("Hugging Face College Comparison error/timeout:", e)
+
+    return fallback_comparison

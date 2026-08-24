@@ -52,6 +52,22 @@ async def lookup_college_ai(q: str = Query(..., min_length=1, description="Colle
     info = generate_college_ai_info(q.strip())
     return {"status": "success", "data": info}
 
+@router.get("/compare/ai")
+async def compare_colleges_ai_endpoint(
+    c1: Optional[str] = None,
+    c2: Optional[str] = None,
+    college1: Optional[str] = None,
+    college2: Optional[str] = None,
+):
+    first = college1 or c1
+    second = college2 or c2
+    if not first or not second:
+        raise HTTPException(status_code=400, detail="Both college1 (c1) and college2 (c2) parameters are required for comparison.")
+    
+    from app.services.college_service import compare_two_colleges_ai
+    comparison = compare_two_colleges_ai(first.strip(), second.strip())
+    return {"status": "success", "data": comparison}
+
 @router.get("/{college_id}", response_model=CollegeResponse)
 async def read_college(college_id: str, db = Depends(get_db)):
     college = await get_college_by_id(db, college_id)
