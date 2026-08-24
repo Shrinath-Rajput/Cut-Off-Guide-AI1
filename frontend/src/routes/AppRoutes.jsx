@@ -41,6 +41,14 @@ const AppRoutes = () => {
             </OnboardingProvider>
           }
         />
+        <Route
+          path="/onboarding"
+          element={
+            <OnboardingProvider currentUser={currentUser}>
+              <Onboarding />
+            </OnboardingProvider>
+          }
+        />
         <Route path="/otp" element={<OTP />} />
         <Route path="/about" element={<About />} />
         <Route path="/terms" element={<Terms />} />
@@ -56,7 +64,11 @@ const AppRoutes = () => {
         <Route path="/history" element={<History />} />
         <Route
           path="/home"
-          element={<Home />}
+          element={
+            <ProtectedRoute>
+              <Home />
+            </ProtectedRoute>
+          }
         />
         <Route
           path="/profile"
@@ -71,16 +83,6 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/onboarding"
-          element={
-            <ProtectedRoute>
-              <OnboardingProvider currentUser={currentUser}>
-                <Onboarding />
-              </OnboardingProvider>
             </ProtectedRoute>
           }
         />

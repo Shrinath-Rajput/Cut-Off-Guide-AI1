@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
+from typing import Optional, Dict, Any
 from datetime import datetime, timezone
 import secrets
 import re
@@ -23,6 +24,7 @@ class OtpRequest(BaseModel):
 class OtpVerifyRequest(OtpRequest):
     otp: str
     sessionId: str
+    registerPayload: Optional[dict] = None
 
 _in_memory_users = {}
 
@@ -189,6 +191,126 @@ async def verify_otp(request: OtpVerifyRequest, db=Depends(get_db)):
                             break
                     except Exception:
                         continue
+
+        if not user and request.registerPayload:
+            payload = request.registerPayload
+            raw_name = str(payload.get("name") or payload.get("fullName") or request.name or "User").strip()
+            raw_email = str(payload.get("email") or normalized_email or request.email or "").strip().lower()
+            raw_phone = str(payload.get("phone") or normalized_phone or request.phone or "")
+            raw_password = payload.get("password")
+            try:
+                raw_phone = normalize_phone(raw_phone)
+            except HTTPException:
+                raise
+            except Exception:
+                pass
+
+            if not raw_password:
+                raise HTTPException(status_code=422, detail="Password is required for new account signup")
+
+            all_users = await db["users"].find({}).to_list(length=10000)
+
+            def _has_password_hash(u):
+                ph = u.get("passwordHash") or u.get("password_hash")
+                return bool(ph)
+
+            email_dup_matches = []
+            for u in all_users:
+                u_email = u.get("email")
+                if u_email and isinstance(u_email, str) and u_email.strip().lower() == raw_email:
+                    email_dup_matches.append(u)
+
+            phone_dup_matches = []
+            for u in all_users:
+                u_phone = u.get("phone")
+                if u_phone and isinstance(u_phone, str):
+                    try:
+                        if normalize_phone(u_phone) == raw_phone:
+                            phone_dup_matches.append(u)
+                    except Exception:
+                        pass
+
+            email_passworded = [u for u in email_dup_matches if _has_password_hash(u)]
+            phone_passworded = [u for u in phone_dup_matches if _has_password_hash(u)]
+
+            if email_passworded:
+                logger.warning(
+                    "VERIFY-OTP SIGNUP 409: Email already has passwordHash. email=%s existing_uid=%s",
+                    raw_email, email_passworded[0].get("uid")
+                )
+                raise HTTPException(status_code=409, detail="Email already registered. Please sign in instead.")
+
+            if phone_passworded:
+                logger.warning(
+                    "VERIFY-OTP SIGNUP 409: Phone already has passwordHash. phone=%s existing_uid=%s",
+                    raw_phone, phone_passworded[0].get("uid")
+                )
+                raise HTTPException(status_code=409, detail="Phone number already registered. Please sign in instead.")
+
+            uid = f"user-{secrets.token_hex(12)}"
+            password_hash = get_password_hash(raw_password)
+            now = datetime.now(timezone.utc)
+
+            new_user = {
+                "uid": uid,
+                "name": raw_name,
+                "email": raw_email or None,
+                "phone": raw_phone or None,
+                "provider": "password",
+                "role": "USER",
+                "passwordHash": password_hash,
+                "userType": payload.get("userType") or "student",
+                "createdAt": now,
+                "lastLogin": now,
+            }
+            try:
+                result = await db["users"].insert_one(new_user)
+            except Exception as insert_err:
+                logger.exception("verify-otp signup: users insert_one FAILED: %s", insert_err)
+                err_str = str(insert_err).lower()
+                if "duplicate" in err_str or "e11000" in err_str:
+                    if "email" in err_str:
+                        raise HTTPException(status_code=409, detail="Email already registered. Please sign in instead.")
+                    if "phone" in err_str:
+                        raise HTTPException(status_code=409, detail="Phone number already registered. Please sign in instead.")
+                    raise HTTPException(status_code=409, detail="Account with this information already exists. Please sign in.")
+                raise HTTPException(status_code=500, detail="Failed to create account. Please try again.")
+
+            profile_dict = {}
+            for k, v in payload.items():
+                if k in ("password", "_id"):
+                    continue
+                profile_dict[k] = v
+            profile_dict.update({
+                "uid": uid,
+                "name": raw_name,
+                "email": raw_email,
+                "phone": raw_phone,
+                "createdAt": now,
+                "updatedAt": now,
+            })
+            try:
+                await db["profiles"].insert_one(profile_dict)
+            except Exception as profile_err:
+                logger.exception("verify-otp signup: profile insert FAILED (rolling back user): %s", profile_err)
+                try:
+                    await db["users"].delete_one({"uid": uid})
+                except Exception:
+                    pass
+                raise HTTPException(status_code=500, detail="Failed to create account. Please try again.")
+
+            user = new_user
+            user["id"] = str(result.inserted_id)
+            user.pop("passwordHash", None)
+            user.pop("password_hash", None)
+            token = create_access_token(subject=uid, role="USER")
+            return {
+                "status": "success",
+                "message": "Account created and verified successfully",
+                "token": token,
+                "user": user,
+                "newAccount": True,
+            }
 
         if not user:
             raise HTTPException(status_code=401, detail="Account not found. Please sign up first.")
