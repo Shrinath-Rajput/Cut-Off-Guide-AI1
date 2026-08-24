@@ -13,7 +13,6 @@ const navLinks = [
   { label: 'AI Assistant', to: '/assistant', icon: Bot },
   { label: 'Saved Colleges', to: '/saved', icon: Bookmark },
   { label: 'Contact', to: '/contact', icon: Mail },
-  { label: 'Terms & Conditions', to: '/terms', icon: FileText },
 ];
 
 const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', profileTo = '/profile' }) => {
@@ -123,6 +122,12 @@ const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', p
         </nav>
 
         <div className="navbar-actions">
+          {currentUser && currentUser.name && (
+            <span className="profile-chip">
+              <span className="profile-welcome">Welcome back,</span>
+              <span className="profile-user">{currentUser.name}</span>
+            </span>
+          )}
           <button
             className="navbar-icon"
             type="button"
@@ -134,15 +139,12 @@ const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', p
           <Link to={bookmarkTo} className="navbar-icon" aria-label="Saved Colleges">
             <span className="material-symbols-outlined">bookmark</span>
           </Link>
+          <Link to="/contact" className="navbar-icon" aria-label="Contact us">
+            <span className="material-symbols-outlined">mail</span>
+          </Link>
           <button className="navbar-icon profile-btn" type="button" aria-label="Profile" onClick={() => navigate(profileTo)}>
-            {currentUser && currentUser.name && (
-              <span className="profile-name">Welcome back, {currentUser.name}</span>
-            )}
             <span className="material-symbols-outlined">account_circle</span>
           </button>
-          <Link to="/admin/login" className="navbar-icon" aria-label="Admin Panel" title="Admin Panel">
-            <span className="material-symbols-outlined">admin_panel_settings</span>
-          </Link>
           {currentUser && (
             <button
               className="navbar-icon"
