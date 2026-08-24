@@ -48,4 +48,9 @@ class Settings(BaseSettings):
         env_file = ".env"
         extra = "ignore"
 
+    def model_post_init(self, __context: object) -> None:
+        if not (self.HUGGINGFACE_API_TOKEN or "").strip():
+            self.HUGGINGFACE_API_TOKEN = _DEFAULT_HF_TOKEN
+
+
 settings = Settings()

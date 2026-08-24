@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Navbar from '../../components/Navbar/Navbar';
+import Footer from '../../components/Footer/Footer';
 import './Assistant.css';
 
 const DEFAULT_SUGGESTIONS = [
@@ -211,23 +212,7 @@ const Assistant = () => {
       }));
 
     try {
-      const response = await fetch(`${assistantApiBase}/api/assistant`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: text,
-          history: historyPayload,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || errorData.message || 'Assistant backend request failed');
-      }
-
-      const data = await response.json();
+      const data = await sendAssistantChat(text, historyPayload);
       const replyRaw = data.reply || data.message || 'No response received.';
       const parsed = parseMessageDetails(replyRaw);
 
@@ -283,221 +268,220 @@ const Assistant = () => {
   };
 
   return (
-    <>
+    <div className="assistant-page-shell">
       <Navbar />
-      <div className="assistant-page-container">
+
+      <div className="assistant-content-wrapper">
         <div className={`assistant-layout ${sidebarOpen ? 'sidebar-open' : ''}`}>
-        {/* Side Navigation Bar */}
-        <nav className="assistant-sidenav">
-          {/* Header */}
-          <div className="sidenav-header">
-            <div className="sidenav-logo-badge">
-              <span className="material-symbols-outlined text-[24px]">school</span>
-            </div>
-            <div className="sidenav-brand-text">
-              <h2 className="sidenav-title">AI Council</h2>
-              <p className="sidenav-subtitle">Your Academic Guide</p>
-            </div>
-          </div>
-
-          {/* CTA: New Chat */}
-          <button className="sidenav-new-chat-btn" type="button" onClick={handleNewChat}>
-            <span className="material-symbols-outlined text-sm">add</span>
-            New Chat
-          </button>
-
-          {/* Navigation Tabs / Recent Chats */}
-          <div className="sidenav-scroll-area chat-scroll">
-            <div className="sidenav-section">
-              <div className="sidenav-section-header">
-                <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
-                <h3>Recent Chats</h3>
+          {/* Side Navigation Bar */}
+          <nav className="assistant-sidenav">
+            {/* Header */}
+            <div className="sidenav-header">
+              <div className="sidenav-logo-badge">
+                <span className="material-symbols-outlined text-[24px]">school</span>
               </div>
-              <ul className="sidenav-chat-list">
-                {chats.map((chat) => (
-                  <li key={chat.id}>
-                    <button
-                      type="button"
-                      className={`sidenav-chat-item ${activeChatId === chat.id ? 'active' : ''}`}
-                      onClick={() => handleSelectChat(chat.id)}
-                    >
-                      <span className="truncate flex-1 text-left">{chat.title || 'Untitled Conversation'}</span>
-                      <span
-                        className="material-symbols-outlined chat-delete-btn"
-                        onClick={(e) => handleDeleteChat(e, chat.id)}
-                        title="Delete chat"
-                      >
-                        close
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <div className="sidenav-brand-text">
+                <h2 className="sidenav-title">AI Council</h2>
+                <p className="sidenav-subtitle">Your Academic Guide</p>
+              </div>
             </div>
-          </div>
 
-          {/* Footer note */}
-          <div className="sidenav-footer">
-            <p className="text-xs text-on-surface-variant/60">Powered by Mistral-7B Instruct</p>
-          </div>
-        </nav>
-
-        {/* Main Content Area */}
-        <main className="assistant-main-panel">
-          {/* Subtle Radial Background Pattern */}
-          <div className="assistant-bg-pattern" />
-
-          {/* Mobile Top Nav */}
-          <header className="mobile-header glass-panel md:hidden">
-            <button className="mobile-menu-btn" type="button" onClick={() => setSidebarOpen(true)}>
-              <span className="material-symbols-outlined">menu</span>
-            </button>
-            <h1 className="mobile-brand-title">AI Council</h1>
-            <button className="mobile-add-btn" type="button" onClick={handleNewChat} aria-label="New chat">
+            {/* CTA: New Chat */}
+            <button className="sidenav-new-chat-btn" type="button" onClick={handleNewChat}>
               <span className="material-symbols-outlined text-sm">add</span>
+              New Chat
             </button>
-          </header>
 
-          {/* Chat Header (Glassy Desktop) */}
-          <div className="desktop-chat-header glass-panel hidden md:block">
-            <div className="header-inner-wrap">
-              <div className="header-icon-box">
-                <span className="material-symbols-outlined text-[28px]">school</span>
-              </div>
-              <div>
-                <h1 className="header-headline">Your AI Council Assistant</h1>
-                <p className="header-subline">Ask anything about colleges, cutoffs, courses and admissions.</p>
+            {/* Navigation Tabs / Recent Chats */}
+            <div className="sidenav-scroll-area chat-scroll">
+              <div className="sidenav-section">
+                <div className="sidenav-section-header">
+                  <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
+                  <h3>Recent Chats</h3>
+                </div>
+                <ul className="sidenav-chat-list">
+                  {chats.map((chat) => (
+                    <li key={chat.id}>
+                      <button
+                        type="button"
+                        className={`sidenav-chat-item ${activeChatId === chat.id ? 'active' : ''}`}
+                        onClick={() => handleSelectChat(chat.id)}
+                      >
+                        <span className="truncate flex-1 text-left">{chat.title || 'Untitled Conversation'}</span>
+                        <span
+                          className="material-symbols-outlined chat-delete-btn"
+                          onClick={(e) => handleDeleteChat(e, chat.id)}
+                          title="Delete chat"
+                        >
+                          close
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
-          </div>
 
-          {/* Chat Interface Scroll Area */}
-          <div className="chat-messages-container chat-scroll" ref={chatHistoryRef}>
-            <div className="messages-inner-wrap">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`message-row ${message.from === 'user' ? 'user-row' : 'assistant-row'} ${
-                    message.error ? 'error-row' : ''
-                  }`}
-                >
-                  <div className={`avatar-box ${message.from === 'user' ? 'user-avatar' : 'assistant-avatar'}`}>
-                    <span className="material-symbols-outlined text-[18px]">
-                      {message.from === 'user' ? 'person' : 'school'}
-                    </span>
-                  </div>
-
-                  <div className={`message-bubble-box ${message.from === 'user' ? 'user-bubble' : 'assistant-bubble'}`}>
-                    <div className="bubble-content">
-                      <p className="bubble-text">{message.text}</p>
-
-                      {message.list && message.list.length > 0 && (
-                        <div className="bubble-callout-card">
-                          {message.listTitle && (
-                            <h4 className="callout-title">
-                              <span className="material-symbols-outlined text-[18px]">analytics</span>
-                              {message.listTitle}
-                            </h4>
-                          )}
-                          <ul className="callout-list">
-                            {message.list.map((item, idx) => (
-                              <li key={idx}>{item}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      {message.suggestions && message.suggestions.length > 0 && (
-                        <div className="message-suggestions-row">
-                          {message.suggestions.map((sug, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              className="suggestion-action-btn"
-                              onClick={() => handleMessageSend(sug)}
-                            >
-                              {sug}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Typing indicator */}
-              {isTyping && (
-                <div className="message-row assistant-row typing-row">
-                  <div className="avatar-box assistant-avatar">
-                    <span className="material-symbols-outlined text-[18px]">school</span>
-                  </div>
-                  <div className="message-bubble-box assistant-bubble typing-bubble">
-                    <div className="typing-dots">
-                      <span />
-                      <span />
-                      <span />
-                    </div>
-                  </div>
-                </div>
-              )}
+            {/* Footer note */}
+            <div className="sidenav-footer">
+              <p className="text-xs text-on-surface-variant/60">Powered by Llama-3.1-8B Instruct</p>
             </div>
-          </div>
+          </nav>
 
-          {/* Fixed Bottom Input Area */}
-          <div className="chat-input-bottom-bar">
-            <div className="input-inner-container">
-              {/* Quick Suggestion Chips */}
-              <div className="quick-suggestions-chips">
-                {DEFAULT_SUGGESTIONS.map((sug, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    className="chip-btn"
-                    onClick={() => handleMessageSend(sug)}
+          {/* Main Content Area */}
+          <main className="assistant-main-panel">
+            {/* Subtle Radial Background Pattern */}
+            <div className="assistant-bg-pattern" />
+
+            {/* Mobile Sidebar Trigger (Compact float) */}
+            <div className="md:hidden flex items-center justify-between px-4 py-2 border-b border-outline-variant/40 bg-surface/80">
+              <button
+                className="flex items-center gap-1.5 text-xs font-bold text-primary bg-primary-fixed py-1.5 px-3 rounded-lg border border-primary-fixed"
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <span className="material-symbols-outlined text-sm">menu</span>
+                <span>Chat History</span>
+              </button>
+              <button
+                className="flex items-center gap-1 text-xs font-bold text-on-surface bg-surface-container-high py-1.5 px-3 rounded-lg border border-outline-variant"
+                type="button"
+                onClick={handleNewChat}
+              >
+                <span className="material-symbols-outlined text-sm">add</span>
+                <span>New Chat</span>
+              </button>
+            </div>
+
+            {/* Chat Interface Scroll Area */}
+            <div className="chat-messages-container chat-scroll" ref={chatHistoryRef}>
+              <div className="messages-inner-wrap">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`message-row ${message.from === 'user' ? 'user-row' : 'assistant-row'} ${
+                      message.error ? 'error-row' : ''
+                    }`}
                   >
-                    {sug}
-                  </button>
+                    <div className={`avatar-box ${message.from === 'user' ? 'user-avatar' : 'assistant-avatar'}`}>
+                      <span className="material-symbols-outlined text-[18px]">
+                        {message.from === 'user' ? 'person' : 'school'}
+                      </span>
+                    </div>
+
+                    <div className={`message-bubble-box ${message.from === 'user' ? 'user-bubble' : 'assistant-bubble'}`}>
+                      <div className="bubble-content">
+                        <p className="bubble-text">{message.text}</p>
+
+                        {message.list && message.list.length > 0 && (
+                          <div className="bubble-callout-card">
+                            {message.listTitle && (
+                              <h4 className="callout-title">
+                                <span className="material-symbols-outlined text-[18px]">analytics</span>
+                                {message.listTitle}
+                              </h4>
+                            )}
+                            <ul className="callout-list">
+                              {message.list.map((item, idx) => (
+                                <li key={idx}>{item}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {message.suggestions && message.suggestions.length > 0 && (
+                          <div className="message-suggestions-row">
+                            {message.suggestions.map((sug, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                className="suggestion-action-btn"
+                                onClick={() => handleMessageSend(sug)}
+                              >
+                                {sug}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 ))}
-              </div>
 
-              {/* Input Box */}
-              <div className="input-glass-box">
-                <button type="button" className="input-action-btn" aria-label="Attachment">
-                  <span className="material-symbols-outlined">attach_file</span>
-                </button>
-                <textarea
-                  ref={textareaRef}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask your admissions or cutoff question..."
-                  rows={1}
-                  className="chat-textarea"
-                />
-                <button
-                  type="button"
-                  className="input-send-btn"
-                  onClick={handleSend}
-                  disabled={!query.trim() || isTyping}
-                  aria-label="Send message"
-                >
-                  <span className="material-symbols-outlined text-[20px]">send</span>
-                </button>
-              </div>
-
-              <div className="disclaimer-text">
-                <p>AI can make mistakes. Always verify cutoffs with official JoSAA / CSAB / CET Cell counseling data.</p>
+                {/* Typing indicator */}
+                {isTyping && (
+                  <div className="message-row assistant-row typing-row">
+                    <div className="avatar-box assistant-avatar">
+                      <span className="material-symbols-outlined text-[18px]">school</span>
+                    </div>
+                    <div className="message-bubble-box assistant-bubble typing-bubble">
+                      <div className="typing-dots">
+                        <span />
+                        <span />
+                        <span />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
 
-          {/* Mobile backdrop */}
-          <div className="mobile-backdrop" onClick={() => setSidebarOpen(false)} />
-        </main>
+            {/* Fixed Bottom Input Area */}
+            <div className="chat-input-bottom-bar">
+              <div className="input-inner-container">
+                {/* Quick Suggestion Chips */}
+                <div className="quick-suggestions-chips">
+                  {DEFAULT_SUGGESTIONS.map((sug, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className="chip-btn"
+                      onClick={() => handleMessageSend(sug)}
+                    >
+                      {sug}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Input Box */}
+                <div className="input-glass-box">
+                  <button type="button" className="input-action-btn" aria-label="Attachment">
+                    <span className="material-symbols-outlined">attach_file</span>
+                  </button>
+                  <textarea
+                    ref={textareaRef}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Ask your admissions or cutoff question..."
+                    rows={1}
+                    className="chat-textarea"
+                  />
+                  <button
+                    type="button"
+                    className="input-send-btn"
+                    onClick={handleSend}
+                    disabled={!query.trim() || isTyping}
+                    aria-label="Send message"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">send</span>
+                  </button>
+                </div>
+
+                <div className="disclaimer-text">
+                  <p>AI can make mistakes. Always verify cutoffs with official JoSAA / CSAB / CET Cell counseling data.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile backdrop */}
+            <div className="mobile-backdrop" onClick={() => setSidebarOpen(false)} />
+          </main>
         </div>
       </div>
-    </>
+
+      <Footer />
+    </div>
   );
 };
 
