@@ -71,6 +71,18 @@ export const lookupCollegeAI = async (query) => {
   return response.data;
 };
 
+export const compareCollegesAI = async (college1, college2) => {
+  const response = await api.get('/api/colleges/compare/ai', {
+    params: { c1: college1, c2: college2 },
+  });
+  return response.data;
+};
+
+export const sendAssistantChat = async (message, history = []) => {
+  const response = await api.post('/api/assistant', { message, history });
+  return response.data;
+};
+
 export const getSavedColleges = async () => {
   const response = await api.get('/api/saved');
   return response.data;

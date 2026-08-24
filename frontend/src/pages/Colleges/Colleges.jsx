@@ -444,21 +444,30 @@ const Colleges = () => {
                       </div>
 
                       {/* Actions */}
-                      <div className="flex items-center gap-2 mt-4">
+                      <div className="flex items-center gap-1.5 mt-4">
                         <Link
                           to={`/colleges/${cid}`}
-                          className="flex-grow bg-surface-container-low hover:bg-primary hover:text-white border border-outline-variant text-on-surface font-label-md text-[13px] py-2 px-3 rounded-xl flex items-center justify-center gap-1 transition-colors font-semibold text-center"
+                          className="flex-1 bg-surface-container-low hover:bg-primary hover:text-white border border-outline-variant text-on-surface font-label-md text-[12px] py-2 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors font-semibold text-center"
                         >
-                          View Details
-                          <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                          Details
+                          <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
                         </Link>
                         <button
                           type="button"
-                          className="bg-primary-fixed hover:bg-primary-container text-on-primary-fixed border border-primary-fixed font-label-md text-[13px] py-2 px-3 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
+                          className="bg-surface-container-lowest hover:bg-surface-container-high text-primary border border-outline-variant font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
+                          onClick={() => navigate(`/compare?college1=${encodeURIComponent(college.name || cid)}`)}
+                          title="Compare this college with another"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">compare_arrows</span>
+                          Compare
+                        </button>
+                        <button
+                          type="button"
+                          className="bg-primary-fixed hover:bg-primary-container text-on-primary-fixed border border-primary-fixed font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
                           onClick={() => handleAiLookup(college.name)}
                           title="Ask AI Council about this college"
                         >
-                          <span className="material-symbols-outlined text-[16px]">psychology</span>
+                          <span className="material-symbols-outlined text-[15px]">psychology</span>
                           AI Info
                         </button>
                       </div>
@@ -668,14 +677,22 @@ const Colleges = () => {
                       </div>
                     )}
 
-                    <div className="mt-2">
+                    <div className="mt-2 flex flex-col sm:flex-row gap-2">
                       <button
                         type="button"
-                        className="w-full bg-surface-tint hover:bg-primary text-white font-label-md py-3.5 px-6 rounded-2xl flex items-center justify-center gap-2 transition-colors shadow-md font-bold cursor-pointer"
+                        className="flex-1 bg-surface-tint hover:bg-primary text-white font-label-md py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-md font-bold cursor-pointer text-xs sm:text-sm"
+                        onClick={() => navigate(`/compare?college1=${encodeURIComponent(aiResult.name)}`)}
+                      >
+                        <span className="material-symbols-outlined text-sm">compare_arrows</span>
+                        Compare with Another College
+                      </button>
+                      <button
+                        type="button"
+                        className="flex-1 bg-surface-container-low hover:bg-surface-container-high border border-outline-variant text-on-surface font-label-md py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors font-bold cursor-pointer text-xs sm:text-sm"
                         onClick={() => navigate('/assistant')}
                       >
-                        <span className="material-symbols-outlined">chat</span>
-                        Ask AI Council More About This College
+                        <span className="material-symbols-outlined text-sm">chat</span>
+                        Ask AI Council
                       </button>
                     </div>
                   </div>
