@@ -177,7 +177,11 @@ const CollegeDetails = () => {
                 <span className="material-symbols-outlined">bookmark_add</span>
                 Save
               </button>
-              <button type="button" className="college-action-btn outline" onClick={() => navigate('/compare')}>
+              <button
+                type="button"
+                className="college-action-btn outline"
+                onClick={() => navigate(`/compare?college1=${encodeURIComponent(college.name || id || '')}`)}
+              >
                 <span className="material-symbols-outlined">compare_arrows</span>
                 Compare
               </button>
