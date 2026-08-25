@@ -193,7 +193,11 @@ const OTP = () => {
       }
       setOtp(['', '', '', '', '', '']);
       setTimer(INITIAL_COUNTDOWN);
-      toast.success('OTP sent successfully.');
+      toast.success(
+        response?.dev_otp
+          ? `Development OTP generated; no SMS was sent. Dev OTP: ${response.dev_otp}`
+          : 'OTP sent successfully.'
+      );
       focusInput(0);
     } catch (requestError) {
       const message = getErrorMessage(requestError, 'Unable to resend OTP. Please try again.');

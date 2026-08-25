@@ -7,14 +7,14 @@
 
 .layout-content {
   width: 100%;
-  max-width: var(--container-max);
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 64px 24px 0;
+  padding: 2.5rem 1.5rem 0;
   flex: 1;
 }
 
 @media (max-width: 900px) {
   .layout-content {
-    padding: 32px 20px 0;
+    padding: 1.5rem 1rem 0;
   }
 }

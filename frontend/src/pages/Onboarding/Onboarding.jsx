@@ -597,7 +597,7 @@ const Onboarding = () => {
         }
 
         if (otpResponse?.dev_otp) {
-          toast.success(`OTP sent. Dev OTP: ${otpResponse.dev_otp}`);
+          toast.success(`Development OTP generated; no SMS was sent. Dev OTP: ${otpResponse.dev_otp}`);
         } else {
           toast.success('OTP sent to your phone number.');
         }

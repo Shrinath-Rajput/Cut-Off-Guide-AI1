@@ -148,9 +148,19 @@ async def send_otp(request: OtpRequest, db=Depends(get_db)):
     from fastapi.responses import JSONResponse
     try:
         result = await send_otp_sms(request.phone, db)
-        response_data = {"status": "success", "message": "OTP sent successfully", "sessionId": result["session_id"]}
+        is_development = bool(result.get("dev_otp"))
+        response_data = {
+            "status": "success",
+            "message": (
+                "Development OTP generated; no SMS was sent"
+                if is_development else "OTP sent successfully"
+            ),
+            "sessionId": result["session_id"],
+        }
         if result.get("provider_request_id"):
             response_data["provider_request_id"] = result["provider_request_id"]
+        if is_development:
+            response_data["dev_otp"] = result["dev_otp"]
         return response_data
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"status": "error", "message": e.detail})
@@ -162,6 +172,15 @@ async def verify_otp(request: OtpVerifyRequest, db=Depends(get_db)):
         is_valid = await verify_otp_sms(request.phone, request.otp, request.sessionId, db)
         if not is_valid:
             raise HTTPException(status_code=400, detail="OTP is invalid or expired")
+
+        if db is None:
+            raise HTTPException(status_code=503, detail="Database is unavailable; account cannot be created")
+
+        try:
+            await db.command("ping")
+        except Exception as exc:
+            logger.exception("verify-otp database health check failed")
+            raise HTTPException(status_code=503, detail="Database is unavailable; account cannot be created") from exc
 
         normalized_email = request.email.strip().lower() if request.email else ""
         try:
@@ -299,32 +318,63 @@ async def verify_otp(request: OtpVerifyRequest, db=Depends(get_db)):
                     pass
                 raise HTTPException(status_code=500, detail="Failed to create account. Please try again.")
 
-            user = new_user
-            user["id"] = str(result.inserted_id)
-            user.pop("passwordHash", None)
-            user.pop("password_hash", None)
+            # Construct a clean, JSON-serializable response
             token = create_access_token(subject=uid, role="USER")
+            user_response = {
+                "id": str(result.inserted_id),
+                "uid": uid,
+                "name": raw_name,
+                "email": raw_email,
+                "phone": raw_phone,
+                "provider": "password",
+                "role": "USER",
+                "createdAt": now.isoformat(),
+                "lastLogin": now.isoformat(),
+            }
             return {
                 "status": "success",
                 "message": "Account created and verified successfully",
                 "token": token,
-                "user": user,
+                "user": user_response,
                 "newAccount": True,
             }
 
         if not user:
             raise HTTPException(status_code=401, detail="Account not found. Please sign up first.")
+        # Construct a clean, JSON-serializable response
         token = create_access_token(subject=user["uid"], role=user.get("role", "USER"))
-        user["id"] = str(user.pop("_id"))
-        user.pop("passwordHash", None)
-        user.pop("password_hash", None)
-        return {"status": "success", "message": "Authentication successful", "token": token, "user": user}
+        
+        # Safely serialize all fields
+        created_at = user.get("createdAt")
+        last_login = user.get("lastLogin")
+        if hasattr(created_at, "isoformat"):
+            created_at = created_at.isoformat()
+        if hasattr(last_login, "isoformat"):
+            last_login = last_login.isoformat()
+        
+        user_response = {
+            "id": str(user["_id"]),
+            "uid": user.get("uid"),
+            "name": user.get("name"),
+            "email": user.get("email"),
+            "phone": user.get("phone"),
+            "provider": user.get("provider", "password"),
+            "role": user.get("role", "USER"),
+            "createdAt": created_at,
+            "lastLogin": last_login,
+        }
+        return {"status": "success", "message": "Authentication successful", "token": token, "user": user_response}
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"status": "error", "message": e.detail})
     except Exception as e:
         import traceback
+        logger.exception("verify-otp unhandled exception")
         traceback.print_exc()
-        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+        try:
+            error_message = str(e)
+        except Exception:
+            error_message = "Failed to process request. Please try again."
+        return JSONResponse(status_code=500, content={"status": "error", "message": error_message})
 
 @router.post("/register")
 async def register(request: UserSignup, db=Depends(get_db)):
@@ -603,12 +653,16 @@ async def login(request: UserLogin, db=Depends(get_db)):
     if db is None:
         raise HTTPException(status_code=503, detail="Database is unavailable")
 
-    raw_identifier = (request.username or request.email or "").strip()
+    raw_identifier = (request.email if request.email is not None else request.username or "").strip()
     identifier = raw_identifier.lower()
-    password = (request.password or "").strip()
+    password = request.password or ""
 
     if not identifier or not password:
         raise HTTPException(status_code=422, detail="Username/email and password are required")
+
+    is_email_lookup = "@" in identifier
+    if is_email_lookup:
+        logger.warning("LOGIN REQUEST EMAIL = %s", identifier)
 
     try:
         normalized_phone = normalize_phone(raw_identifier)
@@ -622,9 +676,7 @@ async def login(request: UserLogin, db=Depends(get_db)):
         repr(raw_identifier), repr(identifier), is_phone_lookup, repr(normalized_phone)
     )
 
-    query_conditions = [
-        {"email": identifier},
-        {"email": raw_identifier},
+    query_conditions = [] if is_email_lookup else [
         {"uid": identifier},
         {"uid": raw_identifier},
         {"username": identifier},
@@ -651,7 +703,23 @@ async def login(request: UserLogin, db=Depends(get_db)):
     else:
         user_via_scan = None
 
-    user = await db["users"].find_one({"$or": query_conditions})
+    if is_email_lookup:
+        user = await db["users"].find_one({"email": identifier})
+        # Existing records may predate normalized email storage.
+        if user is None:
+            all_users = await db["users"].find({}).to_list(length=10000)
+            user = next(
+                (
+                    candidate for candidate in all_users
+                    if isinstance(candidate.get("email"), str)
+                    and candidate["email"].strip().lower() == identifier
+                ),
+                None,
+            )
+    elif query_conditions:
+        user = await db["users"].find_one({"$or": query_conditions})
+    else:
+        user = None
     if user is None and user_via_scan is not None:
         logger.info(
             "LOGIN: Found user via phone-scan (non-normalized DB record) uid=%s stored_phone=%s",
@@ -663,8 +731,14 @@ async def login(request: UserLogin, db=Depends(get_db)):
         logger.warning("LOGIN FAILED: No user found for identifier=%s", identifier)
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
 
+    if is_email_lookup:
+        logger.warning("FOUND USER EMAIL = %s", user.get("email"))
+        logger.warning("FOUND USER UID = %s", user.get("uid"))
+
     stored_password_hash = user.get("passwordHash") or user.get("password_hash")
     legacy_plain_or_hash = user.get("password")
+    if is_email_lookup:
+        logger.warning("PASSWORD VERIFY USER EMAIL = %s", user.get("email"))
     logger.info(
         "LOGIN: user found uid=%s email=%s phone=%s provider=%s has_passwordHash=%s legacy_password_field=%s",
         user.get("uid"),
@@ -759,7 +833,15 @@ async def send_login_otp(request: LoginOtpRequest, db=Depends(get_db)):
         raise HTTPException(status_code=400, detail="Phone number does not match this account")
 
     result = await send_otp_sms(registered_phone, db)
-    return {"status": "success", "message": "OTP sent successfully", "sessionId": result["session_id"]}
+    response = {
+        "status": "success",
+        "message": "OTP sent successfully",
+        "sessionId": result["session_id"],
+    }
+    if result.get("dev_otp"):
+        response["message"] = "Development OTP generated; no SMS was sent"
+        response["dev_otp"] = result["dev_otp"]
+    return response
 
 @router.post("/login/verify-otp")
 async def verify_login_otp(request: LoginOtpVerifyRequest, db=Depends(get_db)):
@@ -773,13 +855,32 @@ async def verify_login_otp(request: LoginOtpVerifyRequest, db=Depends(get_db)):
     if normalize_phone(user["phone"]) != normalize_phone(request.phone):
         raise HTTPException(status_code=400, detail="Phone number does not match this account")
     await db["users"].update_one({"_id": user["_id"]}, {"$set": {"lastLogin": datetime.now(timezone.utc)}})
-    user["id"] = str(user.pop("_id"))
-    user.pop("passwordHash", None)
-    return {"status": "success", "token": create_access_token(user["uid"], role=user.get("role", "USER")), "user": user}
+    
+    # Construct a clean, JSON-serializable response
+    created_at = user.get("createdAt")
+    last_login = user.get("lastLogin")
+    if hasattr(created_at, "isoformat"):
+        created_at = created_at.isoformat()
+    if hasattr(last_login, "isoformat"):
+        last_login = last_login.isoformat()
+    
+    user_response = {
+        "id": str(user["_id"]),
+        "uid": user.get("uid"),
+        "name": user.get("name"),
+        "email": user.get("email"),
+        "phone": user.get("phone"),
+        "provider": user.get("provider", "password"),
+        "role": user.get("role", "USER"),
+        "createdAt": created_at,
+        "lastLogin": last_login,
+    }
+    return {"status": "success", "token": create_access_token(user["uid"], role=user.get("role", "USER")), "user": user_response}
 
 @router.get("/me")
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):
     user = dict(current_user)
+    user.pop("_id", None)
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
     return {

@@ -29,6 +29,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [pendingLogin, setPendingLogin] = useState(null);
+  const identifierInputRef = useRef(null);
+  const passwordInputRef = useRef(null);
   const otpInputRefs = useRef([]);
 
   const focusOtpInput = (index) => {
@@ -44,16 +46,51 @@ const Login = () => {
     return () => clearInterval(interval);
   }, [timer]);
 
+  useEffect(() => {
+    const syncFromDom = () => {
+      const idDom = identifierInputRef.current?.value;
+      const pwDom = passwordInputRef.current?.value;
+      if (idDom && idDom !== identifier) setIdentifier(idDom);
+      if (pwDom && pwDom !== password) setPassword(pwDom);
+    };
+    const t1 = setTimeout(syncFromDom, 100);
+    const t2 = setTimeout(syncFromDom, 500);
+    const t3 = setTimeout(syncFromDom, 1500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, []);
+
   const handleNext = async (event) => {
     event.preventDefault();
-    if (!identifier.trim() || !password) {
-      setError(!identifier.trim() ? 'Enter your email or username.' : 'Password is required.');
+
+    const rawIdentifier = identifierInputRef.current?.value ?? identifier;
+    const rawPassword = passwordInputRef.current?.value ?? password;
+
+    const trimmedIdentifier = rawIdentifier.trim();
+    const loginEmail = trimmedIdentifier.toLowerCase();
+
+    if (trimmedIdentifier !== identifier) {
+      setIdentifier(trimmedIdentifier);
+    }
+    if (rawPassword !== password) {
+      setPassword(rawPassword);
+    }
+
+    if (!trimmedIdentifier || !rawPassword) {
+      setError(!trimmedIdentifier ? 'Enter your email or username.' : 'Password is required.');
       return;
     }
+
+    console.log('LOGIN FORM EMAIL:', trimmedIdentifier);
+    console.log('LOGIN REQUEST EMAIL:', loginEmail);
+
     setIsLoading(true);
     setError('');
     try {
-      const response = await loginUser({ username: identifier.trim(), password });
+      const response = await loginUser({ email: loginEmail, password: rawPassword });
       setPendingLogin({ ...response.user, uid: response.uid || response.user.uid });
       setPhone(response.otpPhone || response.user.phone || '');
       setView('phone');
@@ -81,7 +118,11 @@ const Login = () => {
       setOtp(['', '', '', '', '', '']);
       setTimer(30);
       setView('otp');
-      toast.success('OTP sent successfully');
+      toast.success(
+        response?.dev_otp
+          ? `Development OTP generated; no SMS was sent. Dev OTP: ${response.dev_otp}`
+          : 'OTP sent successfully'
+      );
       setTimeout(() => otpInputRefs.current[0]?.focus(), 0);
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'Unable to send OTP. Please try again.'));
@@ -224,9 +265,14 @@ const Login = () => {
                 <label className="cg-field-label" htmlFor="login-identifier">Email or Username</label>
                 <input
                   id="login-identifier"
+                  ref={identifierInputRef}
                   className={`cg-input ${error && !identifier.trim() ? 'cg-input--error' : ''}`}
                   value={identifier}
                   onChange={(event) => { setIdentifier(event.target.value); setError(''); }}
+                  onBlur={(event) => {
+                    const domValue = identifierInputRef.current?.value ?? event.target.value;
+                    if (domValue !== identifier) setIdentifier(domValue);
+                  }}
                   placeholder="Enter your email"
                   autoComplete="username"
                 />
@@ -237,10 +283,15 @@ const Login = () => {
                 <div className="cg-input-wrap">
                   <input
                     id="login-password"
+                    ref={passwordInputRef}
                     type={showPassword ? 'text' : 'password'}
                     className={`cg-input cg-input--with-icon ${error && !password ? 'cg-input--error' : ''}`}
                     value={password}
                     onChange={(event) => { setPassword(event.target.value); setError(''); }}
+                    onBlur={(event) => {
+                      const domValue = passwordInputRef.current?.value ?? event.target.value;
+                      if (domValue !== password) setPassword(domValue);
+                    }}
                     placeholder="Enter your password"
                     autoComplete="current-password"
                   />
