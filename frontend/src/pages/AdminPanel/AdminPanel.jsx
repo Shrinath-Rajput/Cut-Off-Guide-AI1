@@ -57,7 +57,7 @@ const AdminPanel = ({ section: initialSection = 'dashboard' }) => {
       close(); toast.success('Changes saved'); refresh();
     } catch (error) { toast.error(errorText(error)); }
   };
-  const signOut = () => { adminLogout(); window.location.replace('/home'); };
+  const signOut = () => { adminLogout(); navigate('/admin/login', { replace: true }); };
 
   return <div className="admin-app">
     <aside className={`admin-sidebar ${mobileOpen ? 'open' : ''}`}>

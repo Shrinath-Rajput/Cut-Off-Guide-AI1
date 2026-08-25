@@ -3,15 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiZap } from 'react-icons/fi';
 import Loader from '../../components/Loader/Loader';
+import { useAuth } from '../../context/AuthContext';
 import './Splash.css';
 
 const Splash = () => {
   const navigate = useNavigate();
+  const { isAuthenticated, loading } = useAuth();
 
   useEffect(() => {
-    const timer = setTimeout(() => navigate('/welcome'), 3000);
+    if (loading) return undefined;
+    const timer = setTimeout(() => {
+      navigate(isAuthenticated ? '/home' : '/login', { replace: true });
+    }, 1500);
     return () => clearTimeout(timer);
-  }, [navigate]);
+  }, [navigate, isAuthenticated, loading]);
 
   return (
     <div className="page-shell splash-shell">

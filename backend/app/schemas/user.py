@@ -31,9 +31,42 @@ class Token(BaseModel):
     user: UserResponse
 
 class UserLogin(BaseModel):
+    username: Optional[str] = None
     email: Optional[str] = None
-    phone: Optional[str] = None
-    uid: Optional[str] = None
-    name: Optional[str] = None
-    provider: Optional[str] = "phone"
-    photoURL: Optional[str] = None
+    password: Optional[str] = None
+
+class UserSignup(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    email: str = Field(..., min_length=3, max_length=254)
+    phone: str = Field(..., min_length=10, max_length=15)
+    password: str = Field(..., min_length=8, max_length=128)
+    userType: Optional[str] = None
+    goals: Optional[List[str]] = None
+    category: Optional[str] = None
+    pwdCrossCategory: Optional[bool] = None
+    domicile: Optional[str] = None
+    locationZone: Optional[str] = None
+    exam: Optional[str] = None
+    examScore: Optional[str] = None
+    careerOption: Optional[str] = None
+    preferredBranch: Optional[str] = None
+    educationLevel: Optional[str] = None
+    targetStream: Optional[str] = None
+    subjects: Optional[List[str]] = None
+    areasOfInterest: Optional[List[str]] = None
+    targetDegreeLevel: Optional[str] = None
+    expectedEntranceScore: Optional[str] = None
+    preferredLocation: Optional[str] = None
+    budgetRange: Optional[str] = None
+    collegeType: Optional[str] = None
+    hostelRequired: Optional[bool] = None
+
+class LoginOtpRequest(BaseModel):
+    uid: str
+    phone: str
+    name: Optional[str] = ""
+    email: Optional[str] = ""
+
+class LoginOtpVerifyRequest(LoginOtpRequest):
+    otp: str
+    sessionId: str

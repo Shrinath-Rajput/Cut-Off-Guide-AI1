@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from 'react';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import Button from '../../components/Button/Button';
 import { useAuth } from '../../context/AuthContext';
+import { submitContactForm } from '../../services/api';
 import './Contact.css';
 
 const faqItems = [
@@ -25,7 +26,9 @@ const faqItems = [
 const Contact = () => {
   const { currentUser } = useAuth();
   const [form, setForm] = useState({ name: '', email: '', subject: 'General Inquiry', message: '' });
+  const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState(null);
   const [openFaq, setOpenFaq] = useState(0);
 
   useEffect(() => {
@@ -43,19 +46,32 @@ const Contact = () => {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    
-    // TODO: Connect this to a real backend handler!
-    // Currently, there is NO backend email service (e.g. SendGrid, Nodemailer, Resend) wired up.
-    // The payload { name, email, subject, message } needs to be sent TO hr@fouriseindia.com,
-    // with the user's name/email as the sender/reply-to details in the email body.
-    
-    setSuccess(true);
-    setTimeout(() => {
-      setSuccess(false);
+    if (loading) return;
+
+    setLoading(true);
+    setError(null);
+    setSuccess(false);
+
+    try {
+      await submitContactForm(form);
+      setSuccess(true);
       setForm({ name: currentUser?.name || '', email: currentUser?.email || '', subject: 'General Inquiry', message: '' });
-    }, 4500);
+      setTimeout(() => {
+        setSuccess(false);
+      }, 5000);
+    } catch (err) {
+      console.error('Error submitting contact form:', err);
+      const detail = err.response?.data?.detail;
+      if (Array.isArray(detail)) {
+        setError(detail.map(d => d.msg).join(', '));
+      } else {
+        setError(detail || 'Failed to send message. Please try again later.');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const faqElements = useMemo(
@@ -183,15 +199,23 @@ const Contact = () => {
                 />
               </label>
 
-              {success && (
-                <div className="contact-success">
-                  Message sent to hr@fouriseindia.com. We'll get back to you at {form.email} within 1-2 business days.
+              {error && (
+                <div className="contact-error" style={{ color: 'red', marginTop: '10px', marginBottom: '10px' }}>
+                  {error}
                 </div>
               )}
 
-              <Button variant="primary" type="submit">
-                Send Message
-                <span className="material-symbols-outlined">send</span>
+              {success && (
+                <div className="contact-success">
+                  Message sent successfully! We'll get back to you at {form.email} within 1-2 business days.
+                </div>
+              )}
+
+              <Button variant="primary" type="submit" disabled={loading}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+                  {loading ? 'Sending...' : 'Send Message'}
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', transform: 'translateY(-1px)' }}>arrow_upward</span>
+                </span>
               </Button>
             </form>
           </section>
