@@ -4,18 +4,40 @@ const OnboardingContext = createContext(null);
 
 const STORAGE_KEY = 'onboarding_state';
 
+const normalizeStoredProfile = (profile = {}) => {
+  const domicile = profile.domicile ?? profile.stateOfDomicile ?? profile.locationZone ?? '';
+  const category = profile.category ?? profile.studentCategory ?? '';
+  return {
+    ...profile,
+    domicile,
+    category,
+    locationZone: profile.locationZone ?? domicile,
+  };
+};
+
 const buildInitialProfile = (currentUser) => ({
+  name: currentUser?.name || '',
   fullName: currentUser?.name || '',
   email: currentUser?.email || '',
+  userType: 'student',
+  goals: [],
   category: '',
   pwdCrossCategory: false,
   phone: '',
   domicile: '',
+  locationZone: '',
   academic: {
     exam: '',
+    examTarget: '',
     examScore: '',
     careerOption: '',
     preferredBranch: '',
+    educationLevel: '',
+    targetStream: '',
+    subjects: [],
+    areasOfInterest: [],
+    targetDegreeLevel: '',
+    expectedEntranceScore: '',
   },
   preferences: {
     preferredLocation: '',
@@ -25,22 +47,64 @@ const buildInitialProfile = (currentUser) => ({
   },
 });
 
+const buildPendingSignupProfile = (currentUser) => {
+  try {
+    const raw = sessionStorage.getItem('signup_pending_credentials');
+    if (!raw) return buildInitialProfile(currentUser);
+
+    const parsed = JSON.parse(raw);
+    const fullName = parsed.fullName || parsed.name || currentUser?.name || '';
+    const domicile = parsed.domicile ?? parsed.stateOfDomicile ?? parsed.locationZone ?? '';
+    const category = parsed.category ?? parsed.studentCategory ?? '';
+
+    return normalizeStoredProfile({
+      ...buildInitialProfile(currentUser),
+      name: fullName,
+      fullName,
+      email: parsed.email || currentUser?.email || '',
+      phone: parsed.phone || '',
+      domicile,
+      category,
+      locationZone: domicile,
+    });
+  } catch (e) {
+    console.warn('Pending signup restore failed', e);
+    return buildInitialProfile(currentUser);
+  }
+};
+
+const resolveInitialProfile = (currentUser) => {
+  const base = buildInitialProfile(currentUser);
+
+  try {
+    const savedRaw = localStorage.getItem(STORAGE_KEY);
+    if (savedRaw) {
+      const savedProfile = normalizeStoredProfile(JSON.parse(savedRaw));
+      const merged = { ...base, ...savedProfile };
+      if (savedProfile.academic) merged.academic = { ...base.academic, ...savedProfile.academic };
+      if (savedProfile.preferences) merged.preferences = { ...base.preferences, ...savedProfile.preferences };
+      return normalizeStoredProfile(merged);
+    }
+  } catch (e) {
+    console.warn('Onboarding storage restore failed', e);
+  }
+
+  const pendingProfile = buildPendingSignupProfile(currentUser);
+  const hasPendingValues = !!(pendingProfile?.email || pendingProfile?.phone || pendingProfile?.fullName || pendingProfile?.domicile);
+  return hasPendingValues ? pendingProfile : base;
+};
+
 export const OnboardingProvider = ({ children, currentUser }) => {
   const [activeStep, setActiveStep] = useState(1);
   const [studentProfile, setStudentProfile] = useState(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        return {
-          ...buildInitialProfile(currentUser),
-          ...parsed,
-        };
-      }
-    } catch (e) {
-      console.warn('Onboarding storage restore failed', e);
+    const pendingProfile = buildPendingSignupProfile(currentUser);
+    const hasPendingValues = !!(pendingProfile?.email || pendingProfile?.phone || pendingProfile?.fullName || pendingProfile?.domicile);
+
+    if (hasPendingValues) {
+      return pendingProfile;
     }
-    return buildInitialProfile(currentUser);
+
+    return resolveInitialProfile(currentUser);
   });
 
   useEffect(() => {
@@ -52,35 +116,55 @@ export const OnboardingProvider = ({ children, currentUser }) => {
   }, [studentProfile]);
 
   const setPersonal = (payload) => {
-    setStudentProfile((prev) => ({
-      ...prev,
-      fullName: payload.fullName ?? prev.fullName,
-      email: payload.email ?? prev.email,
-      category: payload.category ?? prev.category,
-      pwdCrossCategory: payload.pwdCrossCategory ?? prev.pwdCrossCategory,
-      phone: payload.phone ?? prev.phone,
-      domicile: payload.domicile ?? prev.domicile,
-    }));
+    setStudentProfile((prev) => {
+      const nextFullName = payload.fullName ?? payload.name ?? prev.fullName ?? prev.name ?? '';
+      const nextDomicile = payload.domicile ?? payload.stateOfDomicile ?? payload.locationZone ?? prev.domicile ?? prev.stateOfDomicile ?? prev.locationZone ?? '';
+      const nextCategory = payload.category ?? payload.studentCategory ?? prev.category ?? prev.studentCategory ?? '';
+
+      return normalizeStoredProfile({
+        ...prev,
+        name: payload.name ?? nextFullName,
+        fullName: nextFullName,
+        email: payload.email ?? prev.email,
+        userType: payload.userType ?? prev.userType ?? 'student',
+        goals: payload.goals ?? prev.goals ?? [],
+        category: nextCategory,
+        pwdCrossCategory: payload.pwdCrossCategory ?? prev.pwdCrossCategory,
+        phone: payload.phone ?? prev.phone,
+        domicile: nextDomicile,
+        locationZone: nextDomicile,
+      });
+    });
   };
 
   const setAcademic = (payload) => {
-    setStudentProfile((prev) => ({
-      ...prev,
-      academic: {
-        ...prev.academic,
-        ...payload,
-      },
-    }));
+    setStudentProfile((prev) => {
+      const nextExam = payload.exam ?? payload.examTarget ?? prev.academic?.exam ?? '';
+      return {
+        ...prev,
+        academic: {
+          ...prev.academic,
+          ...payload,
+          exam: nextExam,
+          examTarget: nextExam,
+        },
+      };
+    });
   };
 
   const setPreferences = (payload) => {
-    setStudentProfile((prev) => ({
-      ...prev,
-      preferences: {
-        ...prev.preferences,
-        ...payload,
-      },
-    }));
+    setStudentProfile((prev) => {
+      const nextPreferredLocation = payload.preferredLocation ?? payload.locationZone ?? prev.preferences?.preferredLocation ?? prev.locationZone ?? '';
+      return {
+        ...prev,
+        locationZone: payload.locationZone ?? nextPreferredLocation,
+        preferences: {
+          ...prev.preferences,
+          ...payload,
+          preferredLocation: nextPreferredLocation,
+        },
+      };
+    });
   };
 
   const nextStep = () => {

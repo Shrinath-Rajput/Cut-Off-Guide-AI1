@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import connect_to_mongo, close_mongo_connection, get_db
-from app.routes import assistant, auth, users, admin, colleges, cutoffs, profile, saved
+from app.routes import assistant, auth, users, admin, colleges, cutoffs, profile, saved, contact
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -47,7 +47,6 @@ allowed_origins = list(dict.fromkeys((settings.CORS_ORIGINS or []) + [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
-    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,6 +60,7 @@ app.include_router(cutoffs.router)
 app.include_router(profile.router)
 app.include_router(saved.router)
 app.include_router(assistant.router)
+app.include_router(contact.router)
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc: Exception):
