@@ -605,7 +605,7 @@ async def login(request: UserLogin, db=Depends(get_db)):
 
     raw_identifier = (request.username or request.email or "").strip()
     identifier = raw_identifier.lower()
-    password = request.password
+    password = (request.password or "").strip()
 
     if not identifier or not password:
         raise HTTPException(status_code=422, detail="Username/email and password are required")
@@ -622,7 +622,14 @@ async def login(request: UserLogin, db=Depends(get_db)):
         repr(raw_identifier), repr(identifier), is_phone_lookup, repr(normalized_phone)
     )
 
-    query_conditions = [{"email": identifier}, {"uid": identifier}, {"username": identifier}]
+    query_conditions = [
+        {"email": identifier},
+        {"email": raw_identifier},
+        {"uid": identifier},
+        {"uid": raw_identifier},
+        {"username": identifier},
+        {"username": raw_identifier},
+    ]
     if is_phone_lookup and normalized_phone:
         query_conditions.append({"phone": normalized_phone})
         try:
@@ -657,18 +664,50 @@ async def login(request: UserLogin, db=Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
 
     stored_password_hash = user.get("passwordHash") or user.get("password_hash")
+    legacy_plain_or_hash = user.get("password")
     logger.info(
-        "LOGIN: user found uid=%s email=%s phone=%s provider=%s has_passwordHash=%s",
+        "LOGIN: user found uid=%s email=%s phone=%s provider=%s has_passwordHash=%s legacy_password_field=%s",
         user.get("uid"),
         repr(user.get("email")),
         repr(user.get("phone")),
         user.get("provider"),
-        bool(stored_password_hash)
+        bool(stored_password_hash),
+        isinstance(legacy_plain_or_hash, str)
     )
 
-    if not stored_password_hash:
+    password_valid = False
+    if stored_password_hash:
+        try:
+            password_valid = verify_password(password, stored_password_hash)
+        except Exception as verify_err:
+            logger.exception("LOGIN: password verification exception for hash field: %s", verify_err)
+            password_valid = False
+
+    if not password_valid and isinstance(legacy_plain_or_hash, str) and legacy_plain_or_hash.strip():
+        try:
+            legacy_value = legacy_plain_or_hash.strip()
+            if verify_password(password, legacy_value):
+                password_valid = True
+            elif password == legacy_value:
+                password_valid = True
+        except Exception as legacy_err:
+            logger.exception("LOGIN: legacy password field verification failed uid=%s: %s", user.get("uid"), legacy_err)
+            password_valid = False
+
+        if password_valid and not stored_password_hash:
+            try:
+                migrated_hash = get_password_hash(password)
+                await db["users"].update_one(
+                    {"_id": user["_id"]},
+                    {"$set": {"passwordHash": migrated_hash, "provider": user.get("provider") or "password"}, "$unset": {"password": ""}}
+                )
+                logger.info("LOGIN migrated legacy password for uid=%s into passwordHash", user.get("uid"))
+            except Exception as migrate_err:
+                logger.exception("LOGIN: failed to migrate legacy password hash for uid=%s: %s", user.get("uid"), migrate_err)
+
+    if not stored_password_hash and not isinstance(legacy_plain_or_hash, str):
         logger.warning(
-            "LOGIN FAILED: Account uid=%s has NO passwordHash. Provider=%s. User was created via old OTP/Google flow.",
+            "LOGIN FAILED: Account uid=%s has NO passwordHash and NO legacy password field. Provider=%s.",
             user.get("uid"), user.get("provider")
         )
         raise HTTPException(
@@ -676,12 +715,6 @@ async def login(request: UserLogin, db=Depends(get_db)):
             detail="This account was created using Phone OTP or Google Sign-In and does not have a password set. "
                    "Please use Phone Number OTP login, or contact support to set a password."
         )
-
-    try:
-        password_valid = verify_password(password, stored_password_hash)
-    except Exception as verify_err:
-        logger.exception("LOGIN: password verification exception: %s", verify_err)
-        password_valid = False
 
     logger.info(
         "LOGIN credential check uid=%s password_valid=%s",
@@ -698,6 +731,7 @@ async def login(request: UserLogin, db=Depends(get_db)):
     user["id"] = str(user.pop("_id"))
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
+    user.pop("password", None)
     logger.info("LOGIN SUCCESS: uid=%s. Proceeding to OTP stage.", user.get("uid"))
     return {
         "status": "success",

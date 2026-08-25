@@ -9,18 +9,9 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.testclient import TestClient
 from app.core.config import settings
 from app.core.database import connect_to_mongo, close_mongo_connection, get_db
 from app.routes import assistant, auth, users, admin, colleges, cutoffs, profile, saved, contact
-
-
-class CompatFastAPI(FastAPI):
-    def test_client(self):
-        return TestClient(self)
-
-    def get_json(self, *args, **kwargs):
-        raise AttributeError("FastAPI app does not support get_json(); use a TestClient response instead.")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -30,7 +21,7 @@ async def lifespan(app: FastAPI):
     # Shutdown
     await close_mongo_connection()
 
-app = CompatFastAPI(
+app = FastAPI(
     title="CutoffGrid API",
     description="Backend API for Cutoff Guide AI",
     version="1.0.0",

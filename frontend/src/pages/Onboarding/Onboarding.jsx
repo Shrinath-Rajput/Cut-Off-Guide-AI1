@@ -29,6 +29,48 @@ const CAREER_OPTIONS = [
 
 const COLLEGE_TYPES = ['Government', 'Private', 'Deemed'];
 
+const EDUCATION_LEVEL_OPTIONS = [
+  'High School / Secondary',
+  'Undergraduate Degree',
+  'Postgraduate Degree',
+  'Professional Certification',
+];
+
+const TARGET_STREAM_OPTIONS = [
+  'Engineering & Technology',
+  'Medicine & Health Sciences',
+  'Business & Management',
+  'Arts & Humanities',
+  'Basic Sciences',
+];
+
+const SUBJECT_OPTIONS = ['Mathematics', 'Physics', 'Computer Science', 'Chemistry'];
+
+const AREA_OF_INTEREST_OPTIONS = [
+  'Computer Science',
+  'Engineering',
+  'Business Admin',
+  'Data Science',
+  'Mathematics',
+  'Biology',
+  'Economics',
+];
+
+const DEGREE_LEVEL_OPTIONS = [
+  {
+    value: 'undergraduate',
+    label: 'Undergraduate',
+    description: 'Bachelors, Associates',
+    icon: 'menu_book',
+  },
+  {
+    value: 'postgraduate',
+    label: 'Postgraduate',
+    description: 'Masters, PhD, Research',
+    icon: 'science',
+  },
+];
+
 const ROLE_OPTIONS = [
   {
     value: 'student',
@@ -109,6 +151,12 @@ const Onboarding = () => {
     examScore: studentProfile?.academic?.examScore || '',
     careerOption: studentProfile?.academic?.careerOption || '',
     preferredBranch: studentProfile?.academic?.preferredBranch || '',
+    educationLevel: studentProfile?.academic?.educationLevel || '',
+    targetStream: studentProfile?.academic?.targetStream || '',
+    subjects: Array.isArray(studentProfile?.academic?.subjects) ? studentProfile.academic.subjects : [],
+    areasOfInterest: Array.isArray(studentProfile?.academic?.areasOfInterest) ? studentProfile.academic.areasOfInterest : [],
+    targetDegreeLevel: studentProfile?.academic?.targetDegreeLevel || '',
+    expectedEntranceScore: studentProfile?.academic?.expectedEntranceScore || '',
   });
 
   const [preferences, setPreferencesLocal] = useState({
@@ -150,12 +198,24 @@ const Onboarding = () => {
       examScore: studentProfile?.academic?.examScore || '',
       careerOption: studentProfile?.academic?.careerOption || '',
       preferredBranch: studentProfile?.academic?.preferredBranch || '',
+      educationLevel: studentProfile?.academic?.educationLevel || '',
+      targetStream: studentProfile?.academic?.targetStream || '',
+      subjects: Array.isArray(studentProfile?.academic?.subjects) ? studentProfile.academic.subjects : [],
+      areasOfInterest: Array.isArray(studentProfile?.academic?.areasOfInterest) ? studentProfile.academic.areasOfInterest : [],
+      targetDegreeLevel: studentProfile?.academic?.targetDegreeLevel || '',
+      expectedEntranceScore: studentProfile?.academic?.expectedEntranceScore || '',
     });
   }, [
     studentProfile?.academic?.exam,
     studentProfile?.academic?.examScore,
     studentProfile?.academic?.careerOption,
     studentProfile?.academic?.preferredBranch,
+    studentProfile?.academic?.educationLevel,
+    studentProfile?.academic?.targetStream,
+    studentProfile?.academic?.subjects,
+    studentProfile?.academic?.areasOfInterest,
+    studentProfile?.academic?.targetDegreeLevel,
+    studentProfile?.academic?.expectedEntranceScore,
   ]);
 
   useEffect(() => {
@@ -283,6 +343,24 @@ const Onboarding = () => {
     }
   };
 
+  const toggleAcademicSubject = (subject) => {
+    setAcademicLocal((prev) => {
+      const current = Array.isArray(prev.subjects) ? prev.subjects : [];
+      const next = current.includes(subject)
+        ? current.filter((item) => item !== subject)
+        : [...current, subject];
+      return { ...prev, subjects: next };
+    });
+
+    if (errors.subjects) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.subjects;
+        return next;
+      });
+    }
+  };
+
   const handlePreferencesChange = (field, value) => {
     setPreferencesLocal((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -308,17 +386,19 @@ const Onboarding = () => {
 
   const validateFinalReview = () => {
     const missing = [];
+    const domicileValue = studentProfile?.domicile || studentProfile?.stateOfDomicile || personal.domicile || '';
+    const categoryValue = studentProfile?.category || studentProfile?.studentCategory || personal.category || '';
+
     if (!studentProfile.fullName) missing.push('Full Name');
     if (!studentProfile.email) missing.push('Email');
     if (!studentProfile.phone) missing.push('Phone');
-    if (!studentProfile.domicile) missing.push('State of Domicile');
-    if (!studentProfile.category) missing.push('Student Category');
+    if (!domicileValue) missing.push('State of Domicile');
+    if (!categoryValue) missing.push('Student Category');
     if (!studentProfile.academic?.exam) missing.push('Primary Exam');
     if (!studentProfile.academic?.examScore) missing.push('Exam Score');
     if (!studentProfile.academic?.careerOption) missing.push('Career Option');
     if (!studentProfile.academic?.preferredBranch) missing.push('Preferred Branch');
-    if (!studentProfile.preferences?.preferredLocation) missing.push('Preferred Location');
-    if (!studentProfile.preferences?.collegeType) missing.push('College Type');
+    if (!studentProfile.academic?.targetDegreeLevel) missing.push('Target Degree Level');
     return missing;
   };
 
@@ -329,6 +409,23 @@ const Onboarding = () => {
     });
   };
 
+  const toggleAreasOfInterest = (area) => {
+    setAcademicLocal((prev) => {
+      const current = Array.isArray(prev.areasOfInterest) ? prev.areasOfInterest : [];
+      const next = current.includes(area)
+        ? current.filter((item) => item !== area)
+        : [...current, area];
+      return { ...prev, areasOfInterest: next };
+    });
+    if (errors.areasOfInterest) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.areasOfInterest;
+        return next;
+      });
+    }
+  };
+
   const validateStepOne = () => {
     const next = {};
     if (!selectedRole) next.role = 'Please select an option';
@@ -336,6 +433,9 @@ const Onboarding = () => {
     setErrors(next);
     return Object.keys(next).length === 0;
   };
+
+  const getDomicileValue = () => studentProfile?.domicile || studentProfile?.stateOfDomicile || personal.domicile || '';
+  const getCategoryValue = () => studentProfile?.category || studentProfile?.studentCategory || personal.category || '';
 
   const handleContinue = async () => {
     if (activeStep === 1) {
@@ -358,35 +458,83 @@ const Onboarding = () => {
     }
 
     if (activeStep === 2) {
-      if (personal.category.trim().length === 0) {
-        toast.error('Please select at least one category.');
+      const next = {};
+      if (!academic.educationLevel) next.educationLevel = 'Please select your current education level';
+      if (!academic.targetStream) next.targetStream = 'Please select your target stream';
+      if (!academic.examScore.trim()) next.examScore = 'Academic score is required';
+      if (!academic.subjects || academic.subjects.length === 0) next.subjects = 'Please select at least one subject';
+      if (!personal.domicile) next.domicile = 'State of Domicile is required';
+      if (!personal.category) next.category = 'Please select a Student Category';
+      setErrors(next);
+
+      if (Object.keys(next).length > 0) {
+        toast.error(Object.values(next)[0]);
         return;
       }
-      if (!validateAcademic()) {
-        toast.error('Please complete all required fields');
-        return;
-      }
+
+      const derivedExam = academic.exam || academic.educationLevel || 'Academic Background';
+      const derivedCareerOption = academic.careerOption || (academic.targetStream ? 'General' : '');
+      const derivedBranch = academic.preferredBranch || academic.targetStream || '';
+
+      setPersonal({
+        fullName: personal.fullName.trim(),
+        email: personal.email.trim(),
+        category: personal.category,
+        pwdCrossCategory: personal.pwdCrossCategory,
+        phone: personal.phone.trim(),
+        domicile: personal.domicile,
+        userType: selectedRole,
+        goals: selectedGoals,
+      });
+
       setAcademic({
-        exam: academic.exam,
+        exam: derivedExam,
         examScore: academic.examScore.trim(),
-        careerOption: academic.careerOption,
-        preferredBranch: academic.preferredBranch.trim(),
+        careerOption: derivedCareerOption,
+        preferredBranch: derivedBranch.trim(),
+        educationLevel: academic.educationLevel,
+        targetStream: academic.targetStream,
+        subjects: academic.subjects,
       });
       nextStep();
       return;
     }
 
     if (activeStep === 3) {
-      if (!validatePreferences()) {
-        toast.error('Please complete all required fields');
+      const step3Errors = {};
+      if (!academic.targetDegreeLevel) {
+        step3Errors.targetDegreeLevel = 'Please select your target degree level';
+      }
+      setErrors(step3Errors);
+      if (Object.keys(step3Errors).length > 0) {
+        toast.error('Please select your target degree level');
         return;
       }
+
+      const derivedExam = academic.exam || academic.educationLevel || 'Academic Background';
+      const derivedCareerOption = academic.careerOption || (academic.targetStream ? 'General' : '');
+      const derivedBranch = academic.preferredBranch || academic.targetStream || '';
+
+      setAcademic({
+        exam: derivedExam,
+        examScore: academic.examScore.trim(),
+        careerOption: derivedCareerOption,
+        preferredBranch: derivedBranch.trim(),
+        educationLevel: academic.educationLevel,
+        targetStream: academic.targetStream,
+        subjects: academic.subjects,
+        areasOfInterest: academic.areasOfInterest,
+        targetDegreeLevel: academic.targetDegreeLevel,
+        expectedEntranceScore: academic.expectedEntranceScore.trim(),
+      });
+
       setPreferences({
         preferredLocation: preferences.preferredLocation.trim(),
         budgetRange: preferences.budgetRange.trim(),
         collegeType: preferences.collegeType,
         hostelRequired: preferences.hostelRequired,
       });
+
       nextStep();
       return;
     }
@@ -403,6 +551,9 @@ const Onboarding = () => {
         const pendingRaw = sessionStorage.getItem(SIGNUP_PENDING_KEY);
         const pendingCreds = pendingRaw ? JSON.parse(pendingRaw) : {};
 
+        const domicileValue = getDomicileValue();
+        const categoryValue = getCategoryValue();
+
         const completePayload = {
           name: studentProfile.fullName,
           fullName: studentProfile.fullName,
@@ -410,10 +561,12 @@ const Onboarding = () => {
           phone: studentProfile.phone,
           password: pendingCreds.password,
           userType: 'student',
-          category: studentProfile.category,
+          category: categoryValue,
+          studentCategory: categoryValue,
           pwdCrossCategory: studentProfile.pwdCrossCategory,
-          domicile: studentProfile.domicile,
-          locationZone: studentProfile.domicile,
+          domicile: domicileValue,
+          stateOfDomicile: domicileValue,
+          locationZone: domicileValue,
           exam: studentProfile.academic?.exam,
           examScore: studentProfile.academic?.examScore,
           careerOption: studentProfile.academic?.careerOption,
@@ -458,10 +611,10 @@ const Onboarding = () => {
   };
 
   const getButtonText = () => {
-    if (activeStep === 1) return 'Continue to Academic Details';
-    if (activeStep === 2) return 'Continue to Preferences';
-    if (activeStep === 3) return 'Continue to Prediction';
-    return 'Create Account';
+    if (activeStep === 1) return 'Continue';
+    if (activeStep === 2) return 'Continue';
+    if (activeStep === 3) return 'Continue';
+    return 'Create Account & Analyze';
   };
 
   const handleBack = () => {
@@ -527,6 +680,20 @@ const Onboarding = () => {
     </div>
   );
 
+  const renderStepTwoProgress = () => (
+    <div className="onboarding-progress-wrap onboarding-progress-wrap-step-two" aria-label="Progress 2 of 4">
+      <div className="step-two-dots-progress">
+        <div className="step-two-dot step-two-dot-done" aria-hidden="true"></div>
+        <div className="step-two-line step-two-line-done" aria-hidden="true"></div>
+        <div className="step-two-dot step-two-dot-active" aria-hidden="true"></div>
+        <div className="step-two-line step-two-line-inactive" aria-hidden="true"></div>
+        <div className="step-two-dot step-two-dot-inactive" aria-hidden="true"></div>
+        <div className="step-two-line step-two-line-inactive" aria-hidden="true"></div>
+        <div className="step-two-dot step-two-dot-inactive" aria-hidden="true"></div>
+      </div>
+    </div>
+  );
+
   const filteredCareerOptions = useMemo(() => {
     if (!academic.exam) return CAREER_OPTIONS;
     if (['JEE Main', 'JEE Advanced', 'MHT-CET', 'Diploma'].includes(academic.exam)) return ['Engineering', 'Architecture', 'Other'];
@@ -543,28 +710,22 @@ const Onboarding = () => {
   const progress = (activeStep / steps.length) * 100;
 
   return (
-    <div className="onboarding-wrapper">
-      <header className={`onboarding-brand-header ${activeStep === 4 ? 'onboarding-brand-header-summary' : ''}`}>
-        <div className={`onboarding-brand-center ${activeStep === 4 ? 'onboarding-brand-center-summary' : ''}`}>
-          <span className="material-symbols-outlined onboarding-brand-icon">school</span>
-          {activeStep !== 4 && <span className="onboarding-brand-name">Cutoff Guide AI</span>}
-        </div>
-      </header>
-
-      <section className="onboarding-main-shell">
-        {activeStep === 4 ? (
-          <div className="onboarding-progress-wrap onboarding-progress-wrap-summary">
-            <div className="onboarding-progress-summary-row">
-              <span className="onboarding-step-label onboarding-step-label-summary">STEP 4 OF 4</span>
-              <span className="onboarding-step-label onboarding-step-label-summary onboarding-step-label-right">FINAL REVIEW</span>
-            </div>
-            <div className="onboarding-progress-summary-bar" aria-label="Progress 4 of 4">
-              <span className="onboarding-progress-summary-fill" />
-            </div>
+    <div className={`onboarding-wrapper ${activeStep === 4 ? 'onboarding-wrapper-step-four' : ''}`}>
+      {activeStep !== 4 && (
+        <header className={`onboarding-brand-header ${activeStep === 4 ? 'onboarding-brand-header-summary' : ''}`}>
+          <div className={`onboarding-brand-center ${activeStep === 4 ? 'onboarding-brand-center-summary' : ''}`}>
+            <span className="material-symbols-outlined onboarding-brand-icon">school</span>
+            {activeStep !== 4 && <span className="onboarding-brand-name">Cutoff Guide AI</span>}
           </div>
-        ) : activeStep === 1 ? (
+        </header>
+      )}
+
+      <section className={`onboarding-main-shell ${activeStep === 4 ? 'onboarding-main-shell-step-four' : ''}`}>
+        {activeStep === 4 ? null : activeStep === 1 ? (
           renderStepOneProgress()
-        ) : (
+        ) : activeStep === 2 ? (
+          renderStepTwoProgress()
+        ) : activeStep === 3 ? null : (
           <div className="onboarding-progress-wrap">
             <div className="onboarding-step-label">STEP {activeStep} OF {steps.length}</div>
             <div className="onboarding-progress" aria-label={`Progress ${activeStep} of ${steps.length}`}>
@@ -573,8 +734,9 @@ const Onboarding = () => {
           </div>
         )}
 
-        <div className="form-card onboarding-step-card">
-          <form className="personal-form" onSubmit={(e) => e.preventDefault()}>
+        {activeStep !== 4 && (
+          <div className="form-card onboarding-step-card">
+            <form className="personal-form" onSubmit={(e) => e.preventDefault()}>
             {activeStep === 1 && (
               <>
                 <div className="onboarding-intro onboarding-step-one-intro">
@@ -642,255 +804,277 @@ const Onboarding = () => {
 
             {activeStep === 2 && (
               <>
-                <div className="form-field">
-                  <label className="field-label" htmlFor="exam">Exam</label>
-                  <select
-                    id="exam"
-                    name="exam"
-                    value={academic.exam}
-                    onChange={(e) => handleAcademicChange('exam', e.target.value)}
-                    className={`field-input ${errors.exam ? 'field-input-error' : ''}`}
-                  >
-                    <option value="" disabled>Select an exam</option>
-                    {Object.keys(EXAM_CONFIG).map((examOption) => (
-                      <option key={examOption} value={examOption}>{examOption}</option>
-                    ))}
-                  </select>
-                  {errors.exam && <div className="field-error-text">{errors.exam}</div>}
+                <div className="step-two-hero">
+                  <h1 className="step-two-heading">Academic Background</h1>
+                  <p className="step-two-subheading">
+                    Help us tailor your cutoff predictions by detailing your educational history.
+                  </p>
                 </div>
 
-                <div className="form-field">
-                  <label className="field-label" htmlFor="examScore">Exam Score</label>
-                  <input
-                    type="text"
-                    id="examScore"
-                    value={academic.examScore}
-                    onChange={(e) => handleAcademicChange('examScore', e.target.value)}
-                    onBlur={handleAcademicScoreBlur}
-                    placeholder="e.g., 630"
-                    className={`field-input ${errors.examScore ? 'field-input-error' : ''}`}
-                  />
-                  {errors.examScore && <div className="field-error-text">{errors.examScore}</div>}
+                <div className="step-two-form">
+                  <div className="step-two-grid">
+                    <div className="step-two-form-field">
+                      <label className="step-two-label" htmlFor="educationLevel">Current Education Level</label>
+                      <div className="step-two-select-wrap">
+                        <select
+                          id="educationLevel"
+                          name="educationLevel"
+                          value={academic.educationLevel}
+                          onChange={(e) => handleAcademicChange('educationLevel', e.target.value)}
+                          className={`step-two-select ${errors.educationLevel ? 'step-two-field-error' : ''}`}
+                        >
+                          <option value="" disabled>Select level</option>
+                          {EDUCATION_LEVEL_OPTIONS.map((level) => (
+                            <option key={level} value={level}>{level}</option>
+                          ))}
+                        </select>
+                        <span className="material-symbols-outlined step-two-select-caret">expand_more</span>
+                      </div>
+                      {errors.educationLevel && <div className="field-error-text">{errors.educationLevel}</div>}
+                    </div>
+
+                    <div className="step-two-form-field">
+                      <label className="step-two-label" htmlFor="targetStream">Target Stream</label>
+                      <div className="step-two-select-wrap">
+                        <select
+                          id="targetStream"
+                          name="targetStream"
+                          value={academic.targetStream}
+                          onChange={(e) => handleAcademicChange('targetStream', e.target.value)}
+                          className={`step-two-select ${errors.targetStream ? 'step-two-field-error' : ''}`}
+                        >
+                          <option value="" disabled>Select stream</option>
+                          {TARGET_STREAM_OPTIONS.map((stream) => (
+                            <option key={stream} value={stream}>{stream}</option>
+                          ))}
+                        </select>
+                        <span className="material-symbols-outlined step-two-select-caret">expand_more</span>
+                      </div>
+                      {errors.targetStream && <div className="field-error-text">{errors.targetStream}</div>}
+                    </div>
+                  </div>
+
+                  <div className="step-two-form-field step-two-full">
+                    <label className="step-two-label" htmlFor="examScore">Most Recent Academic Score (CGPA / %)</label>
+                    <input
+                      type="text"
+                      id="examScore"
+                      value={academic.examScore}
+                      onChange={(e) => handleAcademicChange('examScore', e.target.value)}
+                      onBlur={handleAcademicScoreBlur}
+                      placeholder="e.g., 8.5 or 92%"
+                      className={`step-two-input ${errors.examScore ? 'step-two-field-error' : ''}`}
+                    />
+                    <p className="step-two-hint">This helps us gauge baseline eligibility.</p>
+                    {errors.examScore && <div className="field-error-text">{errors.examScore}</div>}
+                  </div>
+
+                  <div className="step-two-form-field step-two-full">
+                    <label className="step-two-label" htmlFor="domicile">State of Domicile</label>
+                    <div className="step-two-select-wrap">
+                      <select
+                        id="domicile"
+                        name="domicile"
+                        value={personal.domicile}
+                        onChange={(e) => handlePersonalChange('domicile', e.target.value)}
+                        className={`step-two-select ${errors.domicile ? 'step-two-field-error' : ''}`}
+                      >
+                        <option value="" disabled>Select your state</option>
+                        {INDIAN_STATES.map((state) => (
+                          <option key={state} value={state}>{state}</option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined step-two-select-caret">expand_more</span>
+                    </div>
+                    {errors.domicile && <div className="field-error-text">{errors.domicile}</div>}
+                  </div>
+
+                  <div className="step-two-form-field step-two-full">
+                    <label className="step-two-label">Student Category</label>
+                    <div className="step-two-chips">
+                      {['General', 'OBC', 'SC', 'ST', 'EWS', 'PWD', 'Defence/Ex-Servicemen', 'Minority', 'Kashmiri Migrant'].map((option) => {
+                        const selected = (personal.category || '').split(',').map((value) => value.trim()).filter(Boolean).includes(option);
+                        return (
+                          <button
+                            key={option}
+                            type="button"
+                            className={`step-two-chip ${selected ? 'selected' : ''}`}
+                            onClick={() => toggleCategory(option)}
+                            aria-pressed={selected}
+                          >
+                            {option}
+                            <span className="material-symbols-outlined step-two-chip-icon">
+                              {selected ? 'close' : 'add'}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {errors.category && <div className="field-error-text">{errors.category}</div>}
+                  </div>
+
+                  <div className="step-two-form-field step-two-full">
+                    <label className="step-two-label">Key Subjects / Strengths</label>
+                    <div className="step-two-chips">
+                      {SUBJECT_OPTIONS.map((subject) => {
+                        const selected = academic.subjects.includes(subject);
+                        return (
+                          <button
+                            key={subject}
+                            type="button"
+                            className={`step-two-chip ${selected ? 'selected' : ''}`}
+                            onClick={() => toggleAcademicSubject(subject)}
+                            aria-pressed={selected}
+                          >
+                            {subject}
+                            <span className="material-symbols-outlined step-two-chip-icon">
+                              {selected ? 'close' : 'add'}
+                            </span>
+                          </button>
+                        );
+                      })}
+                      <button type="button" className="step-two-chip step-two-chip-custom" onClick={() => {}}>
+                        <span className="material-symbols-outlined step-two-chip-icon">search</span>
+                        Add Custom Subject
+                      </button>
+                    </div>
+                    {errors.subjects && <div className="field-error-text">{errors.subjects}</div>}
+                  </div>
                 </div>
 
-                <div className="form-field">
-                  <label className="field-label" htmlFor="careerOption">Career Option</label>
-                  <select
-                    id="careerOption"
-                    name="careerOption"
-                    value={academic.careerOption}
-                    onChange={(e) => handleAcademicChange('careerOption', e.target.value)}
-                    className={`field-input ${errors.careerOption ? 'field-input-error' : ''}`}
-                  >
-                    <option value="" disabled>Select a career option</option>
-                    {filteredCareerOptions.map((career) => (
-                      <option key={career} value={career}>{career}</option>
-                    ))}
-                  </select>
-                  {errors.careerOption && <div className="field-error-text">{errors.careerOption}</div>}
-                </div>
+                <div className="step-two-divider" aria-hidden="true"></div>
 
-                <div className="form-field">
-                  <label className="field-label" htmlFor="preferredBranch">Preferred Branch</label>
-                  <select
-                    id="preferredBranch"
-                    name="preferredBranch"
-                    value={academic.preferredBranch}
-                    onChange={(e) => handleAcademicChange('preferredBranch', e.target.value)}
-                    className={`field-input ${errors.preferredBranch ? 'field-input-error' : ''}`}
-                  >
-                    <option value="" disabled>Select a branch</option>
-                    {filteredBranches.map((branch) => (
-                      <option key={branch} value={branch}>{branch}</option>
-                    ))}
-                  </select>
-                  {errors.preferredBranch && (
-                    <div className="field-error-text">{errors.preferredBranch}</div>
-                  )}
+                <div className="step-two-cta">
+                  <button className="step-two-back-btn" type="button" onClick={handleBack}>
+                    <span className="material-symbols-outlined button-icon">arrow_back</span>
+                    Back
+                  </button>
+                  <button className="step-two-continue-btn" onClick={handleContinue} type="button">
+                    Continue
+                    <span className="material-symbols-outlined button-icon">arrow_forward</span>
+                  </button>
                 </div>
               </>
             )}
 
             {activeStep === 3 && (
-              <>
-                <div className="form-field">
-                  <label className="field-label" htmlFor="preferredLocation">Preferred Location (State/City)</label>
-                  <input
-                    type="text"
-                    id="preferredLocation"
-                    list="locations-list"
-                    value={preferences.preferredLocation}
-                    onChange={(e) => handlePreferencesChange('preferredLocation', e.target.value)}
-                    placeholder="Search for a state or city..."
-                    className={`field-input ${errors.preferredLocation ? 'field-input-error' : ''}`}
-                  />
-                  <datalist id="locations-list">
-                    {INDIAN_STATES.map((state) => (
-                      <option key={state} value={state} />
-                    ))}
-                  </datalist>
-                  {errors.preferredLocation && (
-                    <div className="field-error-text">{errors.preferredLocation}</div>
-                  )}
-                </div>
-
-                <div className="form-field">
-                  <label className="field-label" htmlFor="budgetRange">
-                    Budget Range: ₹{preferences.budgetRange} Lakhs/year
-                  </label>
-                  <input
-                    type="range"
-                    id="budgetRange"
-                    min="0"
-                    max="20"
-                    step="1"
-                    value={preferences.budgetRange}
-                    onChange={(e) => handlePreferencesChange('budgetRange', e.target.value)}
-                    className="range-slider"
-                  />
-                </div>
-
-                <div className="form-field">
-                  <label className="field-label">College Type</label>
-                  <div className="chip-group">
-                    {COLLEGE_TYPES.map((ctype) => {
-                      const isSelected = preferences.collegeType.includes(ctype);
-                      return (
-                        <button
-                          type="button"
-                          key={ctype}
-                          className={`chip ${isSelected ? 'chip-selected' : ''}`}
-                          onClick={() => toggleCollegeType(ctype)}
-                        >
-                          {ctype}
-                        </button>
-                      );
-                    })}
+              <div className="step-three-shell">
+                <div className="step-three-progress-header">
+                  <div className="step-three-progress-row">
+                    <span className="material-symbols-outlined step-three-progress-icon fill">school</span>
+                    <span className="step-three-step-kicker">STEP 3 OF 4</span>
                   </div>
-                  {errors.collegeType && (
-                    <div className="field-error-text">{errors.collegeType}</div>
-                  )}
-                </div>
-
-                <div className="form-field category-field" style={{ marginTop: '1rem' }}>
-                  <label className="field-label">Hostel Required?</label>
-                  <div className="category-options" style={{ marginTop: '0.5rem' }}>
-                    <label className="category-label">
-                      <input
-                        type="radio"
-                        name="hostelRequired"
-                        value="yes"
-                        checked={preferences.hostelRequired === true}
-                        onChange={() => handlePreferencesChange('hostelRequired', true)}
-                        className="radio-input"
-                      />
-                      <span className="category-text">Yes</span>
-                    </label>
-                    <label className="category-label">
-                      <input
-                        type="radio"
-                        name="hostelRequired"
-                        value="no"
-                        checked={preferences.hostelRequired === false}
-                        onChange={() => handlePreferencesChange('hostelRequired', false)}
-                        className="radio-input"
-                      />
-                      <span className="category-text">No</span>
-                    </label>
+                  <div className="step-three-progress-bar" aria-label="Progress 3 of 4">
+                    <span className="step-three-progress-fill" />
                   </div>
                 </div>
-              </>
+
+                <div className="step-three-main-content">
+                  <header className="step-three-hero">
+                    <h1 className="step-three-title">Refine Your Focus</h1>
+                    <p className="step-three-subtitle">
+                      Select the academic disciplines and degree levels you are targeting. This helps us filter relevant cutoff data.
+                    </p>
+                  </header>
+
+                  <div className="step-three-form-stack">
+                    <section className="step-three-section">
+                      <h2 className="step-three-section-heading">
+                        <span className="material-symbols-outlined step-three-section-icon">category</span>
+                        Areas of Interest
+                      </h2>
+                      <div className="step-three-chips">
+                        {AREA_OF_INTEREST_OPTIONS.map((area) => {
+                          const isSelected = academic.areasOfInterest.includes(area);
+                          return (
+                            <button
+                              type="button"
+                              key={area}
+                              className={`step-three-chip ${isSelected ? 'selected' : ''}`}
+                              onClick={() => toggleAreasOfInterest(area)}
+                              aria-pressed={isSelected}
+                            >
+                              {area}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </section>
+
+                    <div className="step-three-divider" aria-hidden="true"></div>
+
+                    <section className="step-three-section">
+                      <h2 className="step-three-section-heading">
+                        <span className="material-symbols-outlined step-three-section-icon">workspace_premium</span>
+                        Target Degree Level
+                      </h2>
+                      <div className="step-three-degree-grid">
+                        {DEGREE_LEVEL_OPTIONS.map((option) => {
+                          const isSelected = academic.targetDegreeLevel === option.value;
+                          return (
+                            <button
+                              type="button"
+                              key={option.value}
+                              className={`step-three-degree-card ${isSelected ? 'selected' : ''}`}
+                              onClick={() => handleAcademicChange('targetDegreeLevel', option.value)}
+                              aria-pressed={isSelected}
+                            >
+                              <span className="material-symbols-outlined step-three-degree-icon">
+                                {option.icon}
+                              </span>
+                              <div className="step-three-degree-copy">
+                                <span className="step-three-degree-title">{option.label}</span>
+                                <span className="step-three-degree-description">{option.description}</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {errors.targetDegreeLevel && (
+                        <div className="field-error-text">{errors.targetDegreeLevel}</div>
+                      )}
+                    </section>
+
+                    <section className="step-three-section step-three-input-section">
+                      <h2 className="step-three-section-heading">
+                        <span className="material-symbols-outlined step-three-section-icon">analytics</span>
+                        Expected Entrance Score (Optional)
+                      </h2>
+                      <input
+                        type="text"
+                        className="step-three-input"
+                        placeholder="e.g., 95.5 percentile"
+                        value={academic.expectedEntranceScore}
+                        onChange={(e) => handleAcademicChange('expectedEntranceScore', e.target.value)}
+                      />
+                    </section>
+                  </div>
+                </div>
+
+                <div className="step-three-action-footer">
+                  <button
+                    type="button"
+                    className="step-three-back-btn"
+                    onClick={handleBack}
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    className="step-three-continue-btn"
+                    onClick={handleContinue}
+                  >
+                    Continue
+                    <span className="material-symbols-outlined button-icon">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
             )}
 
-            {activeStep === 4 && (
-              <>
-                <div className="summary-grid-layout">
-                  <div className="summary-card summary-card-identity">
-                    <div className="summary-card-header">
-                      <div className="summary-card-title-wrap">
-                        <span className="material-symbols-outlined summary-card-icon">person</span>
-                        <h2>Identity</h2>
-                      </div>
-                      <button type="button" className="summary-edit-button" onClick={() => goToStep(1)} aria-label="Edit personal identity">
-                        <span className="material-symbols-outlined">edit</span>
-                      </button>
-                    </div>
-
-                    <div className="summary-value-block">
-                      <span className="summary-label">Full Name</span>
-                      <span className="summary-value">{studentProfile.fullName || 'Not provided'}</span>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Contact</span>
-                      <span className="summary-value">{studentProfile.email || studentProfile.phone || 'Not provided'}</span>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Location Zone</span>
-                      <span className="summary-value">{studentProfile.domicile || 'Not provided'}</span>
-                    </div>
-                  </div>
-
-                  <div className="summary-card summary-card-academic">
-                    <div className="summary-card-header">
-                      <div className="summary-card-title-wrap">
-                        <span className="material-symbols-outlined summary-card-icon">menu_book</span>
-                        <h2>Academic Baseline</h2>
-                      </div>
-                      <button type="button" className="summary-edit-button" onClick={() => goToStep(2)} aria-label="Edit academic baseline">
-                        <span className="material-symbols-outlined">edit</span>
-                      </button>
-                    </div>
-
-                    <div className="summary-value-block">
-                      <span className="summary-label">Current Level</span>
-                      <span className="summary-value">{studentProfile.academic?.preferredBranch || studentProfile.academic?.careerOption || 'Not provided'}</span>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Current GPA</span>
-                      <span className="summary-value">{studentProfile.academic?.examScore || 'Not provided'}</span>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Target Field</span>
-                      <span className="summary-value">{studentProfile.academic?.careerOption || 'Not provided'}</span>
-                    </div>
-                  </div>
-
-                  <div className="summary-card summary-card-parameters">
-                    <div className="summary-card-header">
-                      <div className="summary-card-title-wrap">
-                        <span className="material-symbols-outlined summary-card-icon">flag</span>
-                        <h2>Cutoff Parameters</h2>
-                      </div>
-                      <button type="button" className="summary-edit-button" onClick={() => goToStep(3)} aria-label="Edit cutoff parameters">
-                        <span className="material-symbols-outlined">edit</span>
-                      </button>
-                    </div>
-
-                    <div className="summary-value-block">
-                      <span className="summary-label">Primary Exam Target</span>
-                      <span className="summary-value">{studentProfile.academic?.exam || 'Not provided'}</span>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Confidence Interval</span>
-                      <div className="summary-confidence-line">
-                        <span className="summary-confidence-label">{studentProfile.academic?.examScore ? 'High' : 'Not provided'}</span>
-                        <div className="summary-confidence-bars" aria-hidden="true">
-                          {[0, 1, 2].map((bar) => (
-                            <span key={bar} className={`summary-confidence-bar ${studentProfile.academic?.examScore ? 'active' : ''}`} />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="summary-value-block">
-                      <span className="summary-label">Institutional Scope</span>
-                      <span className="summary-value">{studentProfile.preferences?.preferredLocation || 'Not provided'}</span>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
+            {activeStep === 4 && null}
           </form>
         </div>
+        )}
 
         {activeStep === 1 ? (
           <>
@@ -904,26 +1088,252 @@ const Onboarding = () => {
               Already have an account? <button type="button" className="onboarding-login-button" onClick={() => navigate('/login')}>Log in</button>
             </div>
           </>
-        ) : activeStep === 2 || activeStep === 3 ? (
-          <div className="step2-actions">
-            <button className="step2-back-button" type="button" onClick={handleBack}>
-              <span className="material-symbols-outlined button-icon">arrow_back</span>
-              Back
-            </button>
-            <button className="continue-button" onClick={handleContinue} type="button">
-              {getButtonText()}
-              <span className="material-symbols-outlined button-icon">arrow_forward</span>
-            </button>
-          </div>
-        ) : activeStep === 4 ? (
-          <div className="summary-cta">
-            <button className="continue-button summary-create-button" onClick={handleContinue} type="button">
-              {getButtonText()}
-              <span className="material-symbols-outlined button-icon">arrow_forward</span>
-            </button>
-          </div>
-        ) : null}
+        ) : activeStep === 3 ? null : activeStep === 2 ? null : null}
       </section>
+
+      {activeStep === 4 && (
+        <div className="step-four-shell">
+          <div className="step-four-ambient step-four-ambient-1" aria-hidden="true"></div>
+          <div className="step-four-ambient step-four-ambient-2" aria-hidden="true"></div>
+
+          <header className="step-four-header">
+            <button
+              type="button"
+              className="step-four-back-btn"
+              onClick={handleBack}
+              aria-label="Go back to Step 3"
+            >
+              <span className="material-symbols-outlined step-four-back-icon">arrow_back</span>
+            </button>
+            <div className="step-four-brand">
+              <span className="material-symbols-outlined step-four-brand-icon fill">school</span>
+              <span className="step-four-brand-name">Cutoff Guide AI</span>
+            </div>
+            <div className="step-four-header-spacer" aria-hidden="true"></div>
+          </header>
+
+          <div className="step-four-progress-wrap" aria-label="Progress 4 of 4">
+            <div className="step-four-progress-row">
+              <span className="step-four-progress-label">STEP 4 OF 4</span>
+              <span className="step-four-progress-label step-four-progress-label-right">FINAL REVIEW</span>
+            </div>
+            <div className="step-four-progress-bar" aria-hidden="true">
+              {[0, 1, 2, 3].map((seg) => (
+                <span
+                  key={`step-four-seg-${seg}`}
+                  className={`step-four-progress-segment ${seg === 3 ? 'step-four-progress-segment-last' : ''}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          <header className="step-four-hero">
+            <h1 className="step-four-hero-title">Ready to optimize your future?</h1>
+            <p className="step-four-hero-subtitle">
+              Please review your academic profile. Ensuring this data is accurate helps our AI model calculate your most viable cutoff strategies.
+            </p>
+          </header>
+
+          <div className="step-four-summary-grid">
+            <article className="step-four-card step-four-card-identity">
+              <div className="step-four-card-header">
+                <div className="step-four-card-title-wrap">
+                  <span className="material-symbols-outlined step-four-card-icon">person</span>
+                  <h2 className="step-four-card-title">Identity</h2>
+                </div>
+                <button
+                  type="button"
+                  className="step-four-card-edit"
+                  onClick={() => goToStep(1)}
+                  aria-label="Edit Identity"
+                >
+                  <span className="material-symbols-outlined">edit</span>
+                </button>
+              </div>
+
+              <div className="step-four-card-divider" aria-hidden="true"></div>
+
+              <div className="step-four-value-group">
+                <div className="step-four-value-block">
+                  <span className="step-four-value-label">FULL NAME</span>
+                  <span className="step-four-value-text">{studentProfile.fullName || 'Not provided'}</span>
+                </div>
+                <div className="step-four-value-block">
+                  <span className="step-four-value-label">CONTACT</span>
+                  <span className="step-four-value-text">{studentProfile.email || studentProfile.phone || 'Not provided'}</span>
+                </div>
+                <div className="step-four-value-block">
+                  <span className="step-four-value-label">LOCATION ZONE</span>
+                  <span className="step-four-value-text">{studentProfile.domicile || 'Not provided'}</span>
+                </div>
+              </div>
+            </article>
+
+            <article className="step-four-card step-four-card-academic">
+              <div className="step-four-card-header">
+                <div className="step-four-card-title-wrap">
+                  <span className="material-symbols-outlined step-four-card-icon">menu_book</span>
+                  <h2 className="step-four-card-title">Academic Baseline</h2>
+                </div>
+                <button
+                  type="button"
+                  className="step-four-card-edit"
+                  onClick={() => goToStep(2)}
+                  aria-label="Edit Academic Baseline"
+                >
+                  <span className="material-symbols-outlined">edit</span>
+                </button>
+              </div>
+
+              <div className="step-four-card-divider" aria-hidden="true"></div>
+
+              <div className="step-four-value-group">
+                <div className="step-four-value-block">
+                  <span className="step-four-value-label">CURRENT LEVEL</span>
+                  <span className="step-four-value-text">
+                    {studentProfile.academic?.educationLevel ||
+                      studentProfile.academic?.preferredBranch ||
+                      studentProfile.academic?.careerOption ||
+                      'Not provided'}
+                  </span>
+                </div>
+                <div className="step-four-value-block">
+                  <span className="step-four-value-label">CURRENT GPA (EST.)</span>
+                  <span className="step-four-value-text">{studentProfile.academic?.examScore || 'Not provided'}</span>
+                </div>
+                <div className="step-four-value-block">
+                  <span className="step-four-value-label">TARGET FIELD</span>
+                  <div className="step-four-pill-row">
+                    {Array.isArray(studentProfile.academic?.areasOfInterest) &&
+                    studentProfile.academic.areasOfInterest.length > 0 ? (
+                      studentProfile.academic.areasOfInterest.map((field, i) => (
+                        <span
+                          key={`${field}-${i}`}
+                          className={`step-four-pill ${i === 0 ? 'step-four-pill-primary' : ''}`}
+                        >
+                          {field}
+                        </span>
+                      ))
+                    ) : studentProfile.academic?.careerOption ||
+                      studentProfile.academic?.preferredBranch ||
+                      studentProfile.academic?.targetStream ? (
+                      <>
+                        {studentProfile.academic?.careerOption && (
+                          <span className="step-four-pill step-four-pill-primary">
+                            {studentProfile.academic.careerOption}
+                          </span>
+                        )}
+                        {studentProfile.academic?.preferredBranch &&
+                        studentProfile.academic.preferredBranch !== studentProfile.academic?.careerOption && (
+                          <span className="step-four-pill">
+                            {studentProfile.academic.preferredBranch}
+                          </span>
+                        )}
+                        {studentProfile.academic?.targetStream &&
+                        studentProfile.academic.targetStream !== studentProfile.academic?.careerOption &&
+                        studentProfile.academic.targetStream !== studentProfile.academic?.preferredBranch && (
+                          <span className="step-four-pill">
+                            {studentProfile.academic.targetStream}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="step-four-value-text">Not provided</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <article className="step-four-card step-four-card-parameters">
+              <div className="step-four-card-header">
+                <div className="step-four-card-title-wrap">
+                  <span className="material-symbols-outlined step-four-card-icon">flag</span>
+                  <h2 className="step-four-card-title">Cutoff Parameters</h2>
+                </div>
+                <button
+                  type="button"
+                  className="step-four-card-edit"
+                  onClick={() => goToStep(3)}
+                  aria-label="Edit Cutoff Parameters"
+                >
+                  <span className="material-symbols-outlined">edit</span>
+                </button>
+              </div>
+
+              <div className="step-four-card-divider" aria-hidden="true"></div>
+
+              <div className="step-four-params-grid">
+                <div className="step-four-value-block">
+                  <span className="step-four-value-label">PRIMARY EXAM TARGET</span>
+                  <span className="step-four-value-text">
+                    {studentProfile.academic?.exam ||
+                      studentProfile.academic?.targetStream ||
+                      studentProfile.academic?.educationLevel ||
+                      'Not provided'}
+                  </span>
+                </div>
+
+                <div className="step-four-value-block">
+                  <span className="step-four-value-label">CONFIDENCE INTERVAL</span>
+                  <div className="step-four-confidence-line">
+                    <span className="step-four-confidence-label">
+                      {studentProfile.academic?.examScore ? 'High' : 'Not provided'}
+                    </span>
+                    {studentProfile.academic?.examScore && (
+                      <div className="step-four-confidence-bars" aria-hidden="true">
+                        {[0, 1, 2].map((bar) => (
+                          <span key={`conf-${bar}`} className="step-four-confidence-bar" />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="step-four-value-block">
+                  <span className="step-four-value-label">INSTITUTIONAL SCOPE</span>
+                  <span className="step-four-value-text">
+                    {studentProfile.preferences?.preferredLocation ||
+                      studentProfile.preferences?.collegeType ||
+                      studentProfile.domicile ||
+                      'Not provided'}
+                  </span>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <div className="step-four-cta">
+            <button
+              type="button"
+              className="step-four-create-btn"
+              onClick={handleContinue}
+            >
+              <span className="material-symbols-outlined step-four-create-icon fill">auto_awesome</span>
+              {getButtonText()}
+            </button>
+            <p className="step-four-terms">
+              By creating an account, you agree to our{' '}
+              <button
+                type="button"
+                className="step-four-terms-link"
+                onClick={() => navigate('/terms')}
+              >
+                Terms of Service
+              </button>{' '}
+              and{' '}
+              <button
+                type="button"
+                className="step-four-terms-link"
+                onClick={() => navigate('/privacy')}
+              >
+                Privacy Policy
+              </button>
+              .
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
