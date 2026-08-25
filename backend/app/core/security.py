@@ -20,9 +20,13 @@ def create_access_token(subject: Union[str, Any], role: str = "USER", expires_de
     return encoded_jwt
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
+    # Trim whitespace from password for consistent verification
+    plain_password = (plain_password or "").strip()
     return pwd_context.verify(plain_password, hashed_password)
 
 def get_password_hash(password: str) -> str:
+    # Trim whitespace from password for consistent hashing
+    password = (password or "").strip()
     return pwd_context.hash(password)
 
 def decode_access_token(token: str) -> dict:

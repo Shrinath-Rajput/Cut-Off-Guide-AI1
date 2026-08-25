@@ -4,6 +4,17 @@ const OnboardingContext = createContext(null);
 
 const STORAGE_KEY = 'onboarding_state';
 
+const normalizeStoredProfile = (profile = {}) => {
+  const domicile = profile.domicile ?? profile.stateOfDomicile ?? profile.locationZone ?? '';
+  const category = profile.category ?? profile.studentCategory ?? '';
+  return {
+    ...profile,
+    domicile,
+    category,
+    locationZone: profile.locationZone ?? domicile,
+  };
+};
+
 const buildInitialProfile = (currentUser) => ({
   name: currentUser?.name || '',
   fullName: currentUser?.name || '',
@@ -43,17 +54,19 @@ const buildPendingSignupProfile = (currentUser) => {
 
     const parsed = JSON.parse(raw);
     const fullName = parsed.fullName || parsed.name || currentUser?.name || '';
-    const domicile = parsed.domicile || parsed.locationZone || '';
+    const domicile = parsed.domicile ?? parsed.stateOfDomicile ?? parsed.locationZone ?? '';
+    const category = parsed.category ?? parsed.studentCategory ?? '';
 
-    return {
+    return normalizeStoredProfile({
       ...buildInitialProfile(currentUser),
       name: fullName,
       fullName,
       email: parsed.email || currentUser?.email || '',
       phone: parsed.phone || '',
       domicile,
+      category,
       locationZone: domicile,
-    };
+    });
   } catch (e) {
     console.warn('Pending signup restore failed', e);
     return buildInitialProfile(currentUser);
@@ -66,11 +79,11 @@ const resolveInitialProfile = (currentUser) => {
   try {
     const savedRaw = localStorage.getItem(STORAGE_KEY);
     if (savedRaw) {
-      const savedProfile = JSON.parse(savedRaw);
+      const savedProfile = normalizeStoredProfile(JSON.parse(savedRaw));
       const merged = { ...base, ...savedProfile };
       if (savedProfile.academic) merged.academic = { ...base.academic, ...savedProfile.academic };
       if (savedProfile.preferences) merged.preferences = { ...base.preferences, ...savedProfile.preferences };
-      return merged;
+      return normalizeStoredProfile(merged);
     }
   } catch (e) {
     console.warn('Onboarding storage restore failed', e);
@@ -105,21 +118,22 @@ export const OnboardingProvider = ({ children, currentUser }) => {
   const setPersonal = (payload) => {
     setStudentProfile((prev) => {
       const nextFullName = payload.fullName ?? payload.name ?? prev.fullName ?? prev.name ?? '';
-      const nextDomicile = payload.domicile ?? payload.locationZone ?? prev.domicile ?? prev.locationZone ?? '';
+      const nextDomicile = payload.domicile ?? payload.stateOfDomicile ?? payload.locationZone ?? prev.domicile ?? prev.stateOfDomicile ?? prev.locationZone ?? '';
+      const nextCategory = payload.category ?? payload.studentCategory ?? prev.category ?? prev.studentCategory ?? '';
 
-      return {
+      return normalizeStoredProfile({
         ...prev,
         name: payload.name ?? nextFullName,
         fullName: nextFullName,
         email: payload.email ?? prev.email,
         userType: payload.userType ?? prev.userType ?? 'student',
         goals: payload.goals ?? prev.goals ?? [],
-        category: payload.category ?? prev.category,
+        category: nextCategory,
         pwdCrossCategory: payload.pwdCrossCategory ?? prev.pwdCrossCategory,
         phone: payload.phone ?? prev.phone,
         domicile: nextDomicile,
         locationZone: nextDomicile,
-      };
+      });
     });
   };
 

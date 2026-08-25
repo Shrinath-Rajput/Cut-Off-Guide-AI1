@@ -124,11 +124,15 @@ async def _consume_otp_session(session_id: str, phone: str, otp: str, db) -> boo
 
 
 def _build_fast2sms_request(phone: str, message: str, otp: int = None):
+    # Convert 10-digit Indian phone to E.164 format with country code
+    # Input: "9657260504" -> Output: "919657260504"
+    phone_with_country_code = f"91{phone}" if len(phone) == 10 else phone
+    
     if settings.SMS_ROUTE.lower() == "otp":
         params = {
             "route": "otp",
             "variables_values": str(otp) if otp is not None else "",
-            "numbers": phone,
+            "numbers": phone_with_country_code,
             "flash": int(settings.SMS_FLASH) if str(settings.SMS_FLASH).isdigit() else 0,
         }
         if settings.SMS_TEMPLATE_ID:
@@ -138,7 +142,7 @@ def _build_fast2sms_request(phone: str, message: str, otp: int = None):
         return params
 
     params = {
-        "numbers": phone,
+        "numbers": phone_with_country_code,
         "message": message,
         "sender_id": settings.SMS_SENDER_ID,
         "route": settings.SMS_ROUTE,
@@ -171,6 +175,7 @@ async def send_otp_sms(phone: str, db) -> dict:
     
     logging.info("[AUTH] SMS provider: %s", str(settings.SMS_PROVIDER).upper())
     logging.info("[AUTH] SMS destination (masked): %s", _mask_phone(normalized_phone))
+    logging.info("[AUTH] SMS destination (E.164 format): +91%s", normalized_phone)
     logging.info("[AUTH] SMS route: %s", settings.SMS_ROUTE)
     logging.info("[AUTH] SMS sender_id: %s", _mask_sender(settings.SMS_SENDER_ID))
     logging.info("[AUTH] SMS template_id configured: %s", "yes" if settings.SMS_TEMPLATE_ID else "no")
@@ -186,6 +191,8 @@ async def send_otp_sms(phone: str, db) -> dict:
         logging.info("[AUTH] Final send-otp decision: SUCCESS (MOCK / DEVELOPMENT MODE)")
         return {"session_id": session_id, "dev_otp": str(otp)}
 
+    logging.info("[AUTH] OTP MODE = PRODUCTION. Will send real SMS via Fast2SMS API.")
+    
     api_key = settings.FAST_TO_SMS_API_KEY
     if not api_key:
         logging.error("[AUTH] OTP send failed: FAST_TO_SMS_API_KEY is not configured.")
