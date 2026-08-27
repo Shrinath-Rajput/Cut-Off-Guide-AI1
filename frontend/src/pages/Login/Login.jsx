@@ -17,7 +17,7 @@ const OTP_LENGTH = 6;
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, adminLogin } = useAuth();
   const [view, setView] = useState('credentials');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -54,6 +54,11 @@ const Login = () => {
     setError('');
     try {
       const response = await loginUser({ username: identifier.trim(), password });
+      if (response.user?.role === 'ADMIN') {
+        adminLogin(response.user, response.token);
+        navigate('/admin/dashboard', { replace: true });
+        return;
+      }
       setPendingLogin({ ...response.user, uid: response.uid || response.user.uid });
       setPhone(response.otpPhone || response.user.phone || '');
       setView('phone');
