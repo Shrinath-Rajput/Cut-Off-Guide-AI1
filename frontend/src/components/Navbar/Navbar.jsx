@@ -18,12 +18,40 @@ const navLinks = [
 const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', profileTo = '/profile' }) => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profilePhoto, setProfilePhoto] = useState('');
   const { currentUser, logout } = useAuth();
+
+  useEffect(() => {
+    const avatarStorageKey = currentUser
+      ? `profile-avatar-${currentUser.uid || currentUser.id || currentUser.email}`
+      : null;
+
+    const updateProfilePhoto = () => {
+      setProfilePhoto(avatarStorageKey ? localStorage.getItem(avatarStorageKey) || '' : '');
+    };
+
+    updateProfilePhoto();
+    const photoRefresh = window.setInterval(updateProfilePhoto, 500);
+    window.addEventListener('storage', updateProfilePhoto);
+
+    return () => {
+      window.clearInterval(photoRefresh);
+      window.removeEventListener('storage', updateProfilePhoto);
+    };
+  }, [currentUser]);
 
   const handleLogout = () => {
     setMobileOpen(false);
     logout();
     navigate('/login', { replace: true });
+  };
+
+  const handleSearch = () => {
+    if (onSearch) {
+      onSearch();
+      return;
+    }
+    navigate('/colleges');
   };
 
   useEffect(() => {
@@ -87,8 +115,7 @@ const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', p
           </nav>
 
           <div className="drawer-actions">
-            {currentUser && <p className="drawer-welcome">Welcome back, <strong>{currentUser.name}</strong></p>}
-            <button type="button" onClick={() => { setMobileOpen(false); onSearch?.(); }}>
+            <button type="button" onClick={() => { setMobileOpen(false); handleSearch(); }}>
               <Search size={19} strokeWidth={1.9} aria-hidden="true" />
               <span>Search</span>
             </button>
@@ -122,17 +149,11 @@ const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', p
         </nav>
 
         <div className="navbar-actions">
-          {currentUser && currentUser.name && (
-            <span className="profile-chip">
-              <span className="profile-welcome">Welcome back,</span>
-              <span className="profile-user">{currentUser.name}</span>
-            </span>
-          )}
           <button
             className="navbar-icon"
             type="button"
             aria-label="Search"
-            onClick={onSearch}
+            onClick={handleSearch}
           >
             <span className="material-symbols-outlined">search</span>
           </button>
@@ -143,7 +164,7 @@ const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', p
             <span className="material-symbols-outlined">mail</span>
           </Link>
           <button className="navbar-icon profile-btn" type="button" aria-label="Profile" onClick={() => navigate(profileTo)}>
-            <span className="material-symbols-outlined">account_circle</span>
+            {profilePhoto ? <img src={profilePhoto} alt="" /> : <span className="material-symbols-outlined">account_circle</span>}
           </button>
           {currentUser && (
             <button
