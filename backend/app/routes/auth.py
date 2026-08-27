@@ -725,13 +725,18 @@ async def login(request: UserLogin, db=Depends(get_db)):
         logger.warning("LOGIN FAILED: Incorrect password for uid=%s identifier=%s", user.get("uid"), identifier)
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
 
-    if user.get("role") == "ADMIN":
-        raise HTTPException(status_code=403, detail="Use the admin login")
-
     user["id"] = str(user.pop("_id"))
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
     user.pop("password", None)
+    if user.get("role") == "ADMIN":
+        return {
+            "status": "success",
+            "message": "Admin authenticated",
+            "token": create_access_token(user["uid"], role="ADMIN"),
+            "user": user,
+        }
+
     logger.info("LOGIN SUCCESS: uid=%s. Proceeding to OTP stage.", user.get("uid"))
     return {
         "status": "success",
