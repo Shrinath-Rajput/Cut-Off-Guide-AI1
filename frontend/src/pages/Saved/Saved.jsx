@@ -2,44 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import './Saved.css';
-import { getCollegeById } from '../../services/api';
+import { getSavedColleges } from '../../services/api';
 import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
-
-const initialSavedColleges = [
-  {
-    id: 'stanford',
-    name: 'Stanford University',
-    location: 'Stanford, CA',
-    course: 'Computer Science (B.S.)',
-    cutoff: '98.5%ile',
-    savedOn: 'Oct 24, 2023',
-    rank: '#12',
-    rating: '4.8',
-    image: null,
-  },
-  {
-    id: 'mit',
-    name: 'MIT',
-    location: 'Cambridge, MA',
-    course: 'Mechanical Eng.',
-    cutoff: '99.1%ile',
-    savedOn: 'Nov 02, 2023',
-    rank: '#3',
-    rating: '4.9',
-    image: null,
-  },
-  {
-    id: 'cornell',
-    name: 'Cornell University',
-    location: 'Ithaca, NY',
-    course: 'Data Science',
-    cutoff: '96.8%ile',
-    savedOn: 'Nov 15, 2023',
-    rank: '#21',
-    rating: '4.5',
-    image: null,
-  },
-];
 
 const sortOptions = [
   { value: 'recent', label: 'Recently Saved' },
@@ -49,18 +13,15 @@ const sortOptions = [
 ];
 
 const Saved = () => {
-  const [savedColleges, setSavedColleges] = useState(initialSavedColleges);
+  const [savedColleges, setSavedColleges] = useState([]);
   const [sortOption, setSortOption] = useState('recent');
   const [sortOpen, setSortOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    Promise.allSettled(savedColleges.map((college) => getCollegeById(college.id))).then((results) => {
-      setSavedColleges((current) => current.map((college, index) => {
-        const result = results[index];
-        return result?.status === 'fulfilled' ? { ...college, image: result.value.image || null } : college;
-      }));
-    });
+    getSavedColleges()
+      .then((saved) => setSavedColleges(Array.isArray(saved) ? saved : []))
+      .catch(() => setSavedColleges([]));
   }, []);
 
   const sortedColleges = useMemo(() => {
@@ -190,7 +151,7 @@ const Saved = () => {
                   </div>
 
                   <div className="saved-card-actions">
-                    <button type="button" className="primary-button" onClick={() => handleViewDetails(college.id)}>
+                    <button type="button" className="primary-button" onClick={() => handleViewDetails(college.college_id)}>
                       View Details
                     </button>
                     <button type="button" className="secondary-button" onClick={() => handleCompare(college.id)}>

@@ -93,7 +93,7 @@ const Colleges = () => {
         if (Array.isArray(saved)) {
           const map = {};
           saved.forEach((c) => {
-            const cid = c.collegeId || c.id || c._id;
+            const cid = c.college_id || c.collegeId || c.id || c._id;
             if (cid) map[cid] = true;
           });
           setBookmarked(map);
@@ -161,10 +161,10 @@ const Colleges = () => {
         toast.success('Removed from saved colleges');
       } else {
         await saveCollege({
-          collegeId: cid,
+          college_id: cid,
           name: college.name,
           location: college.location || `${college.city || ''}, ${college.state || ''}`,
-          rating: college.rating || 4.5,
+          rating: String(college.rating || 4.5),
           image: college.image,
         });
         toast.success('Saved to your colleges list');
