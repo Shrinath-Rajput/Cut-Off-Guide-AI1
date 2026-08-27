@@ -1,6 +1,7 @@
 import json
 import re
 import urllib.parse
+import concurrent.futures
 from urllib import request as urllib_request
 from typing import List, Dict, Any, Optional
 from app.core.config import settings
@@ -713,6 +714,783 @@ INDIAN_COLLEGES_SEED = [
         "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
         "website": "https://www.svnit.ac.in",
         "highlights": "Premier engineering institute in Gujarat with great chemical & software placement records."
+    },
+    # -------------------------------------------------------------
+    # CHHATTISGARH
+    # -------------------------------------------------------------
+    {
+        "id": "nit-raipur",
+        "name": "National Institute of Technology Raipur (NIT Raipur)",
+        "city": "Raipur",
+        "state": "Chhattisgarh",
+        "location": "G.E. Road, Raipur, Chhattisgarh",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.6,
+        "nirf_rank": 70,
+        "established": 1956,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "Information Technology", "Electronics & Telecommunication", "Mining Engineering", "Mechanical"],
+        "feeValue": 140000,
+        "fee_display": "₹1.4 Lakh / year",
+        "placement_avg": "₹10.5 LPA",
+        "highest_package": "₹55.0 LPA",
+        "top_recruiters": ["Amazon", "Adobe", "Microsoft", "Oracle", "Tata Steel", "Schlumberger"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "http://www.nitrr.ac.in",
+        "highlights": "One of the oldest technical institutions in central India with exceptional mining and computer science placements."
+    },
+    {
+        "id": "iit-bhilai",
+        "name": "Indian Institute of Technology Bhilai (IIT Bhilai)",
+        "city": "Bhilai",
+        "state": "Chhattisgarh",
+        "location": "Kutelabhata, Bhilai, Chhattisgarh",
+        "type": "Institute of National Importance (IIT)",
+        "rating": 4.7,
+        "nirf_rank": 81,
+        "established": 2016,
+        "exams": ["JEE Advanced"],
+        "courses": ["Computer Science & Engineering", "Data Science & AI", "Electrical", "Mechanical", "Mechatronics"],
+        "feeValue": 220000,
+        "fee_display": "₹2.2 Lakh / year",
+        "placement_avg": "₹14.0 LPA",
+        "highest_package": "₹48.0 LPA",
+        "top_recruiters": ["Google", "Amazon", "Commvault", "L&T", "AirAsia", "Cognizant"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iitbhilai.ac.in",
+        "highlights": "Fast-growing 3rd-generation IIT with advanced AI, robotics, and high-performance computing centers."
+    },
+    {
+        "id": "iiit-naya-raipur",
+        "name": "International Institute of Information Technology Naya Raipur (IIIT-NR)",
+        "city": "Naya Raipur",
+        "state": "Chhattisgarh",
+        "location": "Sector 24, Nava Raipur Atal Nagar, Chhattisgarh",
+        "type": "State University / Autonomous",
+        "rating": 4.5,
+        "nirf_rank": 105,
+        "established": 2015,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science & Engineering", "Data Science & AI", "Electronics & Communication"],
+        "feeValue": 180000,
+        "fee_display": "₹1.8 Lakh / year",
+        "placement_avg": "₹12.6 LPA",
+        "highest_package": "₹43.0 LPA",
+        "top_recruiters": ["Microsoft", "American Express", "Deloitte", "Ericsson", "Capgemini"],
+        "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iiitnr.ac.in",
+        "highlights": "State-of-the-art residential IT institute focused entirely on emerging AI, IoT, and data engineering programs."
+    },
+    {
+        "id": "bit-durg",
+        "name": "Bhilai Institute of Technology (BIT Durg)",
+        "city": "Durg",
+        "state": "Chhattisgarh",
+        "location": "Bhilai House, Durg, Chhattisgarh",
+        "type": "Private Autonomous",
+        "rating": 4.3,
+        "nirf_rank": 150,
+        "established": 1986,
+        "exams": ["CG PET", "JEE Main"],
+        "courses": ["Computer Science", "Information Technology", "Electrical", "Mechanical", "Civil"],
+        "feeValue": 95000,
+        "fee_display": "₹95,000 / year",
+        "placement_avg": "₹5.5 LPA",
+        "highest_package": "₹20.0 LPA",
+        "top_recruiters": ["TCS", "Wipro", "Infosys", "Cognizant", "Tech Mahindra", "Capgemini"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "https://bitdurg.ac.in",
+        "highlights": "First self-financed engineering college in central India with strong alumni base in public and private sectors."
+    },
+    {
+        "id": "rungta-college-bhilai",
+        "name": "Rungta College of Engineering and Technology (RCET)",
+        "city": "Bhilai",
+        "state": "Chhattisgarh",
+        "location": "Kohka-Kurud Road, Bhilai, Chhattisgarh",
+        "type": "Private Autonomous",
+        "rating": 4.2,
+        "nirf_rank": 165,
+        "established": 1999,
+        "exams": ["CG PET", "JEE Main"],
+        "courses": ["Computer Science", "AI & Machine Learning", "Data Science", "Electronics", "Mechanical"],
+        "feeValue": 85000,
+        "fee_display": "₹85,000 / year",
+        "placement_avg": "₹4.8 LPA",
+        "highest_package": "₹18.0 LPA",
+        "top_recruiters": ["TCS", "Infosys", "Wipro", "Amazon", "Accenture", "SAP"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.rungta.ac.in",
+        "highlights": "Major private engineering campus in Chhattisgarh known for mega placement drives and innovation incubation."
+    },
+    # -------------------------------------------------------------
+    # KERALA
+    # -------------------------------------------------------------
+    {
+        "id": "nit-calicut",
+        "name": "National Institute of Technology Calicut (NIT Calicut)",
+        "city": "Kozhikode",
+        "state": "Kerala",
+        "location": "Chathamangalam, Kozhikode, Kerala",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.8,
+        "nirf_rank": 23,
+        "established": 1961,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "Electronics & Communication", "Electrical", "Mechanical", "Chemical"],
+        "feeValue": 150000,
+        "fee_display": "₹1.5 Lakh / year",
+        "placement_avg": "₹13.8 LPA",
+        "highest_package": "₹67.0 LPA",
+        "top_recruiters": ["Google", "Microsoft", "Amazon", "Oracle", "Goldman Sachs", "Texas Instruments"],
+        "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+        "website": "http://www.nitc.ac.in",
+        "highlights": "Top tier NIT located in Kozhikode known for outstanding computing research and global campus placements."
+    },
+    {
+        "id": "cet-trivandrum",
+        "name": "College of Engineering Trivandrum (CET)",
+        "city": "Thiruvananthapuram",
+        "state": "Kerala",
+        "location": "Sreekaryam, Thiruvananthapuram, Kerala",
+        "type": "Government Autonomous",
+        "rating": 4.7,
+        "nirf_rank": 85,
+        "established": 1939,
+        "exams": ["KEAM", "JEE Main"],
+        "courses": ["Computer Science", "Electronics & Communication", "Electrical", "Mechanical", "Civil"],
+        "feeValue": 25000,
+        "fee_display": "₹25,000 / year",
+        "placement_avg": "₹8.5 LPA",
+        "highest_package": "₹38.0 LPA",
+        "top_recruiters": ["Amazon", "TCS", "Infosys", "Texas Instruments", "Bosch", "L&T"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.cet.ac.in",
+        "highlights": "First engineering college in the erstwhile Travancore state with elite prestige, nominal fees, and top KEAM cutoffs."
+    },
+    {
+        "id": "cusat-kochi",
+        "name": "Cochin University of Science and Technology (CUSAT)",
+        "city": "Kochi",
+        "state": "Kerala",
+        "location": "South Kalamassery, Kochi, Kerala",
+        "type": "State University (Government)",
+        "rating": 4.6,
+        "nirf_rank": 37,
+        "established": 1971,
+        "exams": ["CUSAT CAT", "JEE Main"],
+        "courses": ["Computer Science", "Information Technology", "Marine Engineering", "Safety & Fire Engg", "ECE"],
+        "feeValue": 75000,
+        "fee_display": "₹75,000 / year",
+        "placement_avg": "₹7.8 LPA",
+        "highest_package": "₹40.0 LPA",
+        "top_recruiters": ["CISCO", "IBM", "TCS", "Infosys", "Wipro", "MRF"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.cusat.ac.in",
+        "highlights": "Renowned scientific and technical university famous for specialized Marine, Fire, and Computer Engineering programs."
+    },
+    # -------------------------------------------------------------
+    # ANDHRA PRADESH
+    # -------------------------------------------------------------
+    {
+        "id": "iit-tirupati",
+        "name": "Indian Institute of Technology Tirupati (IIT Tirupati)",
+        "city": "Tirupati",
+        "state": "Andhra Pradesh",
+        "location": "Yerpedu, Tirupati, Andhra Pradesh",
+        "type": "Institute of National Importance (IIT)",
+        "rating": 4.7,
+        "nirf_rank": 59,
+        "established": 2015,
+        "exams": ["JEE Advanced"],
+        "courses": ["Computer Science", "Electrical", "Mechanical", "Civil", "Chemical"],
+        "feeValue": 220000,
+        "fee_display": "₹2.2 Lakh / year",
+        "placement_avg": "₹15.5 LPA",
+        "highest_package": "₹46.0 LPA",
+        "top_recruiters": ["Microsoft", "Amazon", "Adobe", "Texas Instruments", "MathWorks", "TCS"],
+        "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iittp.ac.in",
+        "highlights": "Fastest developing 3rd-generation IIT located near aerospace and tech manufacturing clusters in AP."
+    },
+    {
+        "id": "nit-andhra-pradesh",
+        "name": "National Institute of Technology Andhra Pradesh (NIT AP)",
+        "city": "Tadepalligudem",
+        "state": "Andhra Pradesh",
+        "location": "Tadepalligudem, West Godavari, Andhra Pradesh",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.5,
+        "nirf_rank": 88,
+        "established": 2015,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "ECE", "Electrical", "Mechanical", "Biotechnology"],
+        "feeValue": 140000,
+        "fee_display": "₹1.4 Lakh / year",
+        "placement_avg": "₹8.8 LPA",
+        "highest_package": "₹44.0 LPA",
+        "top_recruiters": ["Amazon", "L&T", "Accenture", "TCS", "Infosys", "Deloitte"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.nitandhra.ac.in",
+        "highlights": "Modern 172-acre green campus in West Godavari offering premier engineering education under MoE."
+    },
+    {
+        "id": "au-visakhapatnam",
+        "name": "Andhra University College of Engineering (AUCOE)",
+        "city": "Visakhapatnam",
+        "state": "Andhra Pradesh",
+        "location": "Waltair Junction, Visakhapatnam, Andhra Pradesh",
+        "type": "State University (Government Autonomous)",
+        "rating": 4.6,
+        "nirf_rank": 76,
+        "established": 1955,
+        "exams": ["AP EAPCET", "GATE"],
+        "courses": ["Computer Science", "Information Technology", "Chemical", "Mechanical", "Marine Engg"],
+        "feeValue": 35000,
+        "fee_display": "₹35,000 / year",
+        "placement_avg": "₹7.5 LPA",
+        "highest_package": "₹30.0 LPA",
+        "top_recruiters": ["TCS", "Wipro", "Infosys", "HCL", "L&T", "Tech Mahindra"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.andhrauniversity.edu.in",
+        "highlights": "Historic beachside university campus in Vizag with high regional esteem, massive alumni network, and low fees."
+    },
+    # -------------------------------------------------------------
+    # MADHYA PRADESH
+    # -------------------------------------------------------------
+    {
+        "id": "iit-indore",
+        "name": "Indian Institute of Technology Indore (IIT Indore)",
+        "city": "Indore",
+        "state": "Madhya Pradesh",
+        "location": "Simrol, Indore, Madhya Pradesh",
+        "type": "Institute of National Importance (IIT)",
+        "rating": 4.8,
+        "nirf_rank": 14,
+        "established": 2009,
+        "exams": ["JEE Advanced"],
+        "courses": ["Computer Science", "Electrical", "Mechanical", "Civil", "Metallurgy"],
+        "feeValue": 230000,
+        "fee_display": "₹2.3 Lakh / year",
+        "placement_avg": "₹21.0 LPA",
+        "highest_package": "₹68.0 LPA",
+        "top_recruiters": ["Google", "Microsoft", "Amazon", "Qualcomm", "DE Shaw", "Goldman Sachs"],
+        "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iiti.ac.in",
+        "highlights": "Ranked among top 15 in NIRF with world-class research citations, astronomy center, and high tech packages."
+    },
+    {
+        "id": "manit-bhopal",
+        "name": "Maulana Azad National Institute of Technology (MANIT Bhopal)",
+        "city": "Bhopal",
+        "state": "Madhya Pradesh",
+        "location": "Link Road No. 3, Bhopal, Madhya Pradesh",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.6,
+        "nirf_rank": 80,
+        "established": 1960,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "Information Technology", "Electrical", "Mechanical", "Architecture"],
+        "feeValue": 145000,
+        "fee_display": "₹1.45 Lakh / year",
+        "placement_avg": "₹11.5 LPA",
+        "highest_package": "₹52.0 LPA",
+        "top_recruiters": ["Microsoft", "Amazon", "Atlassian", "Flipkart", "BPCL", "L&T"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "http://www.manit.ac.in",
+        "highlights": "Sprawling 650-acre historic NIT campus in Bhopal with strong core engineering and software recruitment."
+    },
+    {
+        "id": "sgsits-indore",
+        "name": "Shri Govindram Seksaria Institute of Technology and Science (SGSITS)",
+        "city": "Indore",
+        "state": "Madhya Pradesh",
+        "location": "Park Road, Vallabh Nagar, Indore, Madhya Pradesh",
+        "type": "Government Aided Autonomous",
+        "rating": 4.5,
+        "nirf_rank": 120,
+        "established": 1952,
+        "exams": ["JEE Main", "MP DTE Counseling"],
+        "courses": ["Computer Engineering", "Information Technology", "Electronics", "Biomedical", "Civil"],
+        "feeValue": 98000,
+        "fee_display": "₹98,000 / year",
+        "placement_avg": "₹7.8 LPA",
+        "highest_package": "₹32.0 LPA",
+        "top_recruiters": ["Adobe", "Goldman Sachs", "Amazon", "TCS", "Cognizant", "L&T"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.sgsits.ac.in",
+        "highlights": "The undisputed #1 state engineering college in Madhya Pradesh with top MP DTE cutoffs and strong alumni base."
+    },
+    # -------------------------------------------------------------
+    # PUNJAB & CHANDIGARH
+    # -------------------------------------------------------------
+    {
+        "id": "iit-ropar",
+        "name": "Indian Institute of Technology Ropar (IIT Ropar)",
+        "city": "Rupnagar",
+        "state": "Punjab",
+        "location": "Bara Phool, Rupnagar, Punjab",
+        "type": "Institute of National Importance (IIT)",
+        "rating": 4.8,
+        "nirf_rank": 22,
+        "established": 2008,
+        "exams": ["JEE Advanced"],
+        "courses": ["Computer Science", "Artificial Intelligence", "Electrical", "Mechanical", "Chemical"],
+        "feeValue": 225000,
+        "fee_display": "₹2.25 Lakh / year",
+        "placement_avg": "₹19.5 LPA",
+        "highest_package": "₹55.0 LPA",
+        "top_recruiters": ["Google", "Microsoft", "Amazon", "De Shaw", "Arcesium", "Texas Instruments"],
+        "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iitrpr.ac.in",
+        "highlights": "Top 25 NIRF ranked national institute known for cutting-edge AI research and high international citations."
+    },
+    {
+        "id": "thapar-patiala",
+        "name": "Thapar Institute of Engineering and Technology (TIET)",
+        "city": "Patiala",
+        "state": "Punjab",
+        "location": "Bhadson Road, Patiala, Punjab",
+        "type": "Deemed to be University",
+        "rating": 4.6,
+        "nirf_rank": 20,
+        "established": 1956,
+        "exams": ["JEE Main", "Class 12 Merit"],
+        "courses": ["Computer Engineering", "Computer Science & Business", "Electronics & Computer", "Mechanical"],
+        "feeValue": 450000,
+        "fee_display": "₹4.5 Lakh / year",
+        "placement_avg": "₹11.9 LPA",
+        "highest_package": "₹55.7 LPA",
+        "top_recruiters": ["Microsoft", "Amazon", "Apple", "Oracle", "JPMorgan", "Zomato"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.thapar.edu",
+        "highlights": "Premier private technical university with prestigious global tie-ups (Trinity College Dublin) and massive tech placement drives."
+    },
+    {
+        "id": "pec-chandigarh",
+        "name": "Punjab Engineering College (PEC Chandigarh)",
+        "city": "Chandigarh",
+        "state": "Chandigarh",
+        "location": "Sector 12, Chandigarh",
+        "type": "Deemed to be University (Centrally Funded)",
+        "rating": 4.7,
+        "nirf_rank": 87,
+        "established": 1921,
+        "exams": ["JEE Main (JAC Chandigarh)"],
+        "courses": ["Computer Science", "Data Science", "Electronics & Communication", "Aerospace", "Mechanical"],
+        "feeValue": 180000,
+        "fee_display": "₹1.8 Lakh / year",
+        "placement_avg": "₹15.2 LPA",
+        "highest_package": "₹83.0 LPA",
+        "top_recruiters": ["Microsoft", "Google", "Amazon", "Goldman Sachs", "Apple", "Morgan Stanley"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "https://pec.ac.in",
+        "highlights": "Centenary institution in Sector 12 Chandigarh (alma mater of Kalpana Chawla) with elite tech industry placements."
+    },
+    # -------------------------------------------------------------
+    # HARYANA
+    # -------------------------------------------------------------
+    {
+        "id": "nit-kurukshetra",
+        "name": "National Institute of Technology Kurukshetra (NITKKR)",
+        "city": "Kurukshetra",
+        "state": "Haryana",
+        "location": "Mirzapur Part, Kurukshetra, Haryana",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.7,
+        "nirf_rank": 58,
+        "established": 1963,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Engineering", "Information Technology", "AI & ML", "Electronics", "Mechanical"],
+        "feeValue": 150000,
+        "fee_display": "₹1.5 Lakh / year",
+        "placement_avg": "₹14.1 LPA",
+        "highest_package": "₹62.0 LPA",
+        "top_recruiters": ["Microsoft", "Amazon", "Directi", "Adobe", "Qualcomm", "Flipkart"],
+        "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.nitkkr.ac.in",
+        "highlights": "One of North India's premier NITs with proximity to NCR tech corridor and stellar coding culture."
+    },
+    {
+        "id": "ymca-faridabad",
+        "name": "J.C. Bose University of Science and Technology, YMCA",
+        "city": "Faridabad",
+        "state": "Haryana",
+        "location": "NH-2, Sector 6, Faridabad, Haryana",
+        "type": "State University (Government)",
+        "rating": 4.4,
+        "nirf_rank": 100,
+        "established": 1969,
+        "exams": ["JEE Main", "HSTES"],
+        "courses": ["Computer Engineering", "Information Technology", "Electrical", "Mechanical", "Robotics"],
+        "feeValue": 85000,
+        "fee_display": "₹85,000 / year",
+        "placement_avg": "₹7.5 LPA",
+        "highest_package": "₹35.0 LPA",
+        "top_recruiters": ["Amazon", "Samsung", "Maruti Suzuki", "TCS", "Yamaha", "Hitachi"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.jcboseust.ac.in",
+        "highlights": "Renowned for practical German-collaborated engineering pedagogy and deep industrial linkages in Delhi NCR."
+    },
+    # -------------------------------------------------------------
+    # ODISHA
+    # -------------------------------------------------------------
+    {
+        "id": "nit-rourkela",
+        "name": "National Institute of Technology Rourkela (NIT Rourkela)",
+        "city": "Rourkela",
+        "state": "Odisha",
+        "location": "Sector 1, Rourkela, Sundargarh, Odisha",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.8,
+        "nirf_rank": 16,
+        "established": 1961,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "Electronics & Instrumentation", "Mechanical", "Metallurgy", "Ceramic"],
+        "feeValue": 150000,
+        "fee_display": "₹1.5 Lakh / year",
+        "placement_avg": "₹15.7 LPA",
+        "highest_package": "₹83.0 LPA",
+        "top_recruiters": ["Microsoft", "Google", "Amazon", "Apple", "Tata Steel", "Schlumberger"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.nitrkl.ac.in",
+        "highlights": "Consistently ranked among the top 3 NITs in India with vast 647-acre campus and exceptional research output."
+    },
+    {
+        "id": "iit-bhubaneswar",
+        "name": "Indian Institute of Technology Bhubaneswar (IIT BBS)",
+        "city": "Bhubaneswar",
+        "state": "Odisha",
+        "location": "Argul, Khordha, Bhubaneswar, Odisha",
+        "type": "Institute of National Importance (IIT)",
+        "rating": 4.7,
+        "nirf_rank": 47,
+        "established": 2008,
+        "exams": ["JEE Advanced"],
+        "courses": ["Computer Science", "Electrical", "Mechanical", "Civil", "Metallurgy"],
+        "feeValue": 220000,
+        "fee_display": "₹2.2 Lakh / year",
+        "placement_avg": "₹17.5 LPA",
+        "highest_package": "₹55.0 LPA",
+        "top_recruiters": ["Google", "Amazon", "Goldman Sachs", "DE Shaw", "Oracle", "TCS"],
+        "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iitbbs.ac.in",
+        "highlights": "Scenic 936-acre green campus near Barunei Hill with top tier computing and materials laboratories."
+    },
+    # -------------------------------------------------------------
+    # BIHAR
+    # -------------------------------------------------------------
+    {
+        "id": "iit-patna",
+        "name": "Indian Institute of Technology Patna (IIT Patna)",
+        "city": "Patna",
+        "state": "Bihar",
+        "location": "Bihta, Patna, Bihar",
+        "type": "Institute of National Importance (IIT)",
+        "rating": 4.8,
+        "nirf_rank": 41,
+        "established": 2008,
+        "exams": ["JEE Advanced"],
+        "courses": ["Computer Science", "AI & Data Science", "Electrical", "Mechanical", "Chemical"],
+        "feeValue": 220000,
+        "fee_display": "₹2.2 Lakh / year",
+        "placement_avg": "₹23.9 LPA",
+        "highest_package": "₹82.0 LPA",
+        "top_recruiters": ["Google", "Microsoft", "Amazon", "Atlassian", "Uber", "Qualcomm"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iitp.ac.in",
+        "highlights": "Renowned for record-breaking average placement CTCs in computer science and AI in eastern India."
+    },
+    {
+        "id": "nit-patna",
+        "name": "National Institute of Technology Patna (NIT Patna)",
+        "city": "Patna",
+        "state": "Bihar",
+        "location": "Ashok Rajpath, Patna, Bihar",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.6,
+        "nirf_rank": 56,
+        "established": 1886,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "Information Technology", "Electrical", "Mechanical", "Civil"],
+        "feeValue": 140000,
+        "fee_display": "₹1.4 Lakh / year",
+        "placement_avg": "₹10.2 LPA",
+        "highest_package": "₹52.0 LPA",
+        "top_recruiters": ["Adobe", "Amazon", "Oracle", "Samsung", "L&T", "Tata Projects"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "http://www.nitp.ac.in",
+        "highlights": "One of the oldest engineering institutions in India on the banks of River Ganges with modern Bihta campus."
+    },
+    # -------------------------------------------------------------
+    # ASSAM
+    # -------------------------------------------------------------
+    {
+        "id": "iit-guwahati",
+        "name": "Indian Institute of Technology Guwahati (IIT Guwahati)",
+        "city": "Guwahati",
+        "state": "Assam",
+        "location": "Amingaon, North Guwahati, Assam",
+        "type": "Institute of National Importance (IIT)",
+        "rating": 4.9,
+        "nirf_rank": 7,
+        "established": 1994,
+        "exams": ["JEE Advanced"],
+        "courses": ["Computer Science", "Data Science & AI", "Electronics", "Mechanical", "Biosciences"],
+        "feeValue": 230000,
+        "fee_display": "₹2.3 Lakh / year",
+        "placement_avg": "₹25.7 LPA",
+        "highest_package": "₹1.20 Cr PA",
+        "top_recruiters": ["Google", "Microsoft", "Apple", "Uber", "Goldman Sachs", "Jane Street"],
+        "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iitg.ac.in",
+        "highlights": "Ranked #7 in NIRF, renowned as one of the most picturesque campus environments in the world on the Brahmaputra."
+    },
+    {
+        "id": "nit-silchar",
+        "name": "National Institute of Technology Silchar (NIT Silchar)",
+        "city": "Silchar",
+        "state": "Assam",
+        "location": "Cachar, Silchar, Assam",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.7,
+        "nirf_rank": 40,
+        "established": 1967,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "Electronics & Instrumentation", "Electrical", "Mechanical", "Civil"],
+        "feeValue": 145000,
+        "fee_display": "₹1.45 Lakh / year",
+        "placement_avg": "₹13.5 LPA",
+        "highest_package": "₹52.8 LPA",
+        "top_recruiters": ["Amazon", "Microsoft", "Directi", "Oracle", "Goldman Sachs", "L&T"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "http://www.nits.ac.in",
+        "highlights": "Top 40 NIRF ranked institute known for lush lake-dotted campus, high green energy index, and top tech placements."
+    },
+    # -------------------------------------------------------------
+    # JHARKHAND
+    # -------------------------------------------------------------
+    {
+        "id": "iit-ism-dhanbad",
+        "name": "Indian Institute of Technology (ISM) Dhanbad",
+        "city": "Dhanbad",
+        "state": "Jharkhand",
+        "location": "Sardar Patel Nagar, Dhanbad, Jharkhand",
+        "type": "Institute of National Importance (IIT)",
+        "rating": 4.8,
+        "nirf_rank": 17,
+        "established": 1926,
+        "exams": ["JEE Advanced"],
+        "courses": ["Computer Science", "Mining", "Petroleum", "Electrical", "Mechanical"],
+        "feeValue": 230000,
+        "fee_display": "₹2.3 Lakh / year",
+        "placement_avg": "₹17.0 LPA",
+        "highest_package": "₹56.0 LPA",
+        "top_recruiters": ["Google", "Amazon", "Microsoft", "Schlumberger", "ONGC", "Tata Steel"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iitism.ac.in",
+        "highlights": "Centenary institution globally acclaimed for Earth sciences, Mining, Petroleum, and Computer Science."
+    },
+    {
+        "id": "bit-mesra",
+        "name": "Birla Institute of Technology, Mesra (BIT Mesra)",
+        "city": "Ranchi",
+        "state": "Jharkhand",
+        "location": "Mesra, Ranchi, Jharkhand",
+        "type": "Deemed to be University (GFTI)",
+        "rating": 4.6,
+        "nirf_rank": 53,
+        "established": 1955,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "Information Technology", "AI & ML", "Mechanical", "Space Engineering"],
+        "feeValue": 340000,
+        "fee_display": "₹3.4 Lakh / year",
+        "placement_avg": "₹11.6 LPA",
+        "highest_package": "₹51.0 LPA",
+        "top_recruiters": ["Microsoft", "Amazon", "Atlassian", "Directi", "Goldman Sachs", "PwC"],
+        "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.bitmesra.ac.in",
+        "highlights": "Premier deemed university with a 780-acre historic campus in Ranchi, pioneer of space engineering and computing."
+    },
+    # -------------------------------------------------------------
+    # UTTARAKHAND
+    # -------------------------------------------------------------
+    {
+        "id": "iit-roorkee",
+        "name": "Indian Institute of Technology Roorkee (IIT Roorkee)",
+        "city": "Roorkee",
+        "state": "Uttarakhand",
+        "location": "Roorkee, Haridwar District, Uttarakhand",
+        "type": "Institute of National Importance (IIT)",
+        "rating": 4.9,
+        "nirf_rank": 5,
+        "established": 1847,
+        "exams": ["JEE Advanced"],
+        "courses": ["Computer Science", "Data Science", "Electronics", "Civil", "Mechanical", "Architecture"],
+        "feeValue": 230000,
+        "fee_display": "₹2.3 Lakh / year",
+        "placement_avg": "₹24.5 LPA",
+        "highest_package": "₹1.30 Cr PA",
+        "top_recruiters": ["Google", "Microsoft", "Apple", "Oracle", "Goldman Sachs", "Uber", "ITC"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iitr.ac.in",
+        "highlights": "Oldest technical institution in Asia (established 1847) ranked #5 in NIRF with massive global reputation."
+    },
+    {
+        "id": "nit-uttarakhand",
+        "name": "National Institute of Technology Uttarakhand",
+        "city": "Srinagar (Garhwal)",
+        "state": "Uttarakhand",
+        "location": "Srinagar, Pauri Garhwal, Uttarakhand",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.4,
+        "nirf_rank": 110,
+        "established": 2009,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "Electronics", "Electrical", "Mechanical", "Civil"],
+        "feeValue": 145000,
+        "fee_display": "₹1.45 Lakh / year",
+        "placement_avg": "₹8.5 LPA",
+        "highest_package": "₹34.0 LPA",
+        "top_recruiters": ["Amazon", "L&T", "TCS", "Infosys", "Cognizant", "Deloitte"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.nituk.ac.in",
+        "highlights": "Picturesque Himalayan NIT campus on the banks of Alaknanda River offering focused undergraduate engineering."
+    },
+    # -------------------------------------------------------------
+    # GOA
+    # -------------------------------------------------------------
+    {
+        "id": "bits-goa",
+        "name": "BITS Pilani, K. K. Birla Goa Campus",
+        "city": "Zuarinagar",
+        "state": "Goa",
+        "location": "NH 17B, Bypass Road, Zuarinagar, Sancoale, Goa",
+        "type": "Institute of Eminence (Deemed)",
+        "rating": 4.8,
+        "nirf_rank": 25,
+        "established": 2004,
+        "exams": ["BITSAT"],
+        "courses": ["Computer Science", "Electronics & Instrumentation", "Electrical", "Mechanical", "Chemical"],
+        "feeValue": 540000,
+        "fee_display": "₹5.4 Lakh / year",
+        "placement_avg": "₹20.5 LPA",
+        "highest_package": "₹60.8 LPA",
+        "top_recruiters": ["Google", "Microsoft", "Uber", "Amazon", "Da Vinci Derivatives", "Goldman Sachs"],
+        "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.bits-pilani.ac.in/goa",
+        "highlights": "Scenic 180-acre coastal campus with prestigious 0% attendance policy, Practice School internships, and elite placements."
+    },
+    {
+        "id": "nit-goa",
+        "name": "National Institute of Technology Goa (NIT Goa)",
+        "city": "Cuncolim",
+        "state": "Goa",
+        "location": "Cuncolim, South Goa",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.6,
+        "nirf_rank": 90,
+        "established": 2010,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "Electronics & Communication", "Electrical & Electronics", "Mechanical", "Civil"],
+        "feeValue": 140000,
+        "fee_display": "₹1.4 Lakh / year",
+        "placement_avg": "₹11.2 LPA",
+        "highest_package": "₹44.0 LPA",
+        "top_recruiters": ["Amazon", "Samsung", "Oracle", "Intel", "Siemens", "JPMorgan"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "http://www.nitgoa.ac.in",
+        "highlights": "Brand new 70-acre smart campus in Cuncolim South Goa with high conversion in software and VLSI drives."
+    },
+    # -------------------------------------------------------------
+    # HIMACHAL PRADESH
+    # -------------------------------------------------------------
+    {
+        "id": "iit-mandi",
+        "name": "Indian Institute of Technology Mandi (IIT Mandi)",
+        "city": "Mandi",
+        "state": "Himachal Pradesh",
+        "location": "Kamand, Mandi, Himachal Pradesh",
+        "type": "Institute of National Importance (IIT)",
+        "rating": 4.7,
+        "nirf_rank": 33,
+        "established": 2009,
+        "exams": ["JEE Advanced"],
+        "courses": ["Computer Science", "Data Science", "Electrical", "Mechanical", "Bioengineering"],
+        "feeValue": 225000,
+        "fee_display": "₹2.25 Lakh / year",
+        "placement_avg": "₹18.2 LPA",
+        "highest_package": "₹60.0 LPA",
+        "top_recruiters": ["Google", "Microsoft", "Amazon", "Adobe", "Walmart", "Flipkart"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iitmandi.ac.in",
+        "highlights": "Nestled in the picturesque Uhl river valley of Himalayas with world-class faculty and specialized robotics centers."
+    },
+    {
+        "id": "nit-hamirpur",
+        "name": "National Institute of Technology Hamirpur (NIT Hamirpur)",
+        "city": "Hamirpur",
+        "state": "Himachal Pradesh",
+        "location": "Anu, Hamirpur, Himachal Pradesh",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.6,
+        "nirf_rank": 75,
+        "established": 1986,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "Dual Degree CSE", "Electronics", "Electrical", "Architecture"],
+        "feeValue": 140000,
+        "fee_display": "₹1.4 Lakh / year",
+        "placement_avg": "₹10.9 LPA",
+        "highest_package": "₹52.0 LPA",
+        "top_recruiters": ["Amazon", "Microsoft", "Oracle", "Samsung", "L&T", "Deloitte"],
+        "image": "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=800&q=80",
+        "website": "https://nith.ac.in",
+        "highlights": "Renowned for scenic pine-tree campus overlooking Dhauladhar ranges with strong technical and sports facilities."
+    },
+    # -------------------------------------------------------------
+    # JAMMU AND KASHMIR
+    # -------------------------------------------------------------
+    {
+        "id": "nit-srinagar",
+        "name": "National Institute of Technology Srinagar (NIT Srinagar)",
+        "city": "Srinagar",
+        "state": "Jammu and Kashmir",
+        "location": "Hazratbal, Srinagar, Jammu and Kashmir",
+        "type": "Institute of National Importance (NIT)",
+        "rating": 4.6,
+        "nirf_rank": 82,
+        "established": 1960,
+        "exams": ["JEE Main"],
+        "courses": ["Computer Science", "Information Technology", "Electrical", "Mechanical", "Civil"],
+        "feeValue": 145000,
+        "fee_display": "₹1.45 Lakh / year",
+        "placement_avg": "₹10.4 LPA",
+        "highest_package": "₹42.0 LPA",
+        "top_recruiters": ["Samsung", "Amazon", "Optum", "Wipro", "TCS", "Cognizant"],
+        "image": "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=800&q=80",
+        "website": "https://nitsri.ac.in",
+        "highlights": "Historic technical institute situated on the western bank of Dal Lake with premier civil & IT engineering reputation."
+    },
+    {
+        "id": "iit-jammu",
+        "name": "Indian Institute of Technology Jammu (IIT Jammu)",
+        "city": "Jammu",
+        "state": "Jammu and Kashmir",
+        "location": "Jagti, NH-44, Nagrota, Jammu, Jammu and Kashmir",
+        "type": "Institute of National Importance (IIT)",
+        "rating": 4.6,
+        "nirf_rank": 67,
+        "established": 2016,
+        "exams": ["JEE Advanced"],
+        "courses": ["Computer Science", "Electrical", "Mechanical", "Civil", "Chemical"],
+        "feeValue": 220000,
+        "fee_display": "₹2.2 Lakh / year",
+        "placement_avg": "₹14.5 LPA",
+        "highest_package": "₹53.0 LPA",
+        "top_recruiters": ["Microsoft", "Amazon", "Infosys", "L&T", "Forbes Marshall", "Cognizant"],
+        "image": "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80",
+        "website": "https://www.iitjammu.ac.in",
+        "highlights": "Rapidly expanding national institute with futuristic engineering design studios and 400-acre smart campus."
     }
 ]
 
@@ -1076,14 +1854,19 @@ def generate_college_ai_info(college_name: str) -> Dict[str, Any]:
     """Accurate AI + Multi-source Web Search engine for any Indian college."""
     norm_q = normalize_str(college_name)
 
-    # 1. Exact / Normalized match check in verified directory first
+    # 1. Exact / Substring / Token match check in verified directory first
     for college in INDIAN_COLLEGES_SEED:
         norm_name = normalize_str(college["name"])
         norm_id = normalize_str(college["id"])
         if norm_q in norm_name or norm_q in norm_id or norm_name in norm_q:
             return college
+        
+        # Check token overlap
+        tokens = [t for t in norm_q.split() if len(t) >= 3 and t not in ["college", "institute", "engineering", "technology", "university"]]
+        if tokens and all(t in norm_name for t in tokens):
+            return college
 
-    # 2. Fetch live web facts from Wikipedia & Web APIs
+    # 2. Fetch live web facts from Wikipedia & Web APIs (with 2.0s fast timeout)
     web_context = fetch_live_web_context(college_name)
     clean_web_reference = clean_highlights_text(web_context, college_name)
     extracted_city, extracted_state, extracted_location = extract_indian_location(college_name, web_context)
@@ -1124,7 +1907,7 @@ def generate_college_ai_info(college_name: str) -> Dict[str, Any]:
             },
             {"role": "user", "content": prompt},
         ],
-        "max_tokens": 450,
+        "max_tokens": 400,
         "temperature": 0.1,
     }
 
@@ -1139,14 +1922,13 @@ def generate_college_ai_info(college_name: str) -> Dict[str, Any]:
                 },
                 method="POST",
             )
-            with urllib_request.urlopen(req, timeout=8) as response:
+            with urllib_request.urlopen(req, timeout=3.5) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
                 raw_text = res_data["choices"][0]["message"]["content"].strip()
                 json_match = re.search(r"\{[\s\S]*\}", raw_text)
                 if json_match:
                     result = json.loads(json_match.group(0))
                     result["highlights"] = clean_highlights_text(result.get("highlights", ""), result.get("name", college_name))
-                    # Ensure location is not just "India"
                     if not result.get("location") or result.get("location").strip().lower() in ["india", ""]:
                         result["location"] = extracted_location
                         result["city"] = extracted_city
@@ -1191,8 +1973,12 @@ def parse_currency_amount(val: Any) -> float:
 
 def compare_two_colleges_ai(college1_query: str, college2_query: str) -> Dict[str, Any]:
     """Side-by-side AI Comparison Engine for two colleges using open-source hosted LLM (Llama-3.1-8B-Instruct)."""
-    c1_data = generate_college_ai_info(college1_query)
-    c2_data = generate_college_ai_info(college2_query)
+    # Fetch college 1 and college 2 in parallel for fast response
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
+        f1 = executor.submit(generate_college_ai_info, college1_query)
+        f2 = executor.submit(generate_college_ai_info, college2_query)
+        c1_data = f1.result()
+        c2_data = f2.result()
 
     c1_name = c1_data.get("name", college1_query)
     c2_name = c2_data.get("name", college2_query)
@@ -1251,7 +2037,7 @@ def compare_two_colleges_ai(college1_query: str, college2_query: str) -> Dict[st
         ],
     }
 
-    # Prompt open-source hosted LLM (Llama 3.1) for deep comparative reasoning
+    # Prompt open-source hosted LLM (Llama 3.1) for deep comparative reasoning (with fast 4.0s timeout)
     if settings.HUGGINGFACE_API_TOKEN:
         prompt = (
             f"You are an expert Indian engineering admissions counselor. Compare '{c1_name}' vs '{c2_name}'.\n"
@@ -1284,7 +2070,7 @@ def compare_two_colleges_ai(college1_query: str, college2_query: str) -> Dict[st
                 },
                 {"role": "user", "content": prompt},
             ],
-            "max_tokens": 500,
+            "max_tokens": 400,
             "temperature": 0.1,
         }
 
@@ -1298,7 +2084,7 @@ def compare_two_colleges_ai(college1_query: str, college2_query: str) -> Dict[st
                 },
                 method="POST",
             )
-            with urllib_request.urlopen(req, timeout=8) as response:
+            with urllib_request.urlopen(req, timeout=4.0) as response:
                 res_data = json.loads(response.read().decode("utf-8"))
                 raw_text = res_data["choices"][0]["message"]["content"].strip()
                 json_match = re.search(r"\{[\s\S]*\}", raw_text)

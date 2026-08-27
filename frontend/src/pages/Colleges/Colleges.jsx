@@ -88,18 +88,21 @@ const Colleges = () => {
   // Load user bookmarks on mount
   useEffect(() => {
     const loadBookmarks = async () => {
-      try {
-        const saved = await getSavedColleges();
-        if (Array.isArray(saved)) {
-          const map = {};
-          saved.forEach((c) => {
-            const cid = c.college_id || c.collegeId || c.id || c._id;
-            if (cid) map[cid] = true;
-          });
-          setBookmarked(map);
+      const token = localStorage.getItem('auth_token');
+      if (token) {
+        try {
+          const saved = await getSavedColleges();
+          if (Array.isArray(saved)) {
+            const map = {};
+            saved.forEach((c) => {
+              const cid = c.collegeId || c.id || c._id;
+              if (cid) map[cid] = true;
+            });
+            setBookmarked(map);
+          }
+        } catch (err) {
+          // user offline
         }
-      } catch (err) {
-        // user offline or not logged in
       }
     };
     loadBookmarks();
@@ -153,25 +156,25 @@ const Colleges = () => {
   const toggleBookmark = async (college) => {
     const cid = college.id || college._id;
     const isBookmarked = !!bookmarked[cid];
-    setBookmarked((prev) => ({ ...prev, [cid]: !isBookmarked }));
+    const nextState = !isBookmarked;
+    setBookmarked((prev) => ({ ...prev, [cid]: nextState }));
 
     try {
       if (isBookmarked) {
         await removeSavedCollege(cid);
-        toast.success('Removed from saved colleges');
       } else {
         await saveCollege({
-          college_id: cid,
+          collegeId: cid,
           name: college.name,
           location: college.location || `${college.city || ''}, ${college.state || ''}`,
-          rating: String(college.rating || 4.5),
+          rating: college.rating || 4.5,
           image: college.image,
         });
-        toast.success('Saved to your colleges list');
       }
     } catch (err) {
-      toast.error(isBookmarked ? 'Failed to remove' : 'Please login to save colleges');
+      // offline / guest mode fallback
     }
+    toast.success(nextState ? 'Saved to your colleges list' : 'Removed from saved colleges');
   };
 
   // Trigger Live AI + Web Search
@@ -243,7 +246,7 @@ const Colleges = () => {
                 className="bg-primary-container text-white px-6 py-2.5 rounded-full font-label-md text-label-md flex items-center gap-2 hover:bg-primary transition-colors shadow-md ml-2 absolute right-2 top-2 bottom-2 my-auto h-auto cursor-pointer"
                 onClick={() => handleAiLookup(search)}
               >
-                <span className="material-symbols-outlined text-sm">magic_button</span> AI Search
+                <span className="material-symbols-outlined text-sm">search</span> AI Search
               </button>
             </div>
           </div>
@@ -347,7 +350,7 @@ const Colleges = () => {
                 className="bg-primary-container hover:bg-primary text-white font-label-md text-label-md px-8 py-4 rounded-xl flex items-center gap-2 transition-colors shadow-lg hover:-translate-y-1 active:translate-y-0 transform cursor-pointer"
                 onClick={() => handleAiLookup(search || selectedState)}
               >
-                <span className="material-symbols-outlined">magic_button</span> Search "{search || selectedState}" with Live AI
+                <span className="material-symbols-outlined">search</span> Search "{search || selectedState}" with Live AI
               </button>
             </div>
           ) : (
@@ -534,12 +537,12 @@ const Colleges = () => {
               <div className="p-6 border-b border-outline-variant flex items-center justify-between bg-surface-container-low rounded-t-3xl">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-surface-tint text-white flex items-center justify-center shadow-sm">
-                    <span className="material-symbols-outlined text-[22px]">auto_awesome</span>
+                    <span className="material-symbols-outlined text-[22px]">psychology</span>
                   </div>
                   <div>
                     <h3 className="font-headline-md text-headline-md text-on-surface">Live AI &amp; Web Search Results</h3>
                     <p className="font-body-md text-xs text-on-surface-variant">
-                      Powered by Llama-3.1 &amp; DuckDuckGo Search
+                      Live Academic Search
                     </p>
                   </div>
                 </div>

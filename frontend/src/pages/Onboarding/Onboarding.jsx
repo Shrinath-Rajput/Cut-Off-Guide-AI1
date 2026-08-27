@@ -1309,7 +1309,7 @@ const Onboarding = () => {
               className="step-four-create-btn"
               onClick={handleContinue}
             >
-              <span className="material-symbols-outlined step-four-create-icon fill">auto_awesome</span>
+              <span className="material-symbols-outlined step-four-create-icon fill">arrow_forward</span>
               {getButtonText()}
             </button>
             <p className="step-four-terms">
