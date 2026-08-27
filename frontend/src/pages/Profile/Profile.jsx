@@ -35,9 +35,30 @@ const initialProfile = {
   careerOption: '',
   preferredBranch: '',
   preferredLocation: '',
-  budgetRange: '0',
+  budgetRange: '',
   collegeType: '',
-  hostelRequired: false,
+  hostelRequired: null,
+};
+
+const completionFields = [
+  { key: 'fullName', label: 'Full Name' },
+  { key: 'email', label: 'Email Address' },
+  { key: 'phone', label: 'Phone Number' },
+  { key: 'domicile', label: 'State of Domicile' },
+  { key: 'category', label: 'Student Category' },
+  { key: 'exam', label: 'Primary Exam Target' },
+  { key: 'examScore', label: 'Exam Score / Rank / Percentile' },
+  { key: 'careerOption', label: 'Target Field' },
+  { key: 'preferredBranch', label: 'Preferred Branch' },
+  { key: 'preferredLocation', label: 'Preferred Location' },
+  { key: 'budgetRange', label: 'Budget Range' },
+  { key: 'collegeType', label: 'Institutional Scope' },
+  { key: 'hostelRequired', label: 'Hostel Preference' },
+];
+
+const isCompleted = (value) => {
+  if (typeof value === 'boolean') return true;
+  return value !== undefined && value !== null && String(value).trim() !== '';
 };
 
 const Profile = () => {
@@ -46,12 +67,26 @@ const Profile = () => {
   const [profile, setProfile] = useState(initialProfile);
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(profileImage);
+
+  const missingFields = completionFields
+    .filter(({ key }) => !isCompleted(profile[key]))
+    .map(({ label }) => label);
+  const profileCompletion = Math.round(
+    ((completionFields.length - missingFields.length) / completionFields.length) * 100
+  );
+
+  const avatarStorageKey = currentUser
+    ? `profile-avatar-${currentUser.uid || currentUser.id || currentUser.email}`
+    : null;
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         if (currentUser) {
           const data = await getProfile();
+          const storedAvatar = avatarStorageKey ? localStorage.getItem(avatarStorageKey) : null;
+          if (storedAvatar) setAvatarUrl(storedAvatar);
           setProfile((prev) => ({
             ...prev,
             ...data,
@@ -65,7 +100,7 @@ const Profile = () => {
             careerOption: data.careerOption || data.academic?.careerOption || prev.careerOption,
             preferredBranch: data.preferredBranch || data.academic?.preferredBranch || prev.preferredBranch,
             preferredLocation: data.preferredLocation || data.preferences?.preferredLocation || prev.preferredLocation,
-            budgetRange: data.budgetRange || data.preferences?.budgetRange || prev.budgetRange,
+            budgetRange: data.budgetRange ?? data.preferences?.budgetRange ?? prev.budgetRange,
             collegeType: data.collegeType || data.preferences?.collegeType || prev.collegeType,
             hostelRequired: data.hostelRequired !== undefined
               ? data.hostelRequired
@@ -81,7 +116,7 @@ const Profile = () => {
       }
     };
     fetchProfile();
-  }, [currentUser]);
+  }, [currentUser, avatarStorageKey]);
 
   const handleChange = (event) => {
     const { name, value, type, checked } = event.target;
@@ -115,13 +150,37 @@ const Profile = () => {
 
   const handleSave = async () => {
     try {
-      await updateProfile(profile);
+      const updatedProfile = await updateProfile({
+        ...profile,
+        name: profile.fullName || profile.name,
+      });
+      setProfile((prev) => ({
+        ...prev,
+        ...updatedProfile,
+        fullName: prev.fullName || updatedProfile.name || prev.name,
+      }));
       setSaved(true);
       setEditing(false);
       window.setTimeout(() => setSaved(false), 3200);
     } catch (error) {
       console.error("Failed to save profile", error);
     }
+  };
+
+  const handleAvatarChange = (event) => {
+    const file = event.target.files?.[0];
+    const extension = file?.name?.split('.').pop()?.toLowerCase();
+    const supportedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+    if (!file || !supportedExtensions.includes(extension) || !file.type.startsWith('image/')) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const imageUrl = String(reader.result);
+      setAvatarUrl(imageUrl);
+      if (avatarStorageKey) localStorage.setItem(avatarStorageKey, imageUrl);
+    };
+    reader.readAsDataURL(file);
+    event.target.value = '';
   };
 
   const handleLogout = () => {
@@ -167,14 +226,22 @@ const Profile = () => {
             <div className="profile-card profile-avatar-card">
               <div className="avatar-container">
                 <img
-                  src={profileImage}
+                  src={avatarUrl}
                   alt="Profile avatar"
                   className="profile-avatar"
+                />
+                <input
+                  id="profile-avatar-input"
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                  onChange={handleAvatarChange}
+                  hidden
                 />
                 <button
                   type="button"
                   className="avatar-edit-btn"
                   aria-label="Edit profile picture"
+                  onClick={() => document.getElementById('profile-avatar-input')?.click()}
                 >
                   <span className="material-symbols-outlined">edit</span>
                 </button>
@@ -189,13 +256,25 @@ const Profile = () => {
 
             <div className="profile-card profile-completeness-card">
               <p className="completeness-label">PROFILE COMPLETENESS</p>
-              <div className="completeness-score">85%</div>
+              <div className="completeness-score">{profileCompletion}%</div>
               <div className="progress-bar">
-                <div className="progress-fill" style={{ width: '85%' }} />
+                <div className="progress-fill" style={{ width: `${profileCompletion}%` }} />
               </div>
-              <p className="completeness-note">
-                Complete your academic preferences to get better AI predictions.
-              </p>
+              {profileCompletion === 100 ? (
+                <>
+                  <p className="completeness-note">Your profile is complete!</p>
+                  <p className="completeness-remaining">All required information has been completed.</p>
+                </>
+              ) : (
+                <>
+                  <p className="completeness-note">Your profile is {profileCompletion}% complete.</p>
+                  <p className="completeness-remaining">
+                    {100 - profileCompletion}% remaining - Complete {missingFields.slice(0, 2).join(' and ')}
+                    {missingFields.length > 2 ? ' and other required information' : ''}.
+                  </p>
+                  <p className="completeness-note">Complete the remaining information to get better AI predictions.</p>
+                </>
+              )}
             </div>
           </div>
 
