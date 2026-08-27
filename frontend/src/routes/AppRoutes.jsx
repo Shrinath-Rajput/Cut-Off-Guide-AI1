@@ -30,8 +30,9 @@ const AppRoutes = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Splash />} />
-        <Route path="/welcome" element={<Welcome />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/welcome" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route
           path="/signup"
@@ -62,30 +63,8 @@ const AppRoutes = () => {
         <Route path="/assistant" element={<Assistant />} />
         <Route path="/saved" element={<Saved />} />
         <Route path="/history" element={<History />} />
-        <Route
-          path="/home"
-          element={
-            <ProtectedRoute>
-              <Home />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/auth/google/callback" element={<GoogleCallback />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
@@ -96,7 +75,7 @@ const AppRoutes = () => {
         <Route path="/admin/images" element={<AdminRoute><AdminPanel section="images" /></AdminRoute>} />
         <Route path="/admin/subscriptions" element={<AdminRoute><AdminPanel section="plans" /></AdminRoute>} />
         <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
-        <Route path="*" element={<Navigate to="/welcome" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
   );

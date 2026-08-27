@@ -264,8 +264,8 @@ const Home = () => {
                   className="bg-primary shimmer-btn text-white font-label-md text-sm px-8 py-3.5 rounded-xl flex items-center gap-2 transition-all hover:scale-105 shadow-[0_0_20px_rgba(230,126,34,0.4)] hover:shadow-[0_0_40px_rgba(230,126,34,0.7)] duration-300 font-bold no-underline cursor-pointer"
                 >
                   Start Prediction
-                  <span className="material-symbols-outlined text-sm transition-transform group-hover:rotate-12">
-                    auto_awesome
+                  <span className="material-symbols-outlined text-sm transition-transform group-hover:translate-x-1">
+                    arrow_forward
                   </span>
                 </Link>
 

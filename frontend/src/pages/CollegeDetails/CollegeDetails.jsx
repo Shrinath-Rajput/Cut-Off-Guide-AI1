@@ -303,7 +303,7 @@ const CollegeDetails = () => {
           <aside className="college-sidebar">
             <div className="sidebar-card ai-insight-card">
               <div className="sidebar-card-header">
-                <span className="material-symbols-outlined">auto_awesome</span>
+                <span className="material-symbols-outlined">insights</span>
                 <h3>AI Insight</h3>
               </div>
               <p>Based on current trajectory, cutoffs for CS programs are expected to rise by 1.2% this year due to increased international applications.</p>
