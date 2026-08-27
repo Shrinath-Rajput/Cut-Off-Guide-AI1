@@ -65,7 +65,7 @@ const Dashboard = () => {
           <article className="summary-card summary-card-probability">
             <div className="summary-card-top">
               <div className="summary-card-label summary-card-label-light">
-                <span className="material-symbols-outlined">auto_awesome</span>
+                <span className="material-symbols-outlined">trending_up</span>
                 <span>Top Choice Probability</span>
               </div>
             </div>

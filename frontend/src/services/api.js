@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 const getApiBaseUrl = () => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
-  const cleanUrl = envUrl.replace(/\/$/, '');
+  const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+  const cleanUrl = envUrl.replace(':5000', ':8000').replace(/\/$/, '');
   if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
     return cleanUrl.replace(/localhost|127\.0\.0\.1/, window.location.hostname);
   }
@@ -11,6 +11,7 @@ const getApiBaseUrl = () => {
 
 const api = axios.create({
   baseURL: getApiBaseUrl(),
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -29,19 +30,6 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error?.response?.status === 401) {
-      const isAdminRoute = error?.config?.url?.startsWith('/api/admin');
-      if (!isAdminRoute) {
-        localStorage.removeItem('auth_token');
-        localStorage.removeItem('auth_user');
-        sessionStorage.removeItem('auth_pending_otp_session_id');
-        sessionStorage.removeItem('auth_pending_user');
-        sessionStorage.removeItem('auth_pending_phone');
-        if (!window.location.pathname.startsWith('/login') && !window.location.pathname.startsWith('/welcome') && !window.location.pathname.startsWith('/onboarding')) {
-          window.location.replace('/login');
-        }
-      }
-    }
     return Promise.reject(error);
   }
 );
