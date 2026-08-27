@@ -1,6 +1,7 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 
+from app.core.database import get_db
 from app.services.assistant_service import generate_assistant_reply
 
 router = APIRouter(prefix="/api/assistant", tags=["Assistant"])
@@ -17,6 +18,6 @@ class AssistantRequest(BaseModel):
 
 
 @router.post("")
-async def assistant_chat(request: AssistantRequest):
-    reply = generate_assistant_reply(request.message.strip(), history=request.history)
+async def assistant_chat(request: AssistantRequest, db=Depends(get_db)):
+    reply = await generate_assistant_reply(request.message.strip(), db=db, history=request.history)
     return {"status": "success", "reply": reply}

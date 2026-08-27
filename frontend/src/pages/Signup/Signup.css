@@ -161,8 +161,61 @@
 @media (min-width: 1024px) {
   .cg-signup-right {
     width: 50%;
-    padding: 40px;
+    padding: 0;
   }
+}
+
+.cg-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: var(--cg-text-muted);
+  font-size: 14px;
+  margin: 4px 0;
+}
+.cg-divider::before,
+.cg-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--cg-outline-variant);
+}
+.cg-divider not(:empty)::before {
+  margin-right: .5em;
+}
+.cg-divider not(:empty)::after {
+  margin-left: .5em;
+}
+
+.cg-google-btn {
+  position: relative;
+  width: 100%;
+  min-height: 56px;
+  padding: 14px 20px;
+  background-color: #ffffff;
+  color: #3c4043;
+  border: 1px solid #dadce0;
+  border-radius: var(--cg-radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: 0.01em;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 180ms ease, box-shadow 180ms ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.cg-google-btn:hover {
+  background-color: #f8f9fa;
+  box-shadow: 0 1px 3px rgba(60, 64, 67, 0.1);
+}
+.cg-google-icon {
+  width: 20px;
+  height: 20px;
 }
 
 .cg-signup-right-inner {

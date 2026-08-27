@@ -92,14 +92,7 @@ const Profile = () => {
   };
 
   const toggleCategory = (cat) => {
-    const currentCategories = profile.category ? profile.category.split(',').map(b => b.trim()) : [];
-    let newCategories;
-    if (currentCategories.includes(cat)) {
-      newCategories = currentCategories.filter(b => b !== cat);
-    } else {
-      newCategories = [...currentCategories, cat];
-    }
-    setProfile((prev) => ({ ...prev, category: newCategories.join(', ') }));
+    setProfile((prev) => ({ ...prev, category: cat }));
   };
 
   const toggleCollegeType = (ctype) => {

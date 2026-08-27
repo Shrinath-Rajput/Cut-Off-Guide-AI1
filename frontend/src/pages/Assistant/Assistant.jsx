@@ -107,7 +107,7 @@ const Assistant = () => {
     }
   }, [query]);
 
-  const assistantApiBase = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
+  const assistantApiBase = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
   const handleNewChat = () => {
     const newChatId = `chat-${Date.now()}`;

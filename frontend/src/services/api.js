@@ -1,9 +1,9 @@
 import axios from 'axios';
 
 const getApiBaseUrl = () => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:5000';
+  const envUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
   const cleanUrl = envUrl.replace(/\/$/, '');
-  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
     return cleanUrl.replace(/localhost|127\.0\.0\.1/, window.location.hostname);
   }
   return cleanUrl;

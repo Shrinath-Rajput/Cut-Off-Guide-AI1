@@ -5,6 +5,12 @@ from datetime import datetime, timezone
 import secrets
 import re
 import logging
+import os
+import json
+import urllib.parse
+import urllib.request
+from fastapi.responses import RedirectResponse
+from fastapi import Request
 
 from app.core.database import get_db
 from app.core.security import create_access_token, get_password_hash, verify_password
@@ -786,3 +792,119 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
         "status": "success",
         "user": user
     }
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_OAUTH_REDIRECT_URI = os.getenv(
+    "GOOGLE_OAUTH_REDIRECT_URI",
+    "http://localhost:5000/api/auth/google/callback",
+)
+FRONTEND_APP_URL = os.getenv("FRONTEND_APP_URL", "http://localhost:5173")
+
+def _build_google_auth_url():
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": GOOGLE_OAUTH_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "online",
+        "prompt": "select_account",
+    }
+    return "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+
+def _exchange_google_code(code):
+    token_url = "https://oauth2.googleapis.com/token"
+    data = urllib.parse.urlencode(
+        {
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": GOOGLE_OAUTH_REDIRECT_URI,
+            "grant_type": "authorization_code",
+        }
+    ).encode("utf-8")
+
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    request_obj = urllib.request.Request(token_url, data=data, headers=headers, method="POST")
+    with urllib.request.urlopen(request_obj, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+def _fetch_google_user_info(access_token):
+    request_obj = urllib.request.Request(
+        "https://openidconnect.googleapis.com/v1/userinfo",
+        headers={"Authorization": f"Bearer {access_token}"},
+        method="GET",
+    )
+    with urllib.request.urlopen(request_obj, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+def _build_frontend_callback_url(token, user):
+    query = urllib.parse.urlencode(
+        {
+            "token": token,
+            "uid": user.get("uid", ""),
+            "name": user.get("name", ""),
+            "email": user.get("email", ""),
+            "photoURL": user.get("photoURL", ""),
+        }
+    )
+    return f"{FRONTEND_APP_URL}/auth/google/callback?{query}"
+
+@router.get("/google")
+async def google_auth():
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=501, 
+            detail="Google OAuth credentials are not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend .env."
+        )
+    return RedirectResponse(url=_build_google_auth_url())
+
+@router.get("/google/callback")
+async def google_auth_callback(request: Request, db=Depends(get_db)):
+    error = request.query_params.get("error")
+    if error:
+        raise HTTPException(status_code=400, detail=f"Google auth failed: {error}")
+
+    code = (request.query_params.get("code") or "").strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing authorization code from Google callback.")
+
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=501, 
+            detail="Google auth credentials are not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend .env."
+        )
+
+    try:
+        token_response = _exchange_google_code(code)
+        access_token = token_response.get("access_token")
+        if not access_token:
+            raise RuntimeError("Failed to obtain access token from Google")
+
+        user_info = _fetch_google_user_info(access_token)
+        email = (user_info.get("email") or "").strip().lower()
+        name = (user_info.get("name") or user_info.get("given_name") or "Google User").strip()
+        picture = (user_info.get("picture") or "").strip()
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Google account did not return an email address.")
+
+        user_payload = UserLogin(
+            uid=f"google-{email}",
+            name=name,
+            email=email,
+            provider="google",
+            photoURL=picture,
+        )
+
+        create_response = await create_or_update_user(user_payload, db)
+        
+        token = create_response.get("token")
+        user = create_response.get("user") or {}
+        callback_url = _build_frontend_callback_url(token, user)
+        return RedirectResponse(url=callback_url)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Google callback error")
+        raise HTTPException(status_code=502, detail=f"Google callback failed: {exc}")

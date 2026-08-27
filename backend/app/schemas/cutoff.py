@@ -9,8 +9,11 @@ class CutoffSearchRequest(BaseModel):
     course: Optional[str] = None
     location: Optional[str] = None
     round: Optional[str] = None
+    year: Optional[int] = None
 
 class CutoffResult(BaseModel):
     cutoff: str
     rank: str
     suggestion: str
+    year: Optional[int] = None
+    data_type: Optional[str] = "actual"

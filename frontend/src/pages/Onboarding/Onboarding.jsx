@@ -20,7 +20,7 @@ const INDIAN_STATES = [
 import { EXAM_CONFIG, validateAcademicScore } from '../../utils/validation';
 
 const STANDARD_BRANCHES = [
-  'Computer Science', 'Information Technology', 'Electronics & Telecom', 'Mechanical', 'Civil', 'Electrical', 'Chemical'
+  'Computer Science', 'Information Technology', 'Electronics & Telecom', 'Mechanical', 'Civil', 'Electrical', 'Chemical', 'AI & ML'
 ];
 
 const CAREER_OPTIONS = [
@@ -54,6 +54,7 @@ const AREA_OF_INTEREST_OPTIONS = [
   'Mathematics',
   'Biology',
   'Economics',
+  'AI & ML'
 ];
 
 const DEGREE_LEVEL_OPTIONS = [
@@ -283,15 +284,7 @@ const Onboarding = () => {
   };
 
   const toggleCategory = (cat) => {
-    const currentCategories = personal.category ? personal.category.split(',').map(b => b.trim()) : [];
-    let newCategories;
-    if (currentCategories.includes(cat)) {
-      newCategories = currentCategories.filter(b => b !== cat);
-    } else {
-      newCategories = [...currentCategories, cat];
-    }
-    const newValue = newCategories.join(', ');
-    handlePersonalChange('category', newValue);
+    handlePersonalChange('category', cat);
   };
 
   const validatePreferences = () => {
