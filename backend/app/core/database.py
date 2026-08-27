@@ -13,7 +13,7 @@ def get_db():
 
 async def connect_to_mongo():
     try:
-        db.client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=2000)
+        db.client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=500)
         db.db = db.client[settings.MONGODB_DATABASE]
         logging.info("Initialized MongoDB client at %s", settings.MONGODB_URI)
     except Exception as e:
