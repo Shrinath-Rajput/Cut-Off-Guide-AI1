@@ -31,8 +31,8 @@ def _clean_reply(text: str) -> str:
     return cleaned.strip()
 
 
-<<<<<<< HEAD
 async def generate_assistant_reply(message: str, db=None, history: list = None) -> str:
+    token = settings.HUGGINGFACE_API_TOKEN or ""
     prediction_info = ""
     lower_msg = message.lower()
     
@@ -56,23 +56,10 @@ async def generate_assistant_reply(message: str, db=None, history: list = None) 
                 prediction_info = f"\nSYSTEM NOTE: The prediction API reports: {pred_resp.message} (Status: {pred_resp.data_status}). Tell the user exactly this."
             else:
                 prediction_info = f"\nSYSTEM NOTE: The prediction API calculated the following for {target_year}: Predicted Cutoff={pred_resp.predicted_cutoff}, Range={pred_resp.lower_bound}-{pred_resp.upper_bound}, Confidence={pred_resp.confidence}, Latest Actual Year={pred_resp.latest_actual_year}. The user is asking about {college} {course}. Use EXACTLY these prediction numbers in your response and mention the latest actual year."
-=======
-def generate_assistant_reply(message: str, history: list = None) -> str:
-    token = settings.HUGGINGFACE_API_TOKEN or ""
->>>>>>> 3bef6b0112bf6b062a04186c7cf6e75ae777af8e
 
     system_prompt = {
         "role": "system",
         "content": (
-<<<<<<< HEAD
-            "You are AI Council, a direct, concise, and accurate academic admissions counselor for CutoffGuide (India). "
-            "STRICT GUIDELINES:\n"
-            "- Be concise, direct, and fact-focused. Keep answers under 120-180 words.\n"
-            "- Do NOT include internal thoughts, rambling reflections, or phrases like 'Okay, let me think'. Start directly with the answer.\n"
-            "- For college comparisons or cutoffs, provide 3 to 4 clear bullet points covering: Cutoff Trend, Placements, Location/Campus, and Final Recommendation.\n"
-            "- Always be helpful, objective, and accurate regarding MHT CET, JEE Main, JoSAA, CSAB, and CAP rounds."
-            f"{prediction_info}"
-=======
             "You are AI Council, a fast, direct, and concise academic admissions counselor for CutoffGuide (India). "
             "STRICT RULES:\n"
             "- Never use markdown asterisks (do NOT output '**', '***', or '******'). Output plain clean text.\n"
@@ -80,18 +67,14 @@ def generate_assistant_reply(message: str, history: list = None) -> str:
             "- Start immediately with the direct answer. No introductory fluff.\n"
             "- Use clean bullet points (•) for cutoff trends, placements, and campus advice.\n"
             "- Provide accurate information for MHT CET, JEE Main, JoSAA, and CAP rounds."
->>>>>>> 3bef6b0112bf6b062a04186c7cf6e75ae777af8e
+            f"{prediction_info}"
         ),
     }
 
     messages = [system_prompt]
 
     if history and isinstance(history, list):
-<<<<<<< HEAD
-        for item in history[-6:]:
-=======
         for item in history[-4:]:  # keep last 4 messages for fast context
->>>>>>> 3bef6b0112bf6b062a04186c7cf6e75ae777af8e
             if isinstance(item, dict) and "role" in item and "content" in item:
                 role = item["role"] if item["role"] in ("user", "assistant") else "user"
                 content = str(item["content"]).strip()
@@ -117,9 +100,8 @@ def generate_assistant_reply(message: str, history: list = None) -> str:
         method="POST",
     )
 
-<<<<<<< HEAD
     def fetch_hf():
-        if not settings.HUGGINGFACE_API_TOKEN:
+        if not token:
             return {
                 "choices": [{
                     "message": {
@@ -150,19 +132,6 @@ def generate_assistant_reply(message: str, history: list = None) -> str:
                 return _clean_reply(reply)
     except Exception as exc:
         print("Hugging Face API call warning:", exc)
-=======
-    if token:
-        try:
-            with urllib_request.urlopen(request_obj, timeout=4.5) as response:
-                response_data = json.loads(response.read().decode("utf-8"))
-                choice = response_data["choices"][0]
-                message_data = choice.get("message") or {}
-                reply = message_data.get("content") or message_data.get("reasoning_content") or choice.get("text")
-                if reply:
-                    return _clean_reply(reply)
-        except Exception as exc:
-            print("Hugging Face API fast-call fallback:", exc)
->>>>>>> 3bef6b0112bf6b062a04186c7cf6e75ae777af8e
 
     # Resilient fast fallback academic response
     q_lower = message.lower()
