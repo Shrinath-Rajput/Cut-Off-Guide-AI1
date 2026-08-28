@@ -17,6 +17,8 @@ from app.routes import assistant, auth, users, admin, colleges, cutoffs, profile
 async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
+    if get_db() is not None:
+        await admin.ensure_admin_account(get_db())
     yield
     # Shutdown
     await close_mongo_connection()
@@ -47,6 +49,7 @@ allowed_origins = list(dict.fromkeys((settings.CORS_ORIGINS or []) + [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,
+    allow_origin_regex=r"https?://.*",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

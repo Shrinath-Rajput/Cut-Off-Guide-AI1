@@ -53,6 +53,24 @@ def _query(search: Optional[str], fields: list[str]) -> dict:
     return {"$or": [{field: {"$regex": search, "$options": "i"}} for field in fields]}
 
 
+async def ensure_admin_account(db):
+    configured_email = (settings.ADMIN_EMAIL or "").strip().lower()
+    configured_password = settings.ADMIN_PASSWORD or ""
+    if not configured_email or not configured_password:
+        return
+
+    user = await db["users"].find_one({"email": configured_email})
+    if user:
+        return
+
+    now = datetime.now(timezone.utc)
+    await db["users"].insert_one({
+        "uid": f"admin-{uuid4().hex}", "name": "Administrator", "email": configured_email,
+        "role": "ADMIN", "isActive": True, "passwordHash": get_password_hash(configured_password),
+        "createdAt": now, "lastLogin": now,
+    })
+
+
 @router.post("/login")
 async def admin_login(request: AdminLoginRequest, db=Depends(get_db)):
     configured_email = (settings.ADMIN_EMAIL or "").strip().lower()

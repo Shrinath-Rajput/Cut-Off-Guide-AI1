@@ -18,6 +18,19 @@ export const AuthProvider = ({ children }) => {
     if (storedUser && storedToken) {
       setCurrentUser(JSON.parse(storedUser));
       setIsAuthenticated(true);
+    } else {
+      // Default guest user to allow direct access without login barrier
+      const guestUser = {
+        uid: 'guest_student',
+        name: 'Guest Student',
+        email: 'student@cutoffguide.ai',
+        phone: '9876543210',
+        percentile: 95.5,
+        targetBranch: 'Computer Science',
+        state: 'Maharashtra',
+      };
+      setCurrentUser(guestUser);
+      setIsAuthenticated(true);
     }
 
     if (storedAdminUser && storedAdminToken) {

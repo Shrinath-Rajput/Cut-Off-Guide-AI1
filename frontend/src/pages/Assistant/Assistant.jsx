@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
+import { sendAssistantChat } from '../../services/api';
 import './Assistant.css';
 
 const DEFAULT_SUGGESTIONS = [
@@ -160,9 +161,17 @@ const Assistant = () => {
     let cleanText = rawText || '';
     // Strip <think>...</think> if returned by deepseek models
     cleanText = cleanText.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+    // Remove repeated asterisks (e.g. ******, ****, ***)
+    cleanText = cleanText.replace(/\*{3,}/g, '');
+    // Clean **bold** text to plain clean text
+    cleanText = cleanText.replace(/\*\*([^\*]+)\*\*/g, '$1');
+    // Convert markdown bullets to neat unicode bullets
+    cleanText = cleanText.replace(/^\s*[\*\-]\s+/gm, '• ');
+    // Remove any remaining stray asterisks
+    cleanText = cleanText.replace(/\*/g, '');
 
     return {
-      text: cleanText,
+      text: cleanText.trim(),
     };
   };
 
@@ -324,7 +333,7 @@ const Assistant = () => {
 
             {/* Footer note */}
             <div className="sidenav-footer">
-              <p className="text-xs text-on-surface-variant/60">Powered by Llama-3.1-8B Instruct</p>
+              <p className="text-xs text-on-surface-variant/60">Cutoff Guide AI</p>
             </div>
           </nav>
 

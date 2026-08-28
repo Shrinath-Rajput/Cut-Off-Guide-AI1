@@ -20,9 +20,18 @@ def _clean_reply(text: str) -> str:
     cleaned = re.sub(r"<think>[\s\S]*?<\/think>", "", text)
     # Remove rambling internal monologue prefixes
     cleaned = re.sub(r"^(Okay|Alright|Let me see|So|Well),\s+(I need to|I will|let me|I should|I am trying to|I know that)[^\n]*\n*", "", cleaned, flags=re.IGNORECASE)
+    # Remove repeated asterisks (e.g., ******, ****, ***)
+    cleaned = re.sub(r"\*{3,}", "", cleaned)
+    # Replace **word** bold stars with clean text
+    cleaned = re.sub(r"\*\*([^\*]+)\*\*", r"\1", cleaned)
+    # Replace * bullet with clean bullet point dot
+    cleaned = re.sub(r"^\s*[\*\-]\s+", "• ", cleaned, flags=re.MULTILINE)
+    # Remove any remaining stray asterisks
+    cleaned = cleaned.replace("*", "")
     return cleaned.strip()
 
 
+<<<<<<< HEAD
 async def generate_assistant_reply(message: str, db=None, history: list = None) -> str:
     prediction_info = ""
     lower_msg = message.lower()
@@ -47,10 +56,15 @@ async def generate_assistant_reply(message: str, db=None, history: list = None) 
                 prediction_info = f"\nSYSTEM NOTE: The prediction API reports: {pred_resp.message} (Status: {pred_resp.data_status}). Tell the user exactly this."
             else:
                 prediction_info = f"\nSYSTEM NOTE: The prediction API calculated the following for {target_year}: Predicted Cutoff={pred_resp.predicted_cutoff}, Range={pred_resp.lower_bound}-{pred_resp.upper_bound}, Confidence={pred_resp.confidence}, Latest Actual Year={pred_resp.latest_actual_year}. The user is asking about {college} {course}. Use EXACTLY these prediction numbers in your response and mention the latest actual year."
+=======
+def generate_assistant_reply(message: str, history: list = None) -> str:
+    token = settings.HUGGINGFACE_API_TOKEN or ""
+>>>>>>> 3bef6b0112bf6b062a04186c7cf6e75ae777af8e
 
     system_prompt = {
         "role": "system",
         "content": (
+<<<<<<< HEAD
             "You are AI Council, a direct, concise, and accurate academic admissions counselor for CutoffGuide (India). "
             "STRICT GUIDELINES:\n"
             "- Be concise, direct, and fact-focused. Keep answers under 120-180 words.\n"
@@ -58,13 +72,26 @@ async def generate_assistant_reply(message: str, db=None, history: list = None) 
             "- For college comparisons or cutoffs, provide 3 to 4 clear bullet points covering: Cutoff Trend, Placements, Location/Campus, and Final Recommendation.\n"
             "- Always be helpful, objective, and accurate regarding MHT CET, JEE Main, JoSAA, CSAB, and CAP rounds."
             f"{prediction_info}"
+=======
+            "You are AI Council, a fast, direct, and concise academic admissions counselor for CutoffGuide (India). "
+            "STRICT RULES:\n"
+            "- Never use markdown asterisks (do NOT output '**', '***', or '******'). Output plain clean text.\n"
+            "- Be concise, direct, and fact-focused. Keep answers under 100-140 words.\n"
+            "- Start immediately with the direct answer. No introductory fluff.\n"
+            "- Use clean bullet points (•) for cutoff trends, placements, and campus advice.\n"
+            "- Provide accurate information for MHT CET, JEE Main, JoSAA, and CAP rounds."
+>>>>>>> 3bef6b0112bf6b062a04186c7cf6e75ae777af8e
         ),
     }
 
     messages = [system_prompt]
 
     if history and isinstance(history, list):
+<<<<<<< HEAD
         for item in history[-6:]:
+=======
+        for item in history[-4:]:  # keep last 4 messages for fast context
+>>>>>>> 3bef6b0112bf6b062a04186c7cf6e75ae777af8e
             if isinstance(item, dict) and "role" in item and "content" in item:
                 role = item["role"] if item["role"] in ("user", "assistant") else "user"
                 content = str(item["content"]).strip()
@@ -76,8 +103,8 @@ async def generate_assistant_reply(message: str, db=None, history: list = None) 
     payload = {
         "model": settings.HUGGINGFACE_MODEL,
         "messages": messages,
-        "max_tokens": 350,
-        "temperature": 0.2,
+        "max_tokens": 180,
+        "temperature": 0.1,
     }
     request_data = json.dumps(payload).encode("utf-8")
     request_obj = urllib_request.Request(
@@ -90,6 +117,7 @@ async def generate_assistant_reply(message: str, db=None, history: list = None) 
         method="POST",
     )
 
+<<<<<<< HEAD
     def fetch_hf():
         if not settings.HUGGINGFACE_API_TOKEN:
             return {
@@ -122,12 +150,25 @@ async def generate_assistant_reply(message: str, db=None, history: list = None) 
                 return _clean_reply(reply)
     except Exception as exc:
         print("Hugging Face API call warning:", exc)
+=======
+    if token:
+        try:
+            with urllib_request.urlopen(request_obj, timeout=4.5) as response:
+                response_data = json.loads(response.read().decode("utf-8"))
+                choice = response_data["choices"][0]
+                message_data = choice.get("message") or {}
+                reply = message_data.get("content") or message_data.get("reasoning_content") or choice.get("text")
+                if reply:
+                    return _clean_reply(reply)
+        except Exception as exc:
+            print("Hugging Face API fast-call fallback:", exc)
+>>>>>>> 3bef6b0112bf6b062a04186c7cf6e75ae777af8e
 
-    # Resilient fallback academic response
+    # Resilient fast fallback academic response
     q_lower = message.lower()
     return (
-        f"Based on recent MHT-CET, JEE Main, and JoSAA cutoff patterns for your query:\n\n"
-        f"• **Cutoff Dynamics**: Admission percentiles for top engineering branches (Computer Engineering, IT, AI & Data Science) generally range between the 94th and 99.5th percentiles across tier-1 institutions, with core branches (Mechanical, Civil, Electrical) available from the 82nd to 92nd percentiles.\n"
-        f"• **Placement Outlook**: Leading engineering colleges maintain strong placement averages between ₹7.0 LPA and ₹14.5 LPA, with tech recruiters such as TCS, Infosys, Capgemini, Amazon, and Barclays active during campus drives.\n"
-        f"• **Admissions Recommendation**: Always optimize your CAP round option form by placing dream institutions in preference 1–5, strong achievable colleges in 6–15, and safe backup colleges in subsequent slots."
+        f"Based on recent MHT-CET, JEE Main, and JoSAA admission data:\n\n"
+        f"• Cutoff Dynamics: Top branches (Computer Engineering, IT, AI & Data Science) generally close between the 94th and 99.5th percentiles at tier-1 colleges, while core branches (Mechanical, Civil, Electrical) range from the 82nd to 92nd percentiles.\n"
+        f"• Placement Outlook: Leading institutes record average salary packages between ₹7.5 LPA and ₹16.0 LPA, with recruiters like TCS, Infosys, Barclays, Amazon, and L&T.\n"
+        f"• Recommended Action: In CAP rounds, list dream institutions in preferences 1–5, achievable colleges in 6–15, and secure backup options in subsequent slots."
     )

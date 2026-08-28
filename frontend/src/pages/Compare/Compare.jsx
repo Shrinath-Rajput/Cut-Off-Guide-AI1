@@ -294,7 +294,7 @@ const Compare = () => {
             <div className="run-compare-wrap">
               <button type="submit" className="run-compare-btn" disabled={loading || !college1Input || !college2Input}>
                 <span className="material-symbols-outlined text-sm">
-                  {loading ? 'hourglass_top' : 'auto_awesome'}
+                  {loading ? 'hourglass_top' : 'compare_arrows'}
                 </span>
                 {loading ? 'AI Council Analyzing Comparison...' : 'Compare Colleges with AI'}
               </button>
@@ -335,7 +335,7 @@ const Compare = () => {
                 <div>
                   <h3 className="verdict-title">AI Council Recommendation & Verdict</h3>
                   <span className="text-xs font-bold text-surface-tint uppercase tracking-wider">
-                    Powered by Open-Source Hosted Llama-3.1
+                    Powered by Cutoff Guide AI
                   </span>
                 </div>
               </div>
