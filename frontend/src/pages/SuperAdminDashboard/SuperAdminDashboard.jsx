@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { BarChart3, Building2, Crown, LogOut, Menu, ShieldCheck, Users, X } from 'lucide-react';
+import { BarChart3, Building2, Crown, LogOut, Menu, ShieldCheck, Users } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
@@ -77,7 +77,6 @@ const SuperAdminDashboard = () => {
               <small className="admin-brand-company">FOURISE</small>
             </div>
           </div>
-          <button className="admin-close" onClick={() => setMobileOpen(false)}><X size={18} /></button>
         </div>
         <nav>
           {navItems.map(({ key, label, path, icon: Icon }) => (

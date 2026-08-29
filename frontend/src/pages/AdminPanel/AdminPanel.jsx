@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowLeft, BarChart3, Database, Image, LayoutDashboard, LogOut, Menu, MessageSquare, Pencil, Plus, Search, ShieldCheck, Trash2, Users, X } from 'lucide-react';
+import { ArrowLeft, BarChart3, Database, Image, LayoutDashboard, LogOut, Menu, MessageSquare, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -82,7 +82,6 @@ const AdminPanel = ({ section: initialSection = 'dashboard' }) => {
             <small className="admin-brand-company">FOURISE</small>
           </div>
         </div>
-        <button className="admin-close" onClick={() => setMobileOpen(false)}><X size={18} /></button>
       </div>
       <nav>{sidebarModules.map(([id, label, Icon]) => <button className={(isSuperAdminRoute ? superAdminActiveKey : section) === id ? 'active' : ''} key={id} onClick={() => {
         const target = isSuperAdminRoute ? (
