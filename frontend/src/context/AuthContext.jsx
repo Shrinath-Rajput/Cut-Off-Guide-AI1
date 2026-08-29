@@ -19,7 +19,6 @@ export const AuthProvider = ({ children }) => {
       setCurrentUser(JSON.parse(storedUser));
       setIsAuthenticated(true);
     } else {
-      // Default guest user to allow direct access without login barrier
       const guestUser = {
         uid: 'guest_student',
         name: 'Guest Student',
@@ -28,13 +27,15 @@ export const AuthProvider = ({ children }) => {
         percentile: 95.5,
         targetBranch: 'Computer Science',
         state: 'Maharashtra',
+        role: 'USER',
       };
       setCurrentUser(guestUser);
       setIsAuthenticated(true);
     }
 
     if (storedAdminUser && storedAdminToken) {
-      setAdminUser(JSON.parse(storedAdminUser));
+      const parsedAdmin = JSON.parse(storedAdminUser);
+      setAdminUser(parsedAdmin);
     }
 
     setLoading(false);
@@ -73,9 +74,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const adminLogin = (user, token) => {
+    const normalizedUser = { ...user, role: user?.role || 'ADMIN' };
     localStorage.setItem('admin_token', token);
-    localStorage.setItem('admin_user', JSON.stringify(user));
-    setAdminUser(user);
+    localStorage.setItem('admin_user', JSON.stringify(normalizedUser));
+    setAdminUser(normalizedUser);
   };
 
   const adminLogout = () => {

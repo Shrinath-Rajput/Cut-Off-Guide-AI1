@@ -7,10 +7,12 @@ import re
 import logging
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.core.deps import get_current_user
 from app.schemas.user import UserLogin, UserSignup, UserResponse, LoginOtpRequest, LoginOtpVerifyRequest
 from app.services.auth_service import normalize_phone, send_otp_sms, verify_otp_sms
+from app.routes.admin import track_analytics_event
 from bson import ObjectId
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
@@ -85,6 +87,7 @@ async def create_or_update_user(payload: UserLogin, db):
                 del updated_user["_id"]
 
                 token = create_access_token(subject=existing_user["uid"], role=updated_user.get("role", "USER"))
+                await track_analytics_event(db, "USER_LOGIN", user_id=existing_user.get("uid"), metadata={"provider": payload.provider or existing_user.get("provider", "phone")})
                 return {
                     "status": "success",
                     "message": "User authenticated",
@@ -109,6 +112,7 @@ async def create_or_update_user(payload: UserLogin, db):
                 del new_user["_id"]
 
             token = create_access_token(subject=uid, role="USER")
+            await track_analytics_event(db, "USER_REGISTERED", user_id=uid, metadata={"provider": payload.provider or "phone"})
             return {
                 "status": "success",
                 "message": "User registered",
@@ -304,6 +308,7 @@ async def verify_otp(request: OtpVerifyRequest, db=Depends(get_db)):
             user.pop("passwordHash", None)
             user.pop("password_hash", None)
             token = create_access_token(subject=uid, role="USER")
+            await track_analytics_event(db, "USER_REGISTERED", user_id=uid, metadata={"provider": "password"})
             return {
                 "status": "success",
                 "message": "Account created and verified successfully",
@@ -318,6 +323,7 @@ async def verify_otp(request: OtpVerifyRequest, db=Depends(get_db)):
         user["id"] = str(user.pop("_id"))
         user.pop("passwordHash", None)
         user.pop("password_hash", None)
+        await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password")})
         return {"status": "success", "message": "Authentication successful", "token": token, "user": user}
     except HTTPException as e:
         return JSONResponse(status_code=e.status_code, content={"status": "error", "message": e.detail})
@@ -610,6 +616,34 @@ async def login(request: UserLogin, db=Depends(get_db)):
     if not identifier or not password:
         raise HTTPException(status_code=422, detail="Username/email and password are required")
 
+    configured_super_admin_email = (settings.SUPER_ADMIN_EMAIL or "").strip().lower()
+    configured_super_admin_password = settings.SUPER_ADMIN_PASSWORD or ""
+    if configured_super_admin_email and identifier == configured_super_admin_email:
+        if not configured_super_admin_password:
+            logger.warning("SUPER_ADMIN login blocked: SUPER_ADMIN_PASSWORD not configured")
+            raise HTTPException(status_code=401, detail="Invalid username/email or password")
+        if password != configured_super_admin_password:
+            logger.warning("SUPER_ADMIN login failed for configured email=%s", configured_super_admin_email)
+            raise HTTPException(status_code=401, detail="Invalid username/email or password")
+
+        super_admin_user = {
+            "uid": "super-admin-fourise",
+            "name": "FOURISE Super Admin",
+            "email": configured_super_admin_email,
+            "phone": (settings.SUPER_ADMIN_PHONE or "").strip(),
+            "role": "SUPER_ADMIN",
+            "provider": "password",
+            "isActive": True,
+        }
+        token = create_access_token(super_admin_user["uid"], role="SUPER_ADMIN")
+        logger.info("SUPER_ADMIN LOGIN SUCCESS: uid=%s email=%s", super_admin_user["uid"], configured_super_admin_email)
+        return {
+            "status": "success",
+            "message": "Admin authenticated",
+            "token": token,
+            "user": super_admin_user,
+        }
+
     try:
         normalized_phone = normalize_phone(raw_identifier)
         is_phone_lookup = True
@@ -729,11 +763,12 @@ async def login(request: UserLogin, db=Depends(get_db)):
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
     user.pop("password", None)
-    if user.get("role") == "ADMIN":
+    if user.get("role") in {"ADMIN", "SUPER_ADMIN"}:
+        await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password"), "role": user.get("role")})
         return {
             "status": "success",
             "message": "Admin authenticated",
-            "token": create_access_token(user["uid"], role="ADMIN"),
+            "token": create_access_token(user["uid"], role=user.get("role", "ADMIN")),
             "user": user,
         }
 
@@ -780,6 +815,7 @@ async def verify_login_otp(request: LoginOtpVerifyRequest, db=Depends(get_db)):
     await db["users"].update_one({"_id": user["_id"]}, {"$set": {"lastLogin": datetime.now(timezone.utc)}})
     user["id"] = str(user.pop("_id"))
     user.pop("passwordHash", None)
+    await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password")})
     return {"status": "success", "token": create_access_token(user["uid"], role=user.get("role", "USER")), "user": user}
 
 @router.get("/me")
