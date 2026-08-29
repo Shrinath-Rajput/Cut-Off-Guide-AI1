@@ -27,6 +27,10 @@
   --surface-tint: #944a00;
   --primary: #944a00;
   --on-primary: #ffffff;
+  --accent: #ff6b00;
+  --accent-strong: #e65c00;
+  --accent-bg: #fff0e6;
+  --accent-border: #ffc299;
   --primary-container: #e67e22;
   --on-primary-container: #502600;
   --inverse-primary: #ffb783;
