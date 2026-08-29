@@ -6,6 +6,7 @@ from bson import ObjectId
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.schemas.saved import SavedCollegeCreate, SavedCollegeResponse
+from app.routes.admin import track_analytics_event
 
 router = APIRouter(prefix="/api/saved", tags=["Saved"])
 
@@ -55,6 +56,7 @@ async def save_college(college: SavedCollegeCreate, current_user: dict = Depends
     result = await collection.insert_one(new_saved)
     new_saved["id"] = str(result.inserted_id)
     del new_saved["_id"]
+    await track_analytics_event(db, "COLLEGE_SAVED", user_id=current_user.get("uid"), college_id=college.college_id, metadata={"savedId": new_saved["id"]})
     
     return new_saved
 
@@ -73,5 +75,6 @@ async def remove_saved_college(saved_id: str, current_user: dict = Depends(get_c
     delete_result = await collection.delete_one({"_id": obj_id, "uid": current_user["uid"]})
     if delete_result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Saved college not found")
-        
+    await track_analytics_event(db, "COLLEGE_UNSAVED", user_id=current_user.get("uid"), college_id=saved_id, metadata={"source": "saved_route"})
+    
     return {"status": "success", "message": "College removed from saved list"}

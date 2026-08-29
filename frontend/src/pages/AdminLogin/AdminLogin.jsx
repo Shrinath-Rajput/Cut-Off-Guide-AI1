@@ -18,7 +18,11 @@ const AdminLogin = () => {
     try {
       const response = await adminLoginApi(credentials);
       saveAdminSession(response.user, response.token);
-      navigate('/admin/dashboard', { replace: true });
+      if (response.user?.role === 'SUPER_ADMIN') {
+        navigate('/super-admin/dashboard', { replace: true });
+      } else {
+        navigate('/admin/dashboard', { replace: true });
+      }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Unable to sign in');
     } finally {
@@ -30,9 +34,9 @@ const AdminLogin = () => {
     <main className="admin-login-shell">
       <section className="admin-login-card">
         <div className="admin-mark"><ShieldCheck size={28} /></div>
-        <p className="admin-kicker">CUTOFF GUIDE AI</p>
-        <h1>Admin Login</h1>
-        <p className="admin-login-copy">Sign in with an authorized administrator account to manage the guide.</p>
+        <p className="admin-kicker">FOURISE</p>
+        <h1>Super Admin Login</h1>
+        <p className="admin-login-copy">Access the FOURISE control layer for CutOff Guide AI.</p>
         <form onSubmit={submit} className="admin-form">
           <label>Email<input type="email" required value={credentials.email} onChange={(event) => setCredentials({ ...credentials, email: event.target.value })} /></label>
           <label>Password<input type="password" required value={credentials.password} onChange={(event) => setCredentials({ ...credentials, password: event.target.value })} /></label>
