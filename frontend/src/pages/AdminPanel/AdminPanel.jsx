@@ -12,6 +12,9 @@ import './AdminPanel.css';
 const modules = [
   ['dashboard', 'Dashboard', LayoutDashboard], ['users', 'Manage Users', Users], ['enquiries', 'Enquiries', MessageSquare], ['data', 'Manage Data', Database], ['images', 'UI Images', Image], ['plans', 'Subscription Plans', BarChart3],
 ];
+const superAdminModules = [
+  ['dashboard', 'Dashboard', LayoutDashboard], ['admin-panel', 'Admin Panel', ShieldCheck], ['users', 'Manage Users', Users], ['data', 'Manage Data', Database],
+];
 const emptyCollege = { name: '', rank: '', location: '', state: '', type: 'Private', rating: '', courses: '', feeLabel: '', feeValue: '', cutoff: '' };
 const emptyCutoff = { college_name: '', course: '', category: '', gender: '', university: '', location: '', round: '', percentile: '', rank: '' };
 const emptyPlan = { name: '', price: '', duration: '', features: '', limits: '' };
@@ -22,8 +25,16 @@ const AdminPanel = ({ section: initialSection = 'dashboard' }) => {
   const { adminUser, adminLogout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const isSuperAdminRoute = location.pathname.startsWith('/super-admin/');
   const routeSection = location.pathname.split('/')[2] || initialSection;
-  const section = routeSection === 'subscriptions' ? 'plans' : routeSection;
+  const superAdminActiveKey = location.pathname.startsWith('/super-admin/admin-panel') ? 'admin-panel' : location.pathname.startsWith('/super-admin/users') ? 'users' : location.pathname.startsWith('/super-admin/data') ? 'data' : 'dashboard';
+  const section = isSuperAdminRoute ? (
+    location.pathname.startsWith('/super-admin/admin-panel') ? 'dashboard' :
+    location.pathname.startsWith('/super-admin/users') ? 'users' :
+    location.pathname.startsWith('/super-admin/data') ? 'data' :
+    'dashboard'
+  ) : routeSection === 'subscriptions' ? 'plans' : routeSection;
+  const sidebarModules = isSuperAdminRoute ? superAdminModules : modules;
   const [mobileOpen, setMobileOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ dashboard: null, users: [], colleges: [], cutoffs: [], enquiries: [], plans: [], images: [] });
@@ -61,20 +72,38 @@ const AdminPanel = ({ section: initialSection = 'dashboard' }) => {
 
   return <div className="admin-app">
     <aside className={`admin-sidebar ${mobileOpen ? 'open' : ''}`}>
-      <div className="admin-brand"><span className="admin-brand-icon"><ShieldCheck size={20} /></span><span>Cutoff Guide <b>AI</b></span><button className="admin-close" onClick={() => setMobileOpen(false)}><X size={18} /></button></div>
-      <nav>{modules.map(([id, label, Icon]) => <button className={section === id ? 'active' : ''} key={id} onClick={() => { navigate(`/admin/${id === 'plans' ? 'subscriptions' : id}`); setMobileOpen(false); }}><Icon size={18} />{label}</button>)}</nav>
+      <div className="admin-brand">
+        <div className="admin-brand-shell">
+          <span className="admin-brand-mark" aria-hidden="true"><span /><span /><span /><span /></span>
+          <div className="admin-brand-copy">
+            <span className="admin-brand-name">Cutoff Guide <b>AI</b></span>
+            <small className="admin-brand-company">FOURISE</small>
+          </div>
+        </div>
+        <button className="admin-close" onClick={() => setMobileOpen(false)}><X size={18} /></button>
+      </div>
+      <nav>{sidebarModules.map(([id, label, Icon]) => <button className={(isSuperAdminRoute ? superAdminActiveKey : section) === id ? 'active' : ''} key={id} onClick={() => {
+        const target = isSuperAdminRoute ? (
+          id === 'dashboard' ? '/super-admin/dashboard' :
+          id === 'users' ? '/super-admin/users' :
+          id === 'data' ? '/super-admin/data' :
+          '/super-admin/admin-panel'
+        ) : `/admin/${id === 'plans' ? 'subscriptions' : id}`;
+        navigate(target);
+        setMobileOpen(false);
+      }}><Icon size={18} />{label}</button>)}</nav>
       <button className="admin-logout" onClick={signOut}><LogOut size={18} />Logout</button>
     </aside>
     {mobileOpen && <button className="admin-overlay" aria-label="Close menu" onClick={() => setMobileOpen(false)} />}
     <main className="admin-main">
-      <header className="admin-topbar"><button className="admin-menu" onClick={() => setMobileOpen(true)}><Menu size={21} /></button><div><p className="admin-kicker">ADMIN PANEL</p><h1>{modules.find(([id]) => id === section)?.[1]}</h1></div><div className="admin-user"><span>{adminUser?.name?.slice(0, 1) || 'A'}</span><div><strong>{adminUser?.name || 'Administrator'}</strong><small>{adminUser?.email || 'Admin account'}</small></div></div></header>
+      <header className="admin-topbar"><button className="admin-menu" onClick={() => setMobileOpen(true)}><Menu size={21} /></button><div><p className="admin-kicker">{isSuperAdminRoute ? 'SUPER ADMIN' : 'ADMIN PANEL'}</p><h1>{(isSuperAdminRoute ? sidebarModules : modules).find(([id]) => id === (isSuperAdminRoute ? superAdminActiveKey : section))?.[1] || 'Dashboard'}</h1></div><div className="admin-user"><span>{adminUser?.name?.slice(0, 1) || 'A'}</span><div><strong>{adminUser?.name || 'Administrator'}</strong><small>{adminUser?.email || 'Admin account'}</small></div></div></header>
       <div className="admin-content">{loading && <div className="admin-loading">Loading workspace...</div>}{!loading && section === 'dashboard' && <Dashboard data={data.dashboard} onTrain={async () => { const result = await trainAdminDatabase(); toast(result.message); }} />}{!loading && section === 'users' && <UsersView items={data.users} search={search} setSearch={setSearch} reload={() => refresh('users')} onEdit={(item) => open('user', item)} onDelete={(id) => destroy('user', () => deleteAdminUser(id))} />}{!loading && section === 'enquiries' && <EnquiriesView items={data.enquiries} search={search} setSearch={setSearch} onDelete={(id) => destroy('enquiry', () => deleteAdminEnquiry(id))} onUpdate={async (id, payload) => { await updateAdminEnquiry(id, payload); toast.success('Enquiry updated'); refresh(); }} />}{!loading && section === 'data' && <DataView colleges={data.colleges} cutoffs={data.cutoffs} search={search} setSearch={setSearch} onAddCollege={() => open('college', emptyCollege)} onEditCollege={(item) => open('college', { ...item, courses: item.courses?.join(', ') })} onDeleteCollege={(id) => destroy('college', () => deleteAdminCollege(id))} onAddCutoff={() => open('cutoff', emptyCutoff)} onEditCutoff={(item) => open('cutoff', item)} onDeleteCutoff={(id) => destroy('cutoff', () => deleteAdminCutoff(id))} />}{!loading && section === 'plans' && <PlansView items={data.plans} onAdd={() => open('plan', emptyPlan)} onEdit={(item) => open('plan', { ...item, features: item.features?.join(', ') })} onToggle={async (id, isActive) => { await updateAdminSubscription(id, { isActive }); toast.success('Plan updated'); refresh('plans'); }} onDelete={(id) => destroy('plan', () => deleteAdminSubscription(id))} />}{!loading && section === 'images' && <ImagesView items={data.images} onUpload={async (file, imageSection, name) => { await uploadAdminImage(file, imageSection, name); toast.success('Image uploaded'); refresh('images'); }} onReplace={async (id, file) => { await replaceAdminImage(id, file); toast.success('Image replaced'); refresh('images'); }} onToggle={async (id, isActive) => { await updateAdminImage(id, { isActive }); refresh('images'); }} onDelete={(id) => destroy('image', () => deleteAdminImage(id))} />}</div>
     </main>
     {modal && <Modal title={`${form.id ? 'Edit' : 'Add'} ${modal}`} onClose={close}>{modal === 'user' && <UserForm form={form} field={field} onSave={async () => { await updateAdminUser(form.id, form); close(); toast.success('User updated'); refresh(); }} />}{modal === 'college' && <RecordForm form={form} field={field} fields={Object.keys(emptyCollege)} onSave={() => save('college')} />}{modal === 'cutoff' && <RecordForm form={form} field={field} fields={Object.keys(emptyCutoff)} onSave={() => save('cutoff')} />}{modal === 'plan' && <RecordForm form={form} field={field} fields={Object.keys(emptyPlan)} onSave={() => save('plan')} />}</Modal>}
   </div>;
 };
 
-const Dashboard = ({ data, onTrain }) => <><section className="admin-welcome"><div><p className="admin-kicker">OVERVIEW</p><h2>Good morning, your guide is in view.</h2><p>Monitor the people, data, and content powering Cutoff Guide AI.</p></div><button className="admin-secondary-button" onClick={onTrain}><Database size={16} />Update database</button></section><section className="stat-grid">{[['Total Users', data?.totalUsers], ['Active Users', data?.activeUsers], ['Total Enquiries', data?.totalEnquiries], ['Total Colleges', data?.totalColleges], ['Total Cutoff Records', data?.totalCutoffs], ['Active Subscription Plans', data?.activePlans]].map(([label, value]) => <article className="stat-card" key={label}><span>{label}</span><strong>{value ?? 0}</strong><small>Live from database</small></article>)}</section><section className="admin-two-column"><Panel title="Recent users"><SimpleList items={data?.recentUsers} empty="No users yet" primary="name" secondary="email" /></Panel><Panel title="Recent enquiries"><SimpleList items={data?.recentEnquiries} empty="No enquiries yet" primary="subject" secondary="status" /></Panel></section></>;
+const Dashboard = ({ data, onTrain }) => <><section className="admin-welcome"><div><p className="admin-kicker">OVERVIEW</p><p>Monitor the people, data, and content powering Cutoff Guide AI.</p></div><button className="admin-secondary-button" onClick={onTrain}><Database size={16} />Update database</button></section><section className="stat-grid">{[['Total Users', data?.totalUsers], ['Active Users', data?.activeUsers], ['Total Enquiries', data?.totalEnquiries], ['Total Colleges', data?.totalColleges], ['Total Cutoff Records', data?.totalCutoffs], ['Active Subscription Plans', data?.activePlans]].map(([label, value]) => <article className="stat-card" key={label}><span>{label}</span><strong>{value ?? 0}</strong><small>Live from database</small></article>)}</section><section className="admin-two-column"><Panel title="Recent users"><SimpleList items={data?.recentUsers} empty="No users yet" primary="name" secondary="email" /></Panel><Panel title="Recent enquiries"><SimpleList items={data?.recentEnquiries} empty="No enquiries yet" primary="subject" secondary="status" /></Panel></section></>;
 const Panel = ({ title, children, action }) => <section className="admin-panel"><div className="panel-heading"><h3>{title}</h3>{action}</div>{children}</section>;
 const SimpleList = ({ items = [], empty, primary, secondary }) => items.length ? <div className="simple-list">{items.map((item) => <div className="simple-row" key={item.id}><div><strong>{item[primary] || 'Untitled'}</strong><small>{item[secondary] || '—'}</small></div><time>{date(item.createdAt)}</time></div>)}</div> : <p className="empty-state">{empty}</p>;
 const Toolbar = ({ search, setSearch, children }) => <div className="admin-toolbar"><label className="search-box"><Search size={17} /><input placeholder="Search records" value={search} onChange={(event) => setSearch(event.target.value)} /></label>{children}</div>;

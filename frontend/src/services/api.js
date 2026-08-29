@@ -139,6 +139,7 @@ export const adminLogin = async (credentials) => {
 };
 
 export const getAdminDashboard = async () => (await api.get('/api/admin/dashboard')).data;
+export const getSuperAdminDashboard = async () => (await api.get('/api/admin/super-admin/dashboard')).data;
 export const getAdminUsers = async (params = {}) => (await api.get('/api/admin/users', { params })).data;
 export const updateAdminUser = async (id, payload) => (await api.patch(`/api/admin/users/${id}`, payload)).data;
 export const deleteAdminUser = async (id) => (await api.delete(`/api/admin/users/${id}`)).data;

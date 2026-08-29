@@ -21,6 +21,7 @@ import History from '../pages/History/History';
 import GoogleCallback from '../pages/GoogleCallback/GoogleCallback';
 import AdminLogin from '../pages/AdminLogin/AdminLogin';
 import AdminPanel from '../pages/AdminPanel/AdminPanel';
+import SuperAdminDashboard from '../pages/SuperAdminDashboard/SuperAdminDashboard';
 import ProtectedRoute from './ProtectedRoute';
 import { OnboardingProvider } from '../context/OnboardingContext';
 import { useAuth } from '../context/AuthContext';
@@ -74,7 +75,13 @@ const AppRoutes = () => {
         <Route path="/admin/data" element={<AdminRoute><AdminPanel section="data" /></AdminRoute>} />
         <Route path="/admin/images" element={<AdminRoute><AdminPanel section="images" /></AdminRoute>} />
         <Route path="/admin/subscriptions" element={<AdminRoute><AdminPanel section="plans" /></AdminRoute>} />
+        <Route path="/super-admin" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
+        <Route path="/super-admin/dashboard" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
+        <Route path="/super-admin/admin-panel" element={<SuperAdminRoute><AdminPanel section="dashboard" /></SuperAdminRoute>} />
+        <Route path="/super-admin/users" element={<SuperAdminRoute><AdminPanel section="users" /></SuperAdminRoute>} />
+        <Route path="/super-admin/data" element={<SuperAdminRoute><AdminPanel section="data" /></SuperAdminRoute>} />
         <Route path="/admin/*" element={<Navigate to="/admin/dashboard" replace />} />
+        <Route path="/super-admin/*" element={<Navigate to="/super-admin/dashboard" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
@@ -84,7 +91,17 @@ const AppRoutes = () => {
 const AdminRoute = ({ children }) => {
   const { adminUser, loading } = useAuth();
   if (loading) return null;
-  return adminUser?.role === 'ADMIN' ? children : <Navigate to="/admin/login" replace />;
+  const role = adminUser?.role || '';
+  if (role === 'SUPER_ADMIN') {
+    return <Navigate to="/super-admin/dashboard" replace />;
+  }
+  return role === 'ADMIN' ? children : <Navigate to="/admin/login" replace />;
+};
+
+const SuperAdminRoute = ({ children }) => {
+  const { adminUser, loading } = useAuth();
+  if (loading) return null;
+  return adminUser?.role === 'SUPER_ADMIN' ? children : <Navigate to="/admin/login" replace />;
 };
 
 export default AppRoutes;

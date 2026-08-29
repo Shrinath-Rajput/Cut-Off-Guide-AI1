@@ -3,6 +3,7 @@ from typing import List, Optional
 from app.core.database import get_db
 from app.schemas.college import CollegeResponse, PaginatedCollegeResponse
 from app.services.college_service import get_all_colleges, get_college_by_id
+from app.routes.admin import track_analytics_event
 
 router = APIRouter(prefix="/api/colleges", tags=["Colleges"])
 
@@ -44,6 +45,8 @@ async def list_colleges(
         college_type=college_type, 
         sort=sort
     )
+    if search:
+        await track_analytics_event(db, "COLLEGE_SEARCH", metadata={"search": search, "page": page, "limit": limit})
     return colleges
 
 @router.get("/ai/lookup")
@@ -73,4 +76,5 @@ async def read_college(college_id: str, db = Depends(get_db)):
     college = await get_college_by_id(db, college_id)
     if not college:
         raise HTTPException(status_code=404, detail="College not found")
+    await track_analytics_event(db, "COLLEGE_VIEW", college_id=college_id, metadata={"college_name": college.get("name")})
     return college
