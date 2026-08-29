@@ -95,13 +95,13 @@ const AdminRoute = ({ children }) => {
   if (role === 'SUPER_ADMIN') {
     return <Navigate to="/super-admin/dashboard" replace />;
   }
-  return role === 'ADMIN' ? children : <Navigate to="/admin/login" replace />;
+  return role === 'ADMIN' ? children : <Navigate to="/login" replace />;
 };
 
 const SuperAdminRoute = ({ children }) => {
   const { adminUser, loading } = useAuth();
   if (loading) return null;
-  return adminUser?.role === 'SUPER_ADMIN' ? children : <Navigate to="/admin/login" replace />;
+  return adminUser?.role === 'SUPER_ADMIN' ? children : <Navigate to="/login" replace />;
 };
 
 export default AppRoutes;

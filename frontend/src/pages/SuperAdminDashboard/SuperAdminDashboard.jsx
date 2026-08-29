@@ -57,7 +57,7 @@ const SuperAdminDashboard = () => {
 
   const signOut = () => {
     adminLogout();
-    navigate('/admin/login', { replace: true });
+    navigate('/login', { replace: true });
   };
 
   if (loading) {
@@ -69,7 +69,9 @@ const SuperAdminDashboard = () => {
       <aside className={`admin-sidebar ${mobileOpen ? 'open' : ''}`}>
         <div className="admin-brand">
           <div className="admin-brand-shell">
-            <span className="admin-brand-mark" aria-hidden="true"><span /><span /><span /><span /></span>
+            <span className="admin-brand-mark" aria-hidden="true">
+              <img src="/favicon.svg" alt="FOURISE" />
+            </span>
             <div className="admin-brand-copy">
               <span className="admin-brand-name">Cutoff Guide <b>Super</b></span>
               <small className="admin-brand-company">FOURISE</small>
