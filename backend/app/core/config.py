@@ -36,7 +36,10 @@ class Settings(BaseSettings):
     CLOUDINARY_API_SECRET: str = os.getenv("CLOUDINARY_API_SECRET", "")
     ADMIN_EMAIL: str = os.getenv("ADMIN_EMAIL", "")
     ADMIN_PASSWORD: str = os.getenv("ADMIN_PASSWORD", "")
-    
+    SUPER_ADMIN_EMAIL: str = os.getenv("SUPER_ADMIN_EMAIL", "fourise@gmail.com")
+    SUPER_ADMIN_PHONE: str = os.getenv("SUPER_ADMIN_PHONE", "9699510445")
+    SUPER_ADMIN_PASSWORD: str = os.getenv("SUPER_ADMIN_PASSWORD", "")
+
     CORS_ORIGINS: list[str] = [
         "http://localhost:5173",
         "http://localhost:5174",

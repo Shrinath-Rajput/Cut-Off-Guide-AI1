@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.database import connect_to_mongo, close_mongo_connection, get_db
-from app.routes import assistant, auth, users, admin, colleges, cutoffs, profile, saved, contact
+from app.routes import assistant, auth, users, admin, super_admin, colleges, cutoffs, profile, saved, contact
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,8 +20,9 @@ async def lifespan(app: FastAPI):
     try:
         if get_db() is not None:
             await admin.ensure_admin_account(get_db())
+            await admin.ensure_super_admin_account(get_db())
     except Exception as e:
-        print("Admin account setup skipped (MongoDB offline):", e)
+        print("Admin accounts setup skipped (MongoDB offline):", e)
     yield
     # Shutdown
     await close_mongo_connection()
@@ -61,6 +62,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(admin.router)
+app.include_router(super_admin.router)
 app.include_router(colleges.router)
 app.include_router(cutoffs.router)
 app.include_router(profile.router)

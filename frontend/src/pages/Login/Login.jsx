@@ -54,9 +54,9 @@ const Login = () => {
     setError('');
     try {
       const response = await loginUser({ username: identifier.trim(), password });
-      if (response.user?.role === 'ADMIN') {
+      if (response.user?.role === 'ADMIN' || response.user?.role === 'SUPER_ADMIN') {
         adminLogin(response.user, response.token);
-        navigate('/admin/dashboard', { replace: true });
+        navigate(response.user?.role === 'SUPER_ADMIN' ? '/super-admin/dashboard' : '/admin/dashboard', { replace: true });
         return;
       }
       setPendingLogin({ ...response.user, uid: response.uid || response.user.uid });
