@@ -616,33 +616,10 @@ async def login(request: UserLogin, db=Depends(get_db)):
     if not identifier or not password:
         raise HTTPException(status_code=422, detail="Username/email and password are required")
 
+    configured_admin_email = (settings.ADMIN_EMAIL or "").strip().lower()
+    configured_admin_password = settings.ADMIN_PASSWORD or ""
     configured_super_admin_email = (settings.SUPER_ADMIN_EMAIL or "").strip().lower()
     configured_super_admin_password = settings.SUPER_ADMIN_PASSWORD or ""
-    if configured_super_admin_email and identifier == configured_super_admin_email:
-        if not configured_super_admin_password:
-            logger.warning("SUPER_ADMIN login blocked: SUPER_ADMIN_PASSWORD not configured")
-            raise HTTPException(status_code=401, detail="Invalid username/email or password")
-        if password != configured_super_admin_password:
-            logger.warning("SUPER_ADMIN login failed for configured email=%s", configured_super_admin_email)
-            raise HTTPException(status_code=401, detail="Invalid username/email or password")
-
-        super_admin_user = {
-            "uid": "super-admin-fourise",
-            "name": "FOURISE Super Admin",
-            "email": configured_super_admin_email,
-            "phone": (settings.SUPER_ADMIN_PHONE or "").strip(),
-            "role": "SUPER_ADMIN",
-            "provider": "password",
-            "isActive": True,
-        }
-        token = create_access_token(super_admin_user["uid"], role="SUPER_ADMIN")
-        logger.info("SUPER_ADMIN LOGIN SUCCESS: uid=%s email=%s", super_admin_user["uid"], configured_super_admin_email)
-        return {
-            "status": "success",
-            "message": "Admin authenticated",
-            "token": token,
-            "user": super_admin_user,
-        }
 
     try:
         normalized_phone = normalize_phone(raw_identifier)
@@ -694,6 +671,33 @@ async def login(request: UserLogin, db=Depends(get_db)):
         user = user_via_scan
 
     if user is None:
+        if configured_super_admin_email and identifier == configured_super_admin_email and configured_super_admin_password and password == configured_super_admin_password:
+            super_admin_user = {
+                "uid": "super-admin-fourise",
+                "name": "FOURISE Super Admin",
+                "email": configured_super_admin_email,
+                "phone": (settings.SUPER_ADMIN_PHONE or "").strip(),
+                "role": "SUPER_ADMIN",
+                "provider": "password",
+                "isActive": True,
+            }
+            token = create_access_token(super_admin_user["uid"], role="SUPER_ADMIN")
+            logger.info("SUPER_ADMIN LOGIN SUCCESS: uid=%s email=%s", super_admin_user["uid"], configured_super_admin_email)
+            return {
+                "status": "success",
+                "message": "Admin authenticated",
+                "token": token,
+                "user": super_admin_user,
+            }
+
+        if configured_admin_email and identifier == configured_admin_email and configured_admin_password and password == configured_admin_password:
+            admin_user = await db["users"].find_one({"email": configured_admin_email})
+            if not admin_user:
+                admin_user = {"uid": "admin-fallback", "name": "Administrator", "email": configured_admin_email, "phone": None, "role": "ADMIN", "provider": "password", "isActive": True}
+            token = create_access_token(admin_user.get("uid") or "admin-fallback", role="ADMIN")
+            logger.info("ADMIN LOGIN SUCCESS (fallback): uid=%s email=%s", admin_user.get("uid") or "admin-fallback", configured_admin_email)
+            return {"status": "success", "message": "Admin authenticated", "token": token, "user": {**admin_user, "role": "ADMIN"}}
+
         logger.warning("LOGIN FAILED: No user found for identifier=%s", identifier)
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
 
