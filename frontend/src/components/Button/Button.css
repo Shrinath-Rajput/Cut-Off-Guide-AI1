@@ -29,18 +29,8 @@
 }
 
 .premium-button.primary {
-  background: var(--accent, #e67e22);
-  color: #ffffff;
-  border: 1px solid rgba(230, 126, 34, 0.3);
-}
-
-.premium-button:disabled {
-  opacity: 0.75;
-  cursor: not-allowed;
-  background: #e67e22 !important;
-  color: #ffffff !important;
-  box-shadow: none !important;
-  transform: none !important;
+  background: var(--accent);
+  color: white;
 }
 
 .premium-button.secondary {

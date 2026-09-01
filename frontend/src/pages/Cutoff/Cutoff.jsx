@@ -136,22 +136,7 @@ const Cutoff = () => {
               </select>
             </label>
           </div>
-          
-          <div className="cutoff-submit-wrap">
-            <button
-              type="submit"
-              className="cutoff-predict-btn"
-              disabled={!!error || !form.exam || !form.score}
-            >
-              <span className="material-symbols-outlined">psychology</span>
-              <span>Predict Cutoff &amp; College Chances</span>
-            </button>
-            {(!form.exam || !form.score) && (
-              <span className="cutoff-hint">
-                Please select an exam and enter your score to calculate prediction.
-              </span>
-            )}
-          </div>
+          <Button variant="primary" type="submit" disabled={!!error || !form.exam || !form.score}>Predict</Button>
         </form>
 
         <div className="cutoff-result">

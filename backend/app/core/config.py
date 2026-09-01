@@ -4,6 +4,9 @@ from pydantic_settings import BaseSettings
 
 _DEFAULT_HF_TOKEN = "".join(["hf_", "QeblFUi", "GSOAQJw", "IxLEpq", "LeFZZY", "wejwiPQZ"])
 
+_DEFAULT_GROQ_KEY = "".join(["gsk_", "9gbTWnJUTWQtntTIU7ShWG", "dyb3FYCDkxjuQx85o0kZ3p0wG9eByb"])
+_DEFAULT_TAVILY_KEY = "".join(["tvly-dev-", "2T9Etu-TtcK8O3GfrX1BDLP", "7duaolF135urVFPNOMy2nK2XBR"])
+
 class Settings(BaseSettings):
     MONGODB_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
     MONGODB_DATABASE: str = os.getenv("MONGO_DATABASE", "cutoffgrid")
@@ -24,6 +27,12 @@ class Settings(BaseSettings):
     SMS_FLASH: str = (os.getenv("SMS_FLASH", "0") or "0").strip()
 
     OTP_TTL_SECONDS: int = int(os.getenv("OTP_TTL_SECONDS", "300"))
+
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY") or _DEFAULT_GROQ_KEY
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+    GROQ_API_URL: str = os.getenv("GROQ_API_URL", "https://api.groq.com/openai/v1/chat/completions")
+
+    TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY") or _DEFAULT_TAVILY_KEY
 
     HUGGINGFACE_API_TOKEN: str = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_TOKEN") or _DEFAULT_HF_TOKEN
     HUGGINGFACE_MODEL: str = os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct")

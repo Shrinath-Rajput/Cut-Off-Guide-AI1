@@ -58,18 +58,6 @@
   --on-background: #2a170f;
   --surface-variant: #ffdbce;
 
-  --accent: #e67e22;
-  --accent-strong: #d35400;
-  --accent-soft: #fdeed9;
-  --accent-bg: #fff8f4;
-  --accent-border: #f8c291;
-  --text: #2a170f;
-  --text-secondary: #564337;
-  --text-muted: #897365;
-  --border: #dcc1b1;
-  --background-soft: #fff1ec;
-  --radius: 20px;
-
   --shadow-base: rgba(42, 23, 15, 0.08);
   --shadow-soft: 0 20px 32px rgba(42, 23, 15, 0.06);
   --shadow-strong: 0 12px 24px rgba(42, 23, 15, 0.1);
