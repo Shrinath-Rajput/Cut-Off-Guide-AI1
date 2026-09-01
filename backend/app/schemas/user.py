@@ -52,14 +52,31 @@ class UserSignup(BaseModel):
     preferredBranch: Optional[str] = None
     educationLevel: Optional[str] = None
     targetStream: Optional[str] = None
-    subjects: Optional[List[str]] = None
-    areasOfInterest: Optional[List[str]] = None
+    subjects: Optional[List[str]] = Field(None, max_length=1)
+    areasOfInterest: Optional[List[str]] = Field(None, max_length=1)
     targetDegreeLevel: Optional[str] = None
     expectedEntranceScore: Optional[str] = None
     preferredLocation: Optional[str] = None
     budgetRange: Optional[str] = None
     collegeType: Optional[str] = None
     hostelRequired: Optional[bool] = None
+    scoreType: Optional[str] = None
+
+    from pydantic import model_validator
+    @model_validator(mode='after')
+    def validate_score(self) -> 'UserSignup':
+        if self.examScore and self.scoreType:
+            try:
+                num = float(self.examScore)
+                if num < 0:
+                    raise ValueError("Score cannot be negative")
+                if self.scoreType == 'Percentage' and num > 100:
+                    raise ValueError("Percentage cannot exceed 100")
+                if self.scoreType == 'CGPA' and num > 10:
+                    raise ValueError("CGPA cannot exceed 10")
+            except ValueError as e:
+                raise ValueError(str(e))
+        return self
 
 class LoginOtpRequest(BaseModel):
     uid: str

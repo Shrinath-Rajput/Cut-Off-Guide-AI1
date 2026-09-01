@@ -52,11 +52,12 @@ const Cutoff = () => {
     try {
       // Use college name as university for prediction req
       const req = {
-          college: form.university || "VJTI",
+          college: form.university,
           course: form.course || "Computer Engineering",
           category: form.category,
           gender: form.gender,
-          target_year: form.target_year
+          target_year: form.target_year,
+          score: form.score ? parseFloat(form.score) : undefined
       };
       const data = await predictCutoffs(req);
       setResult(data);
@@ -167,9 +168,25 @@ const Cutoff = () => {
             <div className="result-card">
               {result.message ? (
                  <div className="result-empty">{result.message}</div>
+              ) : result.recommended_colleges ? (
+                 <>
+                   <h2>{result.target_year} College Recommendations</h2>
+                   <div className="recommendations-list">
+                     {result.recommended_colleges.map((col, idx) => (
+                       <div key={idx} className="recommendation-item">
+                         <h3>{col.college_name}</h3>
+                         <div className="rec-details">
+                           <span>Predicted Cutoff: <strong>{col.predicted_cutoff}</strong></span>
+                           <span>Range: {col.lower_bound} - {col.upper_bound}</span>
+                           <span>Match: <strong className={`match-${col.match_probability?.toLowerCase() || 'medium'}`}>{col.match_probability}</strong></span>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 </>
               ) : (
                  <>
-                   <h2>{result.target_year} Predicted Cutoff</h2>
+                   <h2>{result.target_year} Predicted Cutoff for {result.college}</h2>
                    <div className="result-grid">
                      <div>
                        <strong>{result.predicted_cutoff}</strong>
