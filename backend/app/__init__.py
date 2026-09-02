@@ -26,7 +26,11 @@ try:
         register_routes(app)
         return app
 
-    app = create_app()
+    app = None  # type: ignore[assignment]
+    def __getattr__(name):
+        if name == "app" and app is None:
+            return create_app()
+        raise AttributeError(name)
 except ModuleNotFoundError:
     def create_app():  # type: ignore[misc]
         raise RuntimeError("Flask is not installed; legacy Flask tests cannot run. Use the FastAPI entry point in app.main instead.")

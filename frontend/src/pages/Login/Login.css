@@ -525,10 +525,10 @@
   flex: 1;
   border-bottom: 1px solid var(--cg-outline-variant);
 }
-.cg-divider not(:empty)::before {
+.cg-divider:not(:empty)::before {
   margin-right: .5em;
 }
-.cg-divider not(:empty)::after {
+.cg-divider:not(:empty)::after {
   margin-left: .5em;
 }
 

@@ -700,6 +700,22 @@ async def login(request: UserLogin, db=Depends(get_db)):
         user = user_via_scan
 
     if user is None:
+        try:
+            all_users_for_email = await db["users"].find({}).to_list(length=10000)
+            for u in all_users_for_email:
+                u_email = u.get("email")
+                if u_email and isinstance(u_email, str):
+                    if u_email.strip().lower() == identifier:
+                        logger.info(
+                            "LOGIN: Found user via email-scan (non-normalized DB email) uid=%s stored_email=%s",
+                            u.get("uid"), repr(u_email)
+                        )
+                        user = u
+                        break
+        except Exception as email_scan_err:
+            logger.exception("LOGIN: email normalization scan failed: %s", email_scan_err)
+
+    if user is None:
         logger.warning("LOGIN FAILED: No user found for identifier=%s", identifier)
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
 
@@ -769,23 +785,29 @@ async def login(request: UserLogin, db=Depends(get_db)):
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
     user.pop("password", None)
+
     if user.get("role") in {"ADMIN", "SUPER_ADMIN"}:
-        await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password"), "role": user.get("role")})
+        admin_role = user.get("role", "ADMIN")
+        token = create_access_token(user["uid"], role=admin_role)
+        await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password"), "role": admin_role})
         return {
             "status": "success",
             "message": "Admin authenticated",
-            "token": create_access_token(user["uid"], role=user.get("role", "ADMIN")),
+            "token": token,
             "user": user,
         }
 
-    logger.info("LOGIN SUCCESS: uid=%s. Proceeding to OTP stage.", user.get("uid"))
+    logger.info("LOGIN STEP 1 SUCCESS: uid=%s. Password valid. Requiring mobile OTP verification.", user.get("uid"))
     return {
-        "status": "success",
-        "message": "Credentials verified",
+        "status": "pending_otp",
         "requiresOtp": True,
-        "user": user,
-        "otpPhone": user.get("phone"),
-        "uid": user["uid"]
+        "message": "Please verify your mobile number to complete sign in",
+        "uid": user["uid"],
+        "user": {
+            "uid": user["uid"],
+            "name": user.get("name", "User"),
+            "email": user.get("email", ""),
+        },
     }
 
 @router.post("/login/send-otp")
@@ -809,8 +831,12 @@ async def send_login_otp(request: LoginOtpRequest, db=Depends(get_db)):
 
 @router.post("/login/verify-otp")
 async def verify_login_otp(request: LoginOtpVerifyRequest, db=Depends(get_db)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
     if not await verify_otp_sms(request.phone, request.otp, request.sessionId, db):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+
     user = await db["users"].find_one({"uid": request.uid})
     if not user:
         raise HTTPException(status_code=401, detail="User account was not found")
@@ -818,17 +844,30 @@ async def verify_login_otp(request: LoginOtpVerifyRequest, db=Depends(get_db)):
         raise HTTPException(status_code=400, detail="Phone number is not registered for this account")
     if normalize_phone(user["phone"]) != normalize_phone(request.phone):
         raise HTTPException(status_code=400, detail="Phone number does not match this account")
-    await db["users"].update_one({"_id": user["_id"]}, {"$set": {"lastLogin": datetime.now(timezone.utc)}})
+
+    now = datetime.now(timezone.utc)
+    await db["users"].update_one({"_id": user["_id"]}, {"$set": {"lastLogin": now}})
     user["id"] = str(user.pop("_id"))
     user.pop("passwordHash", None)
-    await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password")})
-    return {"status": "success", "token": create_access_token(user["uid"], role=user.get("role", "USER")), "user": user}
+    user.pop("password_hash", None)
+    user.pop("password", None)
+
+    token = create_access_token(user["uid"], role=user.get("role", "USER"))
+    await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password"), "role": user.get("role", "USER")})
+    return {
+        "status": "success",
+        "message": "Authentication successful",
+        "token": token,
+        "user": user,
+    }
 
 @router.get("/me")
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):
     user = dict(current_user)
+    user.pop("_id", None)
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
+    user.pop("password", None)
     return {
         "status": "success",
         "user": user

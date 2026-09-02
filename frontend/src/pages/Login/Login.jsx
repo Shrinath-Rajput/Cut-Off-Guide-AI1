@@ -59,9 +59,27 @@ const Login = () => {
         navigate(response.user?.role === 'SUPER_ADMIN' ? '/super-admin/dashboard' : '/admin/dashboard', { replace: true });
         return;
       }
-      setPendingLogin({ ...response.user, uid: response.uid || response.user.uid });
-      setPhone(response.otpPhone || response.user.phone || '');
-      setView('phone');
+      if (response.requiresOtp || response.status === 'pending_otp') {
+        setPendingLogin({
+          uid: response.uid || response.user?.uid,
+          name: response.user?.name || '',
+          email: response.user?.email || '',
+        });
+        setPhone('');
+        setView('phone');
+        return;
+      }
+      // Safety fallback: if somehow a token was returned for a non-admin, enforce phone step
+      if (response.user?.role === 'USER') {
+        setPendingLogin({
+          uid: response.uid || response.user?.uid,
+          name: response.user?.name || '',
+          email: response.user?.email || '',
+        });
+        setPhone('');
+        setView('phone');
+        return;
+      }
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'Invalid username/email or password.'));
     } finally {
@@ -70,7 +88,7 @@ const Login = () => {
   };
 
   const handleSendOtp = async (event) => {
-    event.preventDefault();
+    if (event?.preventDefault) event.preventDefault();
     const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
     if (!/^\d{10}$/.test(normalizedPhone)) {
       setPhoneError('Enter a valid 10-digit phone number.');
@@ -87,7 +105,7 @@ const Login = () => {
       setTimer(30);
       setView('otp');
       toast.success('OTP sent successfully');
-      setTimeout(() => otpInputRefs.current[0]?.focus(), 0);
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 50);
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'Unable to send OTP. Please try again.'));
     } finally {
@@ -96,7 +114,7 @@ const Login = () => {
   };
 
   const handleVerifyOtp = async (event) => {
-    event.preventDefault();
+    if (event?.preventDefault) event.preventDefault();
     const otpValue = otp.join('');
     if (otpValue.length !== 6) {
       setError('Enter the 6-digit OTP.');
@@ -109,12 +127,16 @@ const Login = () => {
         uid: pendingLogin.uid,
         phone,
         otp: otpValue,
-        sessionId: sessionStorage.getItem('auth_pending_otp_session_id'),
+        sessionId: sessionStorage.getItem('auth_pending_otp_session_id') || '',
       });
-      login(response.user, response.token);
-      sessionStorage.removeItem('auth_pending_otp_session_id');
-      toast.success('Signed in successfully');
-      navigate('/home', { replace: true });
+      if (response.token && response.user) {
+        login(response.user, response.token);
+        sessionStorage.removeItem('auth_pending_otp_session_id');
+        toast.success('Signed in successfully');
+        navigate('/home', { replace: true });
+      } else {
+        setError('Verification failed. Please try again.');
+      }
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'Invalid or expired OTP. Please try again.'));
     } finally {
@@ -304,10 +326,11 @@ const Login = () => {
                 <input
                   id="login-phone"
                   type="tel"
-                  className={`cg-input ${phoneError ? 'cg-input--error' : ''}`}
+                  className={`cg-input ${phoneError || error ? 'cg-input--error' : ''}`}
                   value={phone}
-                  onChange={(event) => { setPhone(event.target.value); setPhoneError(''); }}
-                  placeholder="+91 XXXXX XXXXX"
+                  onChange={(event) => { setPhone(event.target.value); setPhoneError(''); setError(''); }}
+                  placeholder="Enter 10-digit mobile number"
+                  maxLength={10}
                 />
                 {phoneError && <p className="cg-error-text" role="alert">{phoneError}</p>}
               </div>
