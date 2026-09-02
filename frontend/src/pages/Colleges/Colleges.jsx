@@ -69,7 +69,6 @@ const Colleges = () => {
   // Search & Filters
   const [search, setSearch] = useState('');
   const [selectedState, setSelectedState] = useState('Maharashtra');
-  const [sortOption, setSortOption] = useState('Top Rated (Stars)');
   const [currentPage, setCurrentPage] = useState(1);
   const [collegeItems, setCollegeItems] = useState([]);
   const [totalCollegeCount, setTotalCollegeCount] = useState(0);
@@ -108,18 +107,11 @@ const Colleges = () => {
     loadBookmarks();
   }, []);
 
-  // Fetch catalog colleges with state filter & search
+  // Fetch catalog colleges with state filter & search (minimum 10+ colleges per state)
   useEffect(() => {
     const fetchColleges = async () => {
       setLoading(true);
       try {
-        let sortParam = 'rating';
-        if (sortOption === 'Lowest Cutoff' || sortOption === 'NIRF Ranking') {
-          sortParam = 'ranking';
-        } else if (sortOption === 'Highest Placement' || sortOption === 'Fees') {
-          sortParam = 'fees';
-        }
-
         const isAllIndia =
           selectedState === 'All India' ||
           selectedState === 'All Over India' ||
@@ -127,11 +119,10 @@ const Colleges = () => {
 
         const params = {
           page: currentPage,
-          limit: 12,
+          limit: 50,
           search: search.trim() || undefined,
           state: isAllIndia ? undefined : selectedState,
           states: isAllIndia ? undefined : [selectedState],
-          sort: sortParam,
         };
         const data = await getColleges(params);
         setCollegeItems(data.data || []);
@@ -144,14 +135,14 @@ const Colleges = () => {
       }
     };
 
-    const timeoutId = setTimeout(fetchColleges, 250);
+    const timeoutId = setTimeout(fetchColleges, 200);
     return () => clearTimeout(timeoutId);
-  }, [search, selectedState, sortOption, currentPage]);
+  }, [search, selectedState, currentPage]);
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedState, sortOption]);
+  }, [search, selectedState]);
 
   const toggleBookmark = async (college) => {
     const cid = college.id || college._id;
@@ -300,21 +291,6 @@ const Colleges = () => {
                 }
               )}
             </div>
-          </div>
-
-          {/* Sort Row */}
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-outline">sort</span>
-            <span className="font-label-md text-label-md text-on-surface-variant">Sort:</span>
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="bg-surface-container-lowest border border-outline-variant text-on-surface font-body-md rounded-xl px-4 py-1.5 focus:ring-primary focus:border-primary shadow-sm cursor-pointer appearance-none text-sm shadow-md"
-            >
-              <option value="Top Rated (Stars)">Top Rated (Stars)</option>
-              <option value="Lowest Cutoff">Lowest Cutoff</option>
-              <option value="Highest Placement">Highest Placement</option>
-            </select>
           </div>
         </section>
 

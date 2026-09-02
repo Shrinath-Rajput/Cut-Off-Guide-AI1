@@ -9639,8 +9639,67 @@ def normalize_str(s: Optional[str]) -> str:
     return re.sub(r"[^a-z0-9]", "", str(s).lower())
 
 
-def get_all_colleges(limit: int = 100, skip: int = 0) -> List[Dict[str, Any]]:
-    return INDIAN_COLLEGES_SEED[skip : skip + limit]
+async def get_all_colleges(
+    db=None,
+    page: int = 1,
+    limit: int = 50,
+    search: Optional[str] = None,
+    states: Optional[List[str]] = None,
+    courses: Optional[List[str]] = None,
+    max_fee: Optional[int] = None,
+    college_type: Optional[str] = None,
+    sort: Optional[str] = None,
+) -> Dict[str, Any]:
+    results = list(INDIAN_COLLEGES_SEED)
+
+    if states:
+        clean_states = [normalize_str(s) for s in states if s and normalize_str(s) not in ["allindia", "alloverindia", "inallindia"]]
+        if clean_states:
+            results = [c for c in results if normalize_str(c.get("state")) in clean_states]
+
+    if college_type:
+        type_norm = normalize_str(college_type)
+        results = [c for c in results if type_norm in normalize_str(c.get("type", ""))]
+
+    if max_fee is not None:
+        results = [c for c in results if c.get("fees", 0) <= max_fee]
+
+    if search:
+        q_norm = normalize_str(search)
+        q_tokens = [t for t in q_norm.split() if len(t) >= 2]
+        scored = []
+        for c in results:
+            name_norm = normalize_str(c.get("name", ""))
+            id_norm = normalize_str(c.get("id", ""))
+            loc_norm = normalize_str(c.get("location", ""))
+            score = 0
+            if q_norm == id_norm or q_norm == name_norm:
+                score = 1000
+            elif q_norm in name_norm:
+                score = 500 - abs(len(name_norm) - len(q_norm))
+            elif all(t in name_norm for t in q_tokens):
+                score = 200
+            elif any(t in name_norm for t in q_tokens):
+                score = 100
+            elif q_norm in loc_norm:
+                score = 50
+            if score > 0:
+                scored.append((score, c))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        results = [x[1] for x in scored]
+
+    total = len(results)
+    total_pages = max(1, (total + limit - 1) // limit)
+    start_idx = (page - 1) * limit
+    paged_items = results[start_idx : start_idx + limit]
+
+    return {
+        "data": paged_items,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "total_pages": total_pages,
+    }
 
 
 def get_college_by_id(college_id: str) -> Optional[Dict[str, Any]]:
