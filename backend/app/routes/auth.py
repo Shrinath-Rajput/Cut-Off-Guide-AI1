@@ -767,23 +767,21 @@ async def login(request: UserLogin, db=Depends(get_db)):
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
     user.pop("password", None)
-    if user.get("role") in {"ADMIN", "SUPER_ADMIN"}:
-        await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password"), "role": user.get("role")})
-        return {
-            "status": "success",
-            "message": "Admin authenticated",
-            "token": create_access_token(user["uid"], role=user.get("role", "ADMIN")),
-            "user": user,
-        }
-
-    logger.info("LOGIN SUCCESS: uid=%s. Proceeding to OTP stage.", user.get("uid"))
+    token = create_access_token(user["uid"], role=user.get("role", "USER"))
+    await track_analytics_event(
+        db,
+        "USER_LOGIN",
+        user_id=user.get("uid"),
+        metadata={"provider": user.get("provider", "password"), "role": user.get("role", "USER")},
+    )
+    logger.info("LOGIN SUCCESS: uid=%s authenticated", user.get("uid"))
     return {
         "status": "success",
-        "message": "Credentials verified",
-        "requiresOtp": True,
+        "message": "Login successful",
+        "token": token,
         "user": user,
         "otpPhone": user.get("phone"),
-        "uid": user["uid"]
+        "uid": user["uid"],
     }
 
 @router.post("/login/send-otp")

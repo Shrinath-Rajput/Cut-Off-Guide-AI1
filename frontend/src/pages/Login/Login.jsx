@@ -56,7 +56,14 @@ const Login = () => {
       const response = await loginUser({ username: identifier.trim(), password });
       if (response.user?.role === 'ADMIN' || response.user?.role === 'SUPER_ADMIN') {
         adminLogin(response.user, response.token);
+        toast.success(`Welcome back, ${response.user?.name || 'Admin'}!`);
         navigate(response.user?.role === 'SUPER_ADMIN' ? '/super-admin/dashboard' : '/admin/dashboard', { replace: true });
+        return;
+      }
+      if (response.token && response.user) {
+        login(response.user, response.token);
+        toast.success(`Welcome back, ${response.user?.name || 'Student'}!`);
+        navigate('/home', { replace: true });
         return;
       }
       setPendingLogin({ ...response.user, uid: response.uid || response.user.uid });
