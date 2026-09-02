@@ -13,7 +13,7 @@ def get_db():
 
 async def connect_to_mongo():
     try:
-        db.client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=500)
+        db.client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=5000)
         db.db = db.client[settings.MONGODB_DATABASE]
         await db.db["analytics_events"].create_index([("eventType", 1)])
         await db.db["analytics_events"].create_index([("userId", 1)])

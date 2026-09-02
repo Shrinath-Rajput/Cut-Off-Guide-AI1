@@ -44,16 +44,22 @@ const Saved = () => {
 
   const hasSavedColleges = sortedColleges.length > 0;
 
-  const handleRemoveSaved = (id) => {
-    setSavedColleges((prev) => prev.filter((college) => college.id !== id));
+  const handleRemoveSaved = async (id) => {
+    try {
+      await removeSavedCollege(id);
+      setSavedColleges((prev) => prev.filter((college) => (college.college_id || college.collegeId || college.id) !== id));
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleViewDetails = (id) => {
-    navigate(`/college/${id}`);
+    navigate(`/colleges/${id}`);
   };
 
-  const handleCompare = (id) => {
-    navigate('/compare');
+  const handleCompare = (college) => {
+    const name = college.name || college.college_id || college.id;
+    navigate(`/compare?college1=${encodeURIComponent(name)}`);
   };
 
   const handleCompareAll = () => {
@@ -109,58 +115,65 @@ const Saved = () => {
 
         {hasSavedColleges ? (
           <div className="saved-grid">
-            {sortedColleges.map((college) => (
-              <article key={college.id} className="saved-card">
-                <div className="saved-card-image-shell">
-                  <img src={collegeImage(college.image)} alt={college.name} className="saved-card-image" onError={handleCollegeImageError} />
-                  <button
-                    type="button"
-                    className="bookmark-button"
-                    onClick={() => handleRemoveSaved(college.id)}
-                    aria-label={`Remove ${college.name} from saved`}
-                  >
-                    <span className="material-symbols-outlined filled">bookmark</span>
-                  </button>
-                  <span className="rank-badge">Rank {college.rank}</span>
-                  <span className="rating-badge">
-                    <span className="material-symbols-outlined">star</span>
-                    {college.rating}
-                  </span>
-                </div>
-
-                <div className="saved-card-body">
-                  <h2>{college.name}</h2>
-                  <p className="saved-location">
-                    <span className="material-symbols-outlined">location_on</span>
-                    {college.location}
-                  </p>
-
-                  <div className="saved-details">
-                    <div className="saved-detail-row">
-                      <span className="detail-label">Target Course</span>
-                      <span className="detail-value">{college.course}</span>
-                    </div>
-                    <div className="saved-detail-row">
-                      <span className="detail-label">Predicted Cutoff</span>
-                      <span className="detail-value primary">{college.cutoff}</span>
-                    </div>
-                    <div className="saved-detail-row">
-                      <span className="detail-label">Saved On</span>
-                      <span className="detail-value">{college.savedOn}</span>
-                    </div>
+            {sortedColleges.map((college) => {
+              const cid = college.college_id || college.collegeId || college.id;
+              return (
+                <article key={cid} className="saved-card">
+                  <div className="saved-card-image-shell">
+                    <img src={collegeImage(college.image)} alt={college.name} className="saved-card-image" onError={handleCollegeImageError} />
+                    <button
+                      type="button"
+                      className="bookmark-button"
+                      onClick={() => handleRemoveSaved(cid)}
+                      aria-label={`Remove ${college.name} from saved`}
+                    >
+                      <span className="material-symbols-outlined filled">bookmark</span>
+                    </button>
+                    {college.rank && <span className="rank-badge">Rank {college.rank}</span>}
+                    <span className="rating-badge">
+                      <span className="material-symbols-outlined">star</span>
+                      {college.rating || '4.5'}
+                    </span>
                   </div>
 
-                  <div className="saved-card-actions">
-                    <button type="button" className="primary-button" onClick={() => handleViewDetails(college.college_id)}>
-                      View Details
-                    </button>
-                    <button type="button" className="secondary-button" onClick={() => handleCompare(college.id)}>
-                      Compare
-                    </button>
+                  <div className="saved-card-body">
+                    <h2>{college.name}</h2>
+                    <p className="saved-location">
+                      <span className="material-symbols-outlined">location_on</span>
+                      {college.location}
+                    </p>
+
+                    <div className="saved-details">
+                      {college.course && (
+                        <div className="saved-detail-row">
+                          <span className="detail-label">Target Course</span>
+                          <span className="detail-value">{college.course}</span>
+                        </div>
+                      )}
+                      {college.cutoff && (
+                        <div className="saved-detail-row">
+                          <span className="detail-label">Predicted Cutoff</span>
+                          <span className="detail-value primary">{college.cutoff}</span>
+                        </div>
+                      )}
+                      <div className="saved-detail-row">
+                        <span className="detail-label">Saved On</span>
+                        <span className="detail-value">{college.savedOn || 'Recent'}</span>
+                      </div>
+                    </div>
+
+                    <div className="saved-card-actions">
+                      <button type="button" className="primary-button" onClick={() => handleViewDetails(cid)}>
+                        View Details
+                      </button>
+                      <button type="button" className="secondary-button" onClick={() => handleCompare(college)}>
+                        Compare
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            ))}
+                </article>
+              );
+            })}
           </div>
         ) : (
           <div className="saved-empty-state">

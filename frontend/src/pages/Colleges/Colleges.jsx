@@ -87,21 +87,18 @@ const Colleges = () => {
   // Load user bookmarks on mount
   useEffect(() => {
     const loadBookmarks = async () => {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        try {
-          const saved = await getSavedColleges();
-          if (Array.isArray(saved)) {
-            const map = {};
-            saved.forEach((c) => {
-              const cid = c.collegeId || c.id || c._id;
-              if (cid) map[cid] = true;
-            });
-            setBookmarked(map);
-          }
-        } catch (err) {
-          // user offline
+      try {
+        const saved = await getSavedColleges();
+        if (Array.isArray(saved)) {
+          const map = {};
+          saved.forEach((c) => {
+            const cid = c.college_id || c.collegeId || c.id || c._id;
+            if (cid) map[cid] = true;
+          });
+          setBookmarked(map);
         }
+      } catch (err) {
+        // offline
       }
     };
     loadBookmarks();
@@ -145,7 +142,7 @@ const Colleges = () => {
   }, [search, selectedState]);
 
   const toggleBookmark = async (college) => {
-    const cid = college.id || college._id;
+    const cid = college.id || college.college_id || college._id || (college.name ? college.name.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'unknown');
     const isBookmarked = !!bookmarked[cid];
     const nextState = !isBookmarked;
     setBookmarked((prev) => ({ ...prev, [cid]: nextState }));
@@ -155,6 +152,7 @@ const Colleges = () => {
         await removeSavedCollege(cid);
       } else {
         await saveCollege({
+          college_id: cid,
           collegeId: cid,
           name: college.name,
           location: college.location || `${college.city || ''}, ${college.state || ''}`,
@@ -162,10 +160,10 @@ const Colleges = () => {
           image: college.image,
         });
       }
+      toast.success(nextState ? 'Saved to your colleges list' : 'Removed from saved colleges');
     } catch (err) {
-      // offline / guest mode fallback
+      toast.error('Could not update saved colleges');
     }
-    toast.success(nextState ? 'Saved to your colleges list' : 'Removed from saved colleges');
   };
 
   // Trigger Live AI + Web Search

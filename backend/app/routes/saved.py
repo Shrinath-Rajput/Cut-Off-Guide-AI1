@@ -26,23 +26,28 @@ async def get_saved_colleges(current_user: dict = Depends(get_current_user), db 
 async def save_college(college: SavedCollegeCreate, current_user: dict = Depends(get_current_user), db = Depends(get_db)):
     collection = db["saved_colleges"]
     
+    cid = college.college_id or getattr(college, "collegeId", None) or college.name.lower().replace(" ", "-")
+    
     # Check if already saved
     existing = await collection.find_one({
         "uid": current_user["uid"],
-        "college_id": college.college_id
+        "college_id": cid
     })
     
     if existing:
-        raise HTTPException(status_code=400, detail="College already saved")
+        existing["id"] = str(existing["_id"])
+        del existing["_id"]
+        return existing
         
     new_saved = college.model_dump()
+    new_saved["college_id"] = cid
     new_saved["uid"] = current_user["uid"]
     new_saved["savedOn"] = datetime.now(timezone.utc)
     
     result = await collection.insert_one(new_saved)
     new_saved["id"] = str(result.inserted_id)
     del new_saved["_id"]
-    await track_analytics_event(db, "COLLEGE_SAVED", user_id=current_user.get("uid"), college_id=college.college_id, metadata={"savedId": new_saved["id"]})
+    await track_analytics_event(db, "COLLEGE_SAVED", user_id=current_user.get("uid"), college_id=cid, metadata={"savedId": new_saved["id"]})
     
     return new_saved
 

@@ -90,18 +90,76 @@ export const sendAssistantChat = async (message, history = []) => {
 };
 
 export const getSavedColleges = async () => {
-  const response = await api.get('/api/saved');
-  return response.data;
+  try {
+    const token = localStorage.getItem('auth_token');
+    const local = JSON.parse(localStorage.getItem('saved_colleges_local') || '[]');
+    if (!token) return local;
+
+    const response = await api.get('/api/saved');
+    const serverSaved = Array.isArray(response.data) ? response.data : [];
+
+    const map = new Map();
+    serverSaved.forEach((c) => map.set(c.college_id || c.collegeId || c.id, c));
+    local.forEach((c) => {
+      const key = c.college_id || c.collegeId || c.id;
+      if (key && !map.has(key)) map.set(key, c);
+    });
+    return Array.from(map.values());
+  } catch (err) {
+    return JSON.parse(localStorage.getItem('saved_colleges_local') || '[]');
+  }
 };
 
 export const saveCollege = async (payload) => {
-  const response = await api.post('/api/saved', payload);
-  return response.data;
+  const cid = payload.college_id || payload.collegeId || payload.id;
+  const normalized = {
+    college_id: cid,
+    collegeId: cid,
+    id: cid,
+    name: payload.name,
+    location: payload.location || 'India',
+    rating: String(payload.rating || 4.5),
+    image: payload.image || null,
+    savedOn: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+  };
+
+  try {
+    const local = JSON.parse(localStorage.getItem('saved_colleges_local') || '[]');
+    if (!local.some((c) => (c.college_id || c.collegeId || c.id) === cid)) {
+      local.unshift(normalized);
+      localStorage.setItem('saved_colleges_local', JSON.stringify(local));
+    }
+  } catch (e) {}
+
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      const response = await api.post('/api/saved', normalized);
+      return response.data;
+    }
+  } catch (err) {
+    console.warn('Saved college to local store (unauthenticated or offline server)');
+  }
+  return normalized;
 };
 
 export const removeSavedCollege = async (id) => {
-  const response = await api.delete(`/api/saved/${id}`);
-  return response.data;
+  try {
+    const local = JSON.parse(localStorage.getItem('saved_colleges_local') || '[]');
+    const filtered = local.filter((c) => (c.college_id || c.collegeId || c.id) !== id);
+    localStorage.setItem('saved_colleges_local', JSON.stringify(filtered));
+  } catch (e) {}
+
+  try {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      const response = await api.delete(`/api/saved/${id}`);
+      return response.data;
+    }
+  } catch (err) {
+    console.warn('Removed college from local store');
+  }
+  return { status: 'success' };
 };
 
 export const getProfile = async () => {
