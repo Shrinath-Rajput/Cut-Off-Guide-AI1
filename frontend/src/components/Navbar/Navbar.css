@@ -44,7 +44,7 @@
 .site-menu {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   flex: 1 1 auto;
   min-width: 0;
   gap: clamp(8px, 0.65vw, 16px);

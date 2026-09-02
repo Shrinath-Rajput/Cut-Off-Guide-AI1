@@ -21,7 +21,7 @@ INDIAN_COLLEGES_SEED = [
         "rating": 4.9,
         "nirf_rank": 3,
         "established": 1958,
-        "exams": ["JEE Advanced", "GATE"],
+        "exams": ["JEE Advanced", "GATE", "GATE Commerce"],
         "courses": ["Computer Science", "Electrical", "Mechanical", "Aerospace", "Engineering Physics"],
         "feeValue": 220000,
         "fee_display": "₹2.2 Lakh / year",
@@ -193,7 +193,7 @@ INDIAN_COLLEGES_SEED = [
         "rating": 4.9,
         "nirf_rank": 2,
         "established": 1961,
-        "exams": ["JEE Advanced", "GATE"],
+        "exams": ["JEE Advanced", "GATE", "GATE Commerce"],
         "courses": ["Computer Science", "Electrical", "Mathematics and Computing", "Mechanical"],
         "feeValue": 225000,
         "fee_display": "₹2.25 Lakh / year",
@@ -281,7 +281,7 @@ INDIAN_COLLEGES_SEED = [
         "rating": 5.0,
         "nirf_rank": 1,
         "established": 1909,
-        "exams": ["JEE Advanced", "KVPY", "GATE"],
+        "exams": ["JEE Advanced", "KVPY", "GATE", "GATE Commerce"],
         "courses": ["Computer Science", "Data Science", "Electrical", "Aerospace"],
         "feeValue": 35000,
         "fee_display": "₹35,000 / year",
@@ -369,7 +369,7 @@ INDIAN_COLLEGES_SEED = [
         "rating": 4.9,
         "nirf_rank": 1,
         "established": 1959,
-        "exams": ["JEE Advanced", "GATE"],
+        "exams": ["JEE Advanced", "GATE", "GATE Commerce"],
         "courses": ["Computer Science", "Data Science & AI", "Electrical", "Mechanical"],
         "feeValue": 215000,
         "fee_display": "₹2.15 Lakh / year",
@@ -524,7 +524,7 @@ INDIAN_COLLEGES_SEED = [
         "rating": 4.8,
         "nirf_rank": 4,
         "established": 1959,
-        "exams": ["JEE Advanced", "GATE"],
+        "exams": ["JEE Advanced", "GATE", "GATE Commerce"],
         "courses": ["Computer Science", "Electrical", "Mechanical", "Aerospace"],
         "feeValue": 218000,
         "fee_display": "₹2.18 Lakh / year",
@@ -545,7 +545,7 @@ INDIAN_COLLEGES_SEED = [
         "rating": 4.7,
         "nirf_rank": 15,
         "established": 1919,
-        "exams": ["JEE Advanced", "GATE"],
+        "exams": ["JEE Advanced", "GATE", "GATE Commerce"],
         "courses": ["Computer Science", "Electronics", "Electrical", "Mechanical", "Ceramic"],
         "feeValue": 220000,
         "fee_display": "₹2.2 Lakh / year",
@@ -637,7 +637,7 @@ INDIAN_COLLEGES_SEED = [
         "rating": 4.8,
         "nirf_rank": 6,
         "established": 1951,
-        "exams": ["JEE Advanced", "GATE"],
+        "exams": ["JEE Advanced", "GATE", "GATE Commerce"],
         "courses": ["Computer Science", "Electronics", "Mechanical", "Chemical"],
         "feeValue": 224000,
         "fee_display": "₹2.24 Lakh / year",
@@ -658,7 +658,7 @@ INDIAN_COLLEGES_SEED = [
         "rating": 4.8,
         "nirf_rank": 10,
         "established": 1906,
-        "exams": ["WBJEE", "GATE"],
+        "exams": ["WBJEE", "GATE", "GATE Commerce"],
         "courses": ["Computer Science", "Information Technology", "Electronics & Telecom", "Mechanical"],
         "feeValue": 10000,
         "fee_display": "₹10,000 / 4 years (Ultra Low)",
@@ -1528,12 +1528,18 @@ async def get_all_colleges(
             query = {}
 
             if search:
-                query["$or"] = [
-                    {"name": {"$regex": search, "$options": "i"}},
-                    {"city": {"$regex": search, "$options": "i"}},
-                    {"state": {"$regex": search, "$options": "i"}},
-                    {"location": {"$regex": search, "$options": "i"}},
-                ]
+                search_terms = search.strip().split()
+                and_conditions = []
+                for term in search_terms:
+                    and_conditions.append({
+                        "$or": [
+                            {"name": {"$regex": term, "$options": "i"}},
+                            {"city": {"$regex": term, "$options": "i"}},
+                            {"state": {"$regex": term, "$options": "i"}},
+                            {"location": {"$regex": term, "$options": "i"}},
+                        ]
+                    })
+                query["$and"] = and_conditions
 
             if clean_states:
                 state_regex = "|".join([re.escape(s) for s in clean_states])
@@ -1573,24 +1579,39 @@ async def get_all_colleges(
 
     # 4. Filter by Search Query
     if search:
-        s = search.lower().strip()
-        filtered = [
-            c
-            for c in filtered
-            if s in c.get("name", "").lower()
-            or s in c.get("city", "").lower()
-            or s in c.get("state", "").lower()
-            or s in c.get("location", "").lower()
-            or any(s in course.lower() for course in c.get("courses", []))
-        ]
+        search_terms = search.lower().strip().split()
+        def matches_all_terms(c):
+            for term in search_terms:
+                if not (term in c.get("name", "").lower()
+                        or term in c.get("city", "").lower()
+                        or term in c.get("state", "").lower()
+                        or term in c.get("location", "").lower()
+                        or any(term in course.lower() for course in c.get("courses", []))):
+                    return False
+            return True
+        filtered = [c for c in filtered if matches_all_terms(c)]
 
     # 5. Sort
-    if sort == "ranking":
-        filtered.sort(key=lambda c: c.get("nirf_rank") or 999)
-    elif sort == "fees":
-        filtered.sort(key=lambda c: c.get("feeValue") or 999999)
-    else:
-        filtered.sort(key=lambda c: c.get("rating") or 4.5, reverse=True)
+    def get_sort_key(c):
+        score = 0
+        if search:
+            s_lower = search.lower().strip()
+            name_lower = c.get("name", "").lower()
+            if s_lower == name_lower:
+                score = -100
+            elif s_lower in name_lower:
+                score = -50
+            elif name_lower.startswith(s_lower):
+                score = -75
+        
+        if sort == "ranking":
+            return (score, c.get("nirf_rank") or 999)
+        elif sort == "fees":
+            return (score, c.get("feeValue") or 999999)
+        else:
+            return (score, -(c.get("rating") or 4.5))
+
+    filtered.sort(key=get_sort_key)
 
     total = len(filtered)
     total_pages = (total + limit - 1) // limit if total > 0 else 1

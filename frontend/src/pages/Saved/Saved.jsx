@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import './Saved.css';
-import { getSavedColleges } from '../../services/api';
+import { getSavedColleges, removeSavedCollege } from '../../services/api';
 import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
 
 const sortOptions = [
@@ -44,8 +44,13 @@ const Saved = () => {
 
   const hasSavedColleges = sortedColleges.length > 0;
 
-  const handleRemoveSaved = (id) => {
-    setSavedColleges((prev) => prev.filter((college) => college.id !== id));
+  const handleRemoveSaved = async (id) => {
+    try {
+      await removeSavedCollege(id);
+      setSavedColleges((prev) => prev.filter((college) => college.id !== id));
+    } catch (err) {
+      console.error('Failed to remove saved college:', err);
+    }
   };
 
   const handleViewDetails = (id) => {

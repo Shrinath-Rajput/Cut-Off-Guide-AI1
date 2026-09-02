@@ -16,20 +16,34 @@ async def get_saved_colleges(current_user: dict = Depends(get_current_user), db 
     cursor = collection.find({"uid": current_user["uid"]}).sort("savedOn", -1)
     saved_list = await cursor.to_list(length=100)
     
+    unique_colleges = []
+    seen = set()
     for item in saved_list:
         item["id"] = str(item["_id"])
         del item["_id"]
+        # Data migration on read for legacy documents
+        if "collegeId" in item and "college_id" not in item:
+            item["college_id"] = item.pop("collegeId")
+            
+        # Deduplicate based on college_id
+        cid = item.get("college_id")
+        if cid not in seen:
+            seen.add(cid)
+            unique_colleges.append(item)
         
-    return saved_list
+    return unique_colleges
 
 @router.post("", response_model=SavedCollegeResponse)
 async def save_college(college: SavedCollegeCreate, current_user: dict = Depends(get_current_user), db = Depends(get_db)):
     collection = db["saved_colleges"]
     
-    # Check if already saved
+    # Check if already saved (handle both new college_id and legacy collegeId)
     existing = await collection.find_one({
         "uid": current_user["uid"],
-        "college_id": college.college_id
+        "$or": [
+            {"college_id": college.college_id},
+            {"collegeId": college.college_id}
+        ]
     })
     
     if existing:

@@ -271,6 +271,15 @@ const Login = () => {
                 <span>{isLoading ? 'Checking...' : 'Next'}</span>
               </button>
 
+              <div className="cg-divider">
+                <span>or</span>
+              </div>
+
+              <a href="http://localhost:5000/api/auth/google" className="cg-google-btn">
+                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="cg-google-icon" />
+                <span>Continue with Google</span>
+              </a>
+
               <p className="cg-footnote">
                 Don&apos;t have an account?{' '}
                 <button

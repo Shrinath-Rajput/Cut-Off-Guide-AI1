@@ -5,6 +5,12 @@ from datetime import datetime, timezone
 import secrets
 import re
 import logging
+import os
+import json
+import urllib.parse
+import urllib.request
+from fastapi.responses import RedirectResponse
+from fastapi import Request
 
 from app.core.database import get_db
 from app.core.config import settings
@@ -16,7 +22,7 @@ from app.routes.admin import track_analytics_event
 from bson import ObjectId
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
-logger = logging.getLogger(__name__) 
+logger = logging.getLogger(__name__)
 
 class OtpRequest(BaseModel):
     name: str
@@ -237,17 +243,17 @@ async def verify_otp(request: OtpVerifyRequest, db=Depends(get_db)):
             email_passworded = [u for u in email_dup_matches if _has_password_hash(u)]
             phone_passworded = [u for u in phone_dup_matches if _has_password_hash(u)]
 
-            if email_dup_matches:
+            if email_passworded:
                 logger.warning(
-                    "VERIFY-OTP SIGNUP 409: Email already exists in users collection. email=%s existing_uid=%s",
-                    raw_email, email_dup_matches[0].get("uid")
+                    "VERIFY-OTP SIGNUP 409: Email already has passwordHash. email=%s existing_uid=%s",
+                    raw_email, email_passworded[0].get("uid")
                 )
                 raise HTTPException(status_code=409, detail="Email already registered. Please sign in instead.")
 
-            if phone_dup_matches:
+            if phone_passworded:
                 logger.warning(
-                    "VERIFY-OTP SIGNUP 409: Phone already exists in users collection. phone=%s existing_uid=%s",
-                    raw_phone, phone_dup_matches[0].get("uid")
+                    "VERIFY-OTP SIGNUP 409: Phone already has passwordHash. phone=%s existing_uid=%s",
+                    raw_phone, phone_passworded[0].get("uid")
                 )
                 raise HTTPException(status_code=409, detail="Phone number already registered. Please sign in instead.")
 
@@ -428,18 +434,18 @@ async def register(request: UserSignup, db=Depends(get_db)):
     chosen_user_to_update = None
     update_reason = None
 
-    if email_matches:
-        eu = email_matches[0]
+    if email_passworded:
+        eu = email_passworded[0]
         logger.warning(
-            "REGISTER 409: Email already exists in users collection. email=%s existing_uid=%s stored_email=%s",
+            "REGISTER 409: Email already registered AND HAS passwordHash. email=%s existing_uid=%s stored_email=%s",
             email, eu.get("uid"), repr(eu.get("email"))
         )
         raise HTTPException(status_code=409, detail="Email already registered")
 
-    if phone_matches:
-        pu = phone_matches[0]
+    if phone_passworded:
+        pu = phone_passworded[0]
         logger.warning(
-            "REGISTER 409: Phone already exists in users collection. phone=%s existing_uid=%s stored_phone=%s",
+            "REGISTER 409: Phone already registered AND HAS passwordHash. phone=%s existing_uid=%s stored_phone=%s",
             phone, pu.get("uid"), repr(pu.get("phone"))
         )
         raise HTTPException(status_code=409, detail="Phone number already registered")
@@ -616,10 +622,33 @@ async def login(request: UserLogin, db=Depends(get_db)):
     if not identifier or not password:
         raise HTTPException(status_code=422, detail="Username/email and password are required")
 
-    configured_admin_email = (settings.ADMIN_EMAIL or "").strip().lower()
-    configured_admin_password = settings.ADMIN_PASSWORD or ""
     configured_super_admin_email = (settings.SUPER_ADMIN_EMAIL or "").strip().lower()
     configured_super_admin_password = settings.SUPER_ADMIN_PASSWORD or ""
+    if configured_super_admin_email and identifier == configured_super_admin_email:
+        if not configured_super_admin_password:
+            logger.warning("SUPER_ADMIN login blocked: SUPER_ADMIN_PASSWORD not configured")
+            raise HTTPException(status_code=401, detail="Invalid username/email or password")
+        if password != configured_super_admin_password:
+            logger.warning("SUPER_ADMIN login failed for configured email=%s", configured_super_admin_email)
+            raise HTTPException(status_code=401, detail="Invalid username/email or password")
+
+        super_admin_user = {
+            "uid": "super-admin-fourise",
+            "name": "FOURISE Super Admin",
+            "email": configured_super_admin_email,
+            "phone": (settings.SUPER_ADMIN_PHONE or "").strip(),
+            "role": "SUPER_ADMIN",
+            "provider": "password",
+            "isActive": True,
+        }
+        token = create_access_token(super_admin_user["uid"], role="SUPER_ADMIN")
+        logger.info("SUPER_ADMIN LOGIN SUCCESS: uid=%s email=%s", super_admin_user["uid"], configured_super_admin_email)
+        return {
+            "status": "success",
+            "message": "Admin authenticated",
+            "token": token,
+            "user": super_admin_user,
+        }
 
     try:
         normalized_phone = normalize_phone(raw_identifier)
@@ -671,33 +700,6 @@ async def login(request: UserLogin, db=Depends(get_db)):
         user = user_via_scan
 
     if user is None:
-        if configured_super_admin_email and identifier == configured_super_admin_email and configured_super_admin_password and password == configured_super_admin_password:
-            super_admin_user = {
-                "uid": "super-admin-fourise",
-                "name": "FOURISE Super Admin",
-                "email": configured_super_admin_email,
-                "phone": (settings.SUPER_ADMIN_PHONE or "").strip(),
-                "role": "SUPER_ADMIN",
-                "provider": "password",
-                "isActive": True,
-            }
-            token = create_access_token(super_admin_user["uid"], role="SUPER_ADMIN")
-            logger.info("SUPER_ADMIN LOGIN SUCCESS: uid=%s email=%s", super_admin_user["uid"], configured_super_admin_email)
-            return {
-                "status": "success",
-                "message": "Admin authenticated",
-                "token": token,
-                "user": super_admin_user,
-            }
-
-        if configured_admin_email and identifier == configured_admin_email and configured_admin_password and password == configured_admin_password:
-            admin_user = await db["users"].find_one({"email": configured_admin_email})
-            if not admin_user:
-                admin_user = {"uid": "admin-fallback", "name": "Administrator", "email": configured_admin_email, "phone": None, "role": "ADMIN", "provider": "password", "isActive": True}
-            token = create_access_token(admin_user.get("uid") or "admin-fallback", role="ADMIN")
-            logger.info("ADMIN LOGIN SUCCESS (fallback): uid=%s email=%s", admin_user.get("uid") or "admin-fallback", configured_admin_email)
-            return {"status": "success", "message": "Admin authenticated", "token": token, "user": {**admin_user, "role": "ADMIN"}}
-
         logger.warning("LOGIN FAILED: No user found for identifier=%s", identifier)
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
 
@@ -831,3 +833,119 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
         "status": "success",
         "user": user
     }
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_OAUTH_REDIRECT_URI = os.getenv(
+    "GOOGLE_OAUTH_REDIRECT_URI",
+    "http://localhost:5000/api/auth/google/callback",
+)
+FRONTEND_APP_URL = os.getenv("FRONTEND_APP_URL", "http://localhost:5173")
+
+def _build_google_auth_url():
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": GOOGLE_OAUTH_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "online",
+        "prompt": "select_account",
+    }
+    return "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+
+def _exchange_google_code(code):
+    token_url = "https://oauth2.googleapis.com/token"
+    data = urllib.parse.urlencode(
+        {
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": GOOGLE_OAUTH_REDIRECT_URI,
+            "grant_type": "authorization_code",
+        }
+    ).encode("utf-8")
+
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    request_obj = urllib.request.Request(token_url, data=data, headers=headers, method="POST")
+    with urllib.request.urlopen(request_obj, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+def _fetch_google_user_info(access_token):
+    request_obj = urllib.request.Request(
+        "https://openidconnect.googleapis.com/v1/userinfo",
+        headers={"Authorization": f"Bearer {access_token}"},
+        method="GET",
+    )
+    with urllib.request.urlopen(request_obj, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+def _build_frontend_callback_url(token, user):
+    query = urllib.parse.urlencode(
+        {
+            "token": token,
+            "uid": user.get("uid", ""),
+            "name": user.get("name", ""),
+            "email": user.get("email", ""),
+            "photoURL": user.get("photoURL", ""),
+        }
+    )
+    return f"{FRONTEND_APP_URL}/auth/google/callback?{query}"
+
+@router.get("/google")
+async def google_auth():
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=501, 
+            detail="Google OAuth credentials are not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend .env."
+        )
+    return RedirectResponse(url=_build_google_auth_url())
+
+@router.get("/google/callback")
+async def google_auth_callback(request: Request, db=Depends(get_db)):
+    error = request.query_params.get("error")
+    if error:
+        raise HTTPException(status_code=400, detail=f"Google auth failed: {error}")
+
+    code = (request.query_params.get("code") or "").strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing authorization code from Google callback.")
+
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=501, 
+            detail="Google auth credentials are not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend .env."
+        )
+
+    try:
+        token_response = _exchange_google_code(code)
+        access_token = token_response.get("access_token")
+        if not access_token:
+            raise RuntimeError("Failed to obtain access token from Google")
+
+        user_info = _fetch_google_user_info(access_token)
+        email = (user_info.get("email") or "").strip().lower()
+        name = (user_info.get("name") or user_info.get("given_name") or "Google User").strip()
+        picture = (user_info.get("picture") or "").strip()
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Google account did not return an email address.")
+
+        user_payload = UserLogin(
+            uid=f"google-{email}",
+            name=name,
+            email=email,
+            provider="google",
+            photoURL=picture,
+        )
+
+        create_response = await create_or_update_user(user_payload, db)
+        
+        token = create_response.get("token")
+        user = create_response.get("user") or {}
+        callback_url = _build_frontend_callback_url(token, user)
+        return RedirectResponse(url=callback_url)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Google callback error")
+        raise HTTPException(status_code=502, detail=f"Google callback failed: {exc}")

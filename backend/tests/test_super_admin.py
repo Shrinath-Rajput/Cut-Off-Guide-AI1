@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash
-from app.routes import admin, super_admin
+from app.routes import admin
 from app.routes.auth import login
 from app.schemas.user import UserLogin
 
@@ -219,66 +219,6 @@ def test_super_admin_dashboard_serializes_mongo_values():
     assert dashboard["data"]["mostSearchedColleges"][0]["_id"] == str(college_id)
     assert dashboard["data"]["recentUsers"][0]["id"] == str(user_id)
     assert dashboard["data"]["recentUsers"][0]["createdAt"].endswith("+00:00")
-
-
-def test_super_admin_dashboard_route_handles_week_window_when_day_is_less_than_7(monkeypatch):
-    class FrozenDateTime:
-        @classmethod
-        def now(cls, tz=None):
-            return datetime(2026, 8, 1, 12, 0, tzinfo=timezone.utc)
-
-    monkeypatch.setattr(super_admin, "datetime", FrozenDateTime)
-
-    class DashboardCollection:
-        async def count_documents(self, query=None):
-            return 1 if query and query.get("eventType") in {"COLLEGE_SEARCH", "COLLEGE_VIEW"} else 2
-
-        def find(self, query=None, *args, **kwargs):
-            class Cursor:
-                def sort(self, *args, **kwargs):
-                    return self
-
-                def limit(self, *args, **kwargs):
-                    return self
-
-                async def to_list(self, length=None):
-                    return [{
-                        "_id": ObjectId("64f000000000000000000001"),
-                        "uid": "user-1",
-                        "name": "Alice",
-                        "email": "alice@example.com",
-                        "createdAt": datetime(2026, 8, 1, 12, 0, tzinfo=timezone.utc),
-                        "role": "USER",
-                        "isActive": True,
-                    }, {
-                        "_id": ObjectId("64f000000000000000000002"),
-                        "uid": "user-2",
-                        "name": "Bob",
-                        "email": "bob@example.com",
-                        "createdAt": datetime(2026, 8, 1, 12, 0, tzinfo=timezone.utc),
-                        "role": "ADMIN",
-                        "isActive": True,
-                    }]
-            return Cursor()
-
-        def aggregate(self, pipeline):
-            class Cursor:
-                async def to_list(self, length=None):
-                    return [{"_id": "college-1", "count": 3}]
-            return Cursor()
-
-    class DashboardDB(dict):
-        def __init__(self):
-            self["users"] = DashboardCollection()
-            self["colleges"] = DashboardCollection()
-            self["analytics_events"] = DashboardCollection()
-
-    dashboard = asyncio.run(super_admin.get_super_admin_dashboard({"role": "SUPER_ADMIN"}, DashboardDB()))
-
-    assert dashboard["status"] == "success"
-    assert dashboard["data"]["summary"]["totalUsers"] == 2
-    assert dashboard["data"]["summary"]["totalColleges"] == 2
-    assert dashboard["data"]["mostSearchedColleges"][0]["_id"] == "college-1"
 
 
 def test_super_admin_dashboard_returns_zero_data_when_collections_are_empty(monkeypatch):

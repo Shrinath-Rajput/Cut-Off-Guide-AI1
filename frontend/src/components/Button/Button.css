@@ -29,8 +29,18 @@
 }
 
 .premium-button.primary {
-  background: var(--accent);
-  color: white;
+  background: var(--accent, #e67e22);
+  color: #ffffff;
+  border: 1px solid rgba(230, 126, 34, 0.3);
+}
+
+.premium-button:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+  background: #e67e22 !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
 .premium-button.secondary {
@@ -48,6 +58,13 @@
 
 .premium-button.full-width {
   width: 100%;
+}
+
+.premium-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .button-icon {

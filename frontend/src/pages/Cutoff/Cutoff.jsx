@@ -1,26 +1,37 @@
 import { useState } from 'react';
-import { searchCutoffs } from '../../services/api';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import SectionHeader from '../../components/SectionHeader/SectionHeader';
 import Button from '../../components/Button/Button';
 import { EXAM_CONFIG, validateAcademicScore } from '../../utils/validation';
 import './Cutoff.css';
 
+// Local prediction fetcher
+const predictCutoffs = async (data) => {
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const response = await fetch(`${API_URL}/prediction`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error('Prediction request failed');
+  }
+  return response.json();
+};
+
 const Cutoff = () => {
-  const [form, setForm] = useState({ exam: '', score: '', category: '', gender: '', university: '', course: '', location: '', round: '' });
+  const [form, setForm] = useState({ exam: '', score: '', category: '', gender: '', university: '', course: '', location: '', round: '', target_year: 2027 });
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-
+    
     if (name === 'exam') {
       setForm((prev) => ({ ...prev, exam: value, score: '', course: '' }));
       setError(null);
-      setResult(null);
     } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
-      setResult(null);
+      setForm((prev) => ({ ...prev, [name]: name === 'target_year' ? parseInt(value, 10) : value }));
       if (name === 'score') {
         setError(null);
       }
@@ -36,26 +47,22 @@ const Cutoff = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const validationError = validateAcademicScore(form.exam, form.score);
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
-
-    const requiredFields = ['exam', 'score', 'category', 'gender', 'university', 'course', 'location', 'round'];
-    const missingRequiredField = requiredFields.find((field) => !String(form[field] ?? '').trim());
-    if (missingRequiredField) {
-      setError('Please complete all cutoff fields before predicting.');
-      return;
-    }
-
+    if (error) return;
+    
     try {
-      setError(null);
-      const data = await searchCutoffs(form);
+      // Use college name as university for prediction req
+      const req = {
+          college: form.university,
+          course: form.course || "Computer Engineering",
+          category: form.category,
+          gender: form.gender,
+          target_year: form.target_year,
+          score: form.score ? parseFloat(form.score) : undefined
+      };
+      const data = await predictCutoffs(req);
       setResult(data);
-    } catch (requestError) {
-      console.error('Failed to search cutoffs:', requestError);
-      setError(requestError?.response?.data?.detail || 'Unable to predict cutoff. Please try again.');
+    } catch (error) {
+      console.error('Failed to search cutoffs:', error);
     }
   };
 
@@ -96,19 +103,10 @@ const Cutoff = () => {
               Category
               <select name="category" value={form.category} onChange={handleChange}>
                 <option value="">Select category</option>
-                <option>Open/General</option>
+                <option>Open</option>
                 <option>OBC</option>
                 <option>SC</option>
                 <option>ST</option>
-                <option>EWS</option>
-                <option>PWD (Persons with Disability)</option>
-                <option>Defence/Ex-Servicemen</option>
-                <option>Minority</option>
-                <option>Kashmiri Migrant</option>
-                <option>NT-B</option>
-                <option>NT-C</option>
-                <option>NT-D</option>
-                <option>SBC</option>
               </select>
             </label>
             <label>
@@ -121,8 +119,8 @@ const Cutoff = () => {
               </select>
             </label>
             <label>
-              Home University
-              <input name="university" value={form.university} onChange={handleChange} placeholder="e.g., Mumbai University" />
+              College / University Search
+              <input name="university" value={form.university} onChange={handleChange} placeholder="e.g., VJTI Mumbai" />
             </label>
             <label>
               Preferred course
@@ -139,55 +137,80 @@ const Cutoff = () => {
               </select>
             </label>
             <label>
-              Preferred location
-              <input name="location" value={form.location} onChange={handleChange} placeholder="e.g., Pune" />
-            </label>
-            <label>
-              CAP round
-              <select name="round" value={form.round} onChange={handleChange}>
-                <option value="">Select round</option>
-                <option>Round 1</option>
-                <option>Round 2</option>
+              Target Year
+              <select name="target_year" value={form.target_year} onChange={handleChange}>
+                <option value={2026}>2026</option>
+                <option value={2027}>2027</option>
+                <option value={2028}>2028</option>
               </select>
             </label>
           </div>
-          <Button
-            variant="primary"
-            type="submit"
-            disabled={
-              !!error ||
-              !form.exam ||
-              !form.score ||
-              !form.category ||
-              !form.gender ||
-              !form.university ||
-              !form.course ||
-              !form.location ||
-              !form.round
-            }
-          >
-            Predict
-          </Button>
+          
+          <div className="cutoff-submit-wrap">
+            <button
+              type="submit"
+              className="cutoff-predict-btn"
+              disabled={!!error || !form.exam || !form.score}
+            >
+              <span className="material-symbols-outlined">psychology</span>
+              <span>Predict Cutoff &amp; College Chances</span>
+            </button>
+            {(!form.exam || !form.score) && (
+              <span className="cutoff-hint">
+                Please select an exam and enter your score to calculate prediction.
+              </span>
+            )}
+          </div>
         </form>
 
         <div className="cutoff-result">
           {result ? (
             <div className="result-card">
-              <h2>Prediction result</h2>
-              <div className="result-grid">
-                <div>
-                  <strong>{result.cutoff}</strong>
-                  <span>Predicted cutoff</span>
-                </div>
-                <div>
-                  <strong>{result.rank}</strong>
-                  <span>Expected rank</span>
-                </div>
-                <div>
-                  <strong>{result.suggestion}</strong>
-                  <span>Best college suggestions</span>
-                </div>
-              </div>
+              {result.message ? (
+                 <div className="result-empty">{result.message}</div>
+              ) : result.recommended_colleges ? (
+                 <>
+                   <h2>{result.target_year} College Recommendations</h2>
+                   <div className="recommendations-list">
+                     {result.recommended_colleges.map((col, idx) => (
+                       <div key={idx} className="recommendation-item">
+                         <h3>{col.college_name}</h3>
+                         <div className="rec-details">
+                           <span>Predicted Cutoff: <strong>{col.predicted_cutoff}</strong></span>
+                           <span>Range: {col.lower_bound} - {col.upper_bound}</span>
+                           <span>Match: <strong className={`match-${col.match_probability?.toLowerCase() || 'medium'}`}>{col.match_probability}</strong></span>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                 </>
+              ) : (
+                 <>
+                   <h2>{result.target_year} Predicted Cutoff for {result.college}</h2>
+                   <div className="result-grid">
+                     <div>
+                       <strong>{result.predicted_cutoff}</strong>
+                       <span>Expected/Predicted Value</span>
+                     </div>
+                     <div>
+                       <strong>{result.lower_bound} - {result.upper_bound}</strong>
+                       <span>Prediction Range</span>
+                     </div>
+                     <div>
+                       <strong>{result.confidence}</strong>
+                       <span>Confidence</span>
+                     </div>
+                     <div>
+                       <strong>{result.latest_actual_year}</strong>
+                       <span>Latest Actual Data</span>
+                     </div>
+                     <div>
+                       <strong>{result.data_status.replace(/_/g, " ")}</strong>
+                       <span>Data Status</span>
+                     </div>
+                   </div>
+                 </>
+              )}
             </div>
           ) : (
             <div className="result-empty">Enter your details to view a tailored prediction.</div>

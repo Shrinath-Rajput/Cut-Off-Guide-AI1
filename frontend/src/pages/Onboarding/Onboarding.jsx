@@ -20,7 +20,7 @@ const INDIAN_STATES = [
 import { EXAM_CONFIG, validateAcademicScore } from '../../utils/validation';
 
 const STANDARD_BRANCHES = [
-  'Computer Science', 'Information Technology', 'Electronics & Telecom', 'Mechanical', 'Civil', 'Electrical', 'Chemical'
+  'Computer Science', 'Information Technology', 'Electronics & Telecom', 'Mechanical', 'Civil', 'Electrical', 'Chemical', 'AI & ML'
 ];
 
 const CAREER_OPTIONS = [
@@ -50,10 +50,9 @@ const AREA_OF_INTEREST_OPTIONS = [
   'Computer Science',
   'Engineering',
   'Business Admin',
-  'Data Science',
   'Mathematics',
   'Biology',
-  'Economics',
+  'Economics'
 ];
 
 const DEGREE_LEVEL_OPTIONS = [
@@ -157,6 +156,7 @@ const Onboarding = () => {
     areasOfInterest: Array.isArray(studentProfile?.academic?.areasOfInterest) ? studentProfile.academic.areasOfInterest : [],
     targetDegreeLevel: studentProfile?.academic?.targetDegreeLevel || '',
     expectedEntranceScore: studentProfile?.academic?.expectedEntranceScore || '',
+    scoreType: studentProfile?.academic?.scoreType || 'Percentage',
   });
 
   const [preferences, setPreferencesLocal] = useState({
@@ -204,6 +204,7 @@ const Onboarding = () => {
       areasOfInterest: Array.isArray(studentProfile?.academic?.areasOfInterest) ? studentProfile.academic.areasOfInterest : [],
       targetDegreeLevel: studentProfile?.academic?.targetDegreeLevel || '',
       expectedEntranceScore: studentProfile?.academic?.expectedEntranceScore || '',
+      scoreType: studentProfile?.academic?.scoreType || 'Percentage',
     });
   }, [
     studentProfile?.academic?.exam,
@@ -256,10 +257,16 @@ const Onboarding = () => {
     const next = {};
     if (!academic.exam) next.exam = 'Please select an exam';
     if (!academic.examScore.trim()) {
-      next.examScore = 'Exam Score is required';
+      next.examScore = 'Academic score is required';
     } else {
-      const scoreError = validateAcademicScore(academic.exam, academic.examScore);
-      if (scoreError) next.examScore = scoreError;
+      const num = parseFloat(academic.examScore);
+      if (isNaN(num) || num < 0) {
+        next.examScore = 'Please enter a valid positive number';
+      } else if (academic.scoreType === 'Percentage' && num > 100) {
+        next.examScore = 'Percentage cannot exceed 100';
+      } else if (academic.scoreType === 'CGPA' && num > 10) {
+        next.examScore = 'CGPA cannot exceed 10';
+      }
     }
     if (!academic.careerOption) next.careerOption = 'Please select a career option';
     if (!academic.preferredBranch) next.preferredBranch = 'Please select a branch';
@@ -268,8 +275,17 @@ const Onboarding = () => {
   };
 
   const handleAcademicScoreBlur = () => {
-    if (academic.exam && academic.examScore) {
-      const scoreError = validateAcademicScore(academic.exam, academic.examScore);
+    if (academic.examScore) {
+      let scoreError = null;
+      const num = parseFloat(academic.examScore);
+      if (isNaN(num) || num < 0) {
+        scoreError = 'Please enter a valid positive number';
+      } else if (academic.scoreType === 'Percentage' && num > 100) {
+        scoreError = 'Percentage cannot exceed 100';
+      } else if (academic.scoreType === 'CGPA' && num > 10) {
+        scoreError = 'CGPA cannot exceed 10';
+      }
+      
       if (scoreError) {
         setErrors((prev) => ({ ...prev, examScore: scoreError }));
       } else {
@@ -283,15 +299,7 @@ const Onboarding = () => {
   };
 
   const toggleCategory = (cat) => {
-    const currentCategories = personal.category ? personal.category.split(',').map(b => b.trim()) : [];
-    let newCategories;
-    if (currentCategories.includes(cat)) {
-      newCategories = currentCategories.filter(b => b !== cat);
-    } else {
-      newCategories = [...currentCategories, cat];
-    }
-    const newValue = newCategories.join(', ');
-    handlePersonalChange('category', newValue);
+    handlePersonalChange('category', cat);
   };
 
   const validatePreferences = () => {
@@ -346,9 +354,7 @@ const Onboarding = () => {
   const toggleAcademicSubject = (subject) => {
     setAcademicLocal((prev) => {
       const current = Array.isArray(prev.subjects) ? prev.subjects : [];
-      const next = current.includes(subject)
-        ? current.filter((item) => item !== subject)
-        : [...current, subject];
+      const next = current.includes(subject) ? [] : [subject];
       return { ...prev, subjects: next };
     });
 
@@ -412,9 +418,7 @@ const Onboarding = () => {
   const toggleAreasOfInterest = (area) => {
     setAcademicLocal((prev) => {
       const current = Array.isArray(prev.areasOfInterest) ? prev.areasOfInterest : [];
-      const next = current.includes(area)
-        ? current.filter((item) => item !== area)
-        : [...current, area];
+      const next = current.includes(area) ? [] : [area];
       return { ...prev, areasOfInterest: next };
     });
     if (errors.areasOfInterest) {
@@ -461,7 +465,20 @@ const Onboarding = () => {
       const next = {};
       if (!academic.educationLevel) next.educationLevel = 'Please select your current education level';
       if (!academic.targetStream) next.targetStream = 'Please select your target stream';
-      if (!academic.examScore.trim()) next.examScore = 'Academic score is required';
+      
+      if (!academic.examScore.trim()) {
+        next.examScore = 'Academic score is required';
+      } else {
+        const num = parseFloat(academic.examScore);
+        if (isNaN(num) || num < 0) {
+          next.examScore = 'Please enter a valid positive number';
+        } else if (academic.scoreType === 'Percentage' && num > 100) {
+          next.examScore = 'Percentage cannot exceed 100';
+        } else if (academic.scoreType === 'CGPA' && num > 10) {
+          next.examScore = 'CGPA cannot exceed 10';
+        }
+      }
+
       if (!academic.subjects || academic.subjects.length === 0) next.subjects = 'Please select at least one subject';
       if (!personal.domicile) next.domicile = 'State of Domicile is required';
       if (!personal.category) next.category = 'Please select a Student Category';
@@ -495,6 +512,7 @@ const Onboarding = () => {
         educationLevel: academic.educationLevel,
         targetStream: academic.targetStream,
         subjects: academic.subjects,
+        scoreType: academic.scoreType,
       });
       nextStep();
       return;
@@ -505,9 +523,17 @@ const Onboarding = () => {
       if (!academic.targetDegreeLevel) {
         step3Errors.targetDegreeLevel = 'Please select your target degree level';
       }
+      
+      if (academic.expectedEntranceScore.trim()) {
+        const num = parseFloat(academic.expectedEntranceScore);
+        if (isNaN(num) || num < 0 || num > 100) {
+          step3Errors.expectedEntranceScore = 'Please enter a valid percentage/percentile between 0 and 100';
+        }
+      }
+
       setErrors(step3Errors);
       if (Object.keys(step3Errors).length > 0) {
-        toast.error('Please select your target degree level');
+        toast.error(Object.values(step3Errors)[0] || 'Please fix the errors to continue');
         return;
       }
 
@@ -526,6 +552,7 @@ const Onboarding = () => {
         areasOfInterest: academic.areasOfInterest,
         targetDegreeLevel: academic.targetDegreeLevel,
         expectedEntranceScore: academic.expectedEntranceScore.trim(),
+        scoreType: academic.scoreType,
       });
 
       setPreferences({
@@ -569,6 +596,7 @@ const Onboarding = () => {
           locationZone: domicileValue,
           exam: studentProfile.academic?.exam,
           examScore: studentProfile.academic?.examScore,
+          scoreType: studentProfile.academic?.scoreType,
           careerOption: studentProfile.academic?.careerOption,
           preferredBranch: studentProfile.academic?.preferredBranch,
           preferredLocation: studentProfile.preferences?.preferredLocation,
@@ -855,16 +883,30 @@ const Onboarding = () => {
                   </div>
 
                   <div className="step-two-form-field step-two-full">
-                    <label className="step-two-label" htmlFor="examScore">Most Recent Academic Score (CGPA / %)</label>
-                    <input
-                      type="text"
-                      id="examScore"
-                      value={academic.examScore}
-                      onChange={(e) => handleAcademicChange('examScore', e.target.value)}
-                      onBlur={handleAcademicScoreBlur}
-                      placeholder="e.g., 8.5 or 92%"
-                      className={`step-two-input ${errors.examScore ? 'step-two-field-error' : ''}`}
-                    />
+                    <label className="step-two-label" htmlFor="examScore">Most Recent Academic Score</label>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      <div className="step-two-select-wrap" style={{ width: '140px' }}>
+                        <select
+                          value={academic.scoreType}
+                          onChange={(e) => handleAcademicChange('scoreType', e.target.value)}
+                          className="step-two-select"
+                        >
+                          <option value="Percentage">Percentage</option>
+                          <option value="CGPA">CGPA</option>
+                        </select>
+                        <span className="material-symbols-outlined step-two-select-caret">expand_more</span>
+                      </div>
+                      <input
+                        type="text"
+                        id="examScore"
+                        value={academic.examScore}
+                        onChange={(e) => handleAcademicChange('examScore', e.target.value)}
+                        onBlur={handleAcademicScoreBlur}
+                        placeholder={academic.scoreType === 'CGPA' ? "e.g., 8.5" : "e.g., 92"}
+                        className={`step-two-input ${errors.examScore ? 'step-two-field-error' : ''}`}
+                        style={{ flex: 1 }}
+                      />
+                    </div>
                     <p className="step-two-hint">This helps us gauge baseline eligibility.</p>
                     {errors.examScore && <div className="field-error-text">{errors.examScore}</div>}
                   </div>
@@ -893,7 +935,7 @@ const Onboarding = () => {
                     <label className="step-two-label">Student Category</label>
                     <div className="step-two-chips">
                       {['General', 'OBC', 'SC', 'ST', 'EWS', 'PWD', 'Defence/Ex-Servicemen', 'Minority', 'Kashmiri Migrant'].map((option) => {
-                        const selected = (personal.category || '').split(',').map((value) => value.trim()).filter(Boolean).includes(option);
+                        const selected = (personal.category || '').trim() === option;
                         return (
                           <button
                             key={option}
@@ -1042,11 +1084,14 @@ const Onboarding = () => {
                       </h2>
                       <input
                         type="text"
-                        className="step-three-input"
+                        className={`step-three-input ${errors.expectedEntranceScore ? 'step-two-field-error' : ''}`}
                         placeholder="e.g., 95.5 percentile"
                         value={academic.expectedEntranceScore}
                         onChange={(e) => handleAcademicChange('expectedEntranceScore', e.target.value)}
                       />
+                      {errors.expectedEntranceScore && (
+                        <div className="field-error-text" style={{marginTop: '0.5rem'}}>{errors.expectedEntranceScore}</div>
+                      )}
                     </section>
                   </div>
                 </div>

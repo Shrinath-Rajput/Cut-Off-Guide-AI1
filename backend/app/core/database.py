@@ -24,8 +24,6 @@ async def connect_to_mongo():
         await db.db["users"].create_index([("phone", 1)], unique=False)
         logging.info("Initialized MongoDB client at %s", settings.MONGODB_URI)
     except Exception as e:
-        db.client = None
-        db.db = None
         logging.warning("MongoDB initialization warning: %s", e)
 
 async def close_mongo_connection():

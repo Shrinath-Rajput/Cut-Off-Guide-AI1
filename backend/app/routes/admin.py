@@ -160,15 +160,7 @@ async def admin_login(request: AdminLoginRequest, db=Depends(get_db)):
     user = None
     role = None
 
-    db_user = await db["users"].find_one({"email": input_email})
-    if db_user and db_user.get("role") in {"ADMIN", "SUPER_ADMIN"}:
-        user = db_user
-        role = user.get("role") or "ADMIN"
-        stored_hash = user.get("passwordHash") or user.get("password_hash")
-        if not stored_hash or not verify_password(input_password, stored_hash):
-            raise HTTPException(status_code=401, detail="Invalid admin credentials")
-
-    if user is None and input_email == configured_email and configured_password:
+    if input_email == configured_email and configured_password:
         user = await db["users"].find_one({"email": configured_email})
         if user and user.get("role") not in {"ADMIN", "SUPER_ADMIN"}:
             user = None
@@ -491,6 +483,34 @@ async def delete_cutoff(cutoff_id: str, current_user: dict = Depends(require_adm
     if not result.deleted_count:
         raise HTTPException(status_code=404, detail="Cutoff record not found")
     return {"status": "success"}
+
+class BulkCutoffImportRequest(BaseModel):
+    year: int
+    data_type: str = "actual"
+    records: list[dict[str, Any]]
+
+@router.post("/cutoffs/bulk-import")
+async def bulk_import_cutoffs(payload: BulkCutoffImportRequest, current_user: dict = Depends(require_admin), db=Depends(get_db)):
+    """Import a batch of cutoff data marked as ACTUAL for a specific year, triggering immediate availability for 2027 prediction recalculations."""
+    now = datetime.now(timezone.utc)
+    documents = []
+    for r in payload.records:
+        r["year"] = payload.year
+        r["data_type"] = payload.data_type
+        r["createdAt"] = now
+        documents.append(r)
+        
+    if not documents:
+        raise HTTPException(status_code=400, detail="No records provided")
+        
+    result = await db["cutoffs"].insert_many(documents)
+    return {
+        "status": "success", 
+        "inserted_count": len(result.inserted_ids),
+        "year": payload.year,
+        "data_type": payload.data_type,
+        "message": f"Successfully imported {len(result.inserted_ids)} records as {payload.data_type} data for {payload.year}."
+    }
 
 
 @router.get("/enquiries")
