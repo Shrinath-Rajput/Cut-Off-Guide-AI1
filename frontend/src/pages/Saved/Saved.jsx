@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import MainLayout from '../../components/MainLayout/MainLayout';
 import './Saved.css';
-import { getSavedColleges } from '../../services/api';
+import { getSavedColleges, removeSavedCollege } from '../../services/api';
 import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
+import toast from 'react-hot-toast';
 
 const sortOptions = [
   { value: 'recent', label: 'Recently Saved' },
@@ -44,12 +45,13 @@ const Saved = () => {
 
   const hasSavedColleges = sortedColleges.length > 0;
 
-  const handleRemoveSaved = async (id) => {
+  const handleRemoveSaved = async (id, collegeName = 'College') => {
     try {
       await removeSavedCollege(id);
       setSavedColleges((prev) => prev.filter((college) => (college.college_id || college.collegeId || college.id) !== id));
+      toast.success(`Removed ${collegeName} from saved colleges`);
     } catch (err) {
-      console.error(err);
+      toast.error('Could not remove college');
     }
   };
 
@@ -124,7 +126,8 @@ const Saved = () => {
                     <button
                       type="button"
                       className="bookmark-button"
-                      onClick={() => handleRemoveSaved(cid)}
+                      onClick={() => handleRemoveSaved(cid, college.name)}
+                      title="Click to Unsave College"
                       aria-label={`Remove ${college.name} from saved`}
                     >
                       <span className="material-symbols-outlined filled">bookmark</span>
@@ -163,11 +166,24 @@ const Saved = () => {
                     </div>
 
                     <div className="saved-card-actions">
-                      <button type="button" className="primary-button" onClick={() => handleViewDetails(cid)}>
-                        View Details
-                      </button>
-                      <button type="button" className="secondary-button" onClick={() => handleCompare(college)}>
-                        Compare
+                      <div className="saved-card-actions-row">
+                        <button type="button" className="primary-button" onClick={() => handleViewDetails(cid)}>
+                          View Details
+                        </button>
+                        <button type="button" className="secondary-button" onClick={() => handleCompare(college)}>
+                          Compare
+                        </button>
+                      </div>
+                      <button
+                        type="button"
+                        className="unsave-button"
+                        onClick={() => handleRemoveSaved(cid, college.name)}
+                        title="Remove college from your saved list"
+                      >
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                          bookmark_remove
+                        </span>
+                        Unsave College
                       </button>
                     </div>
                   </div>

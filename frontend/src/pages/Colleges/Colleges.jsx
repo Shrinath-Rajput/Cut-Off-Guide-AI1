@@ -349,15 +349,18 @@ const Colleges = () => {
                       />
                       <button
                         type="button"
-                        className={`absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm border-none flex items-center justify-center text-outline hover:text-primary transition-colors cursor-pointer shadow-sm ${
-                          isSaved ? 'text-primary' : ''
+                        className={`absolute top-3 right-3 px-3 py-1.5 rounded-full backdrop-blur-sm border flex items-center gap-1.5 transition-all cursor-pointer shadow-sm text-xs font-bold ${
+                          isSaved
+                            ? 'bg-amber-600 text-white border-amber-700 shadow-md hover:bg-red-600 hover:border-red-700'
+                            : 'bg-white/95 text-on-surface hover:text-primary hover:bg-white border-outline-variant/70'
                         }`}
                         onClick={() => toggleBookmark(college)}
-                        title={isSaved ? 'Remove from Saved' : 'Save College'}
+                        title={isSaved ? 'Click to Unsave College' : 'Click to Save College'}
                       >
-                        <span className="material-symbols-outlined text-[20px]">
-                          {isSaved ? 'bookmark_added' : 'bookmark_border'}
+                        <span className="material-symbols-outlined text-[16px]">
+                          {isSaved ? 'bookmark_remove' : 'bookmark_add'}
                         </span>
+                        <span>{isSaved ? 'Unsave' : 'Save'}</span>
                       </button>
 
                       {college.type && (
