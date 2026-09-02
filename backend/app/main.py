@@ -18,8 +18,11 @@ async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
     if get_db() is not None:
-        await admin.ensure_admin_account(get_db())
-        await admin.ensure_super_admin_account(get_db())
+        try:
+            await admin.ensure_admin_account(get_db())
+            await admin.ensure_super_admin_account(get_db())
+        except Exception as e:
+            print("MongoDB not reachable yet, continuing without admin auto-init:", e)
     yield
     # Shutdown
     await close_mongo_connection()

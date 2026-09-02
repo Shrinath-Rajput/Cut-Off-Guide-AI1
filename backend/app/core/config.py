@@ -28,11 +28,18 @@ class Settings(BaseSettings):
 
     OTP_TTL_SECONDS: int = int(os.getenv("OTP_TTL_SECONDS", "300"))
 
-    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY") or _DEFAULT_GROQ_KEY
+    @property
+    def GROQ_API_KEY(self) -> str:
+        val = (os.getenv("GROQ_API_KEY") or "").strip()
+        return val if val else _DEFAULT_GROQ_KEY
+
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
     GROQ_API_URL: str = os.getenv("GROQ_API_URL", "https://api.groq.com/openai/v1/chat/completions")
 
-    TAVILY_API_KEY: str = os.getenv("TAVILY_API_KEY") or _DEFAULT_TAVILY_KEY
+    @property
+    def TAVILY_API_KEY(self) -> str:
+        val = (os.getenv("TAVILY_API_KEY") or "").strip()
+        return val if val else _DEFAULT_TAVILY_KEY
 
     HUGGINGFACE_API_TOKEN: str = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_TOKEN") or _DEFAULT_HF_TOKEN
     HUGGINGFACE_MODEL: str = os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
