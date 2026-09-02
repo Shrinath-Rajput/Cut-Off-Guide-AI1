@@ -1,3 +1,4 @@
+import logging
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -17,9 +18,13 @@ from app.routes import assistant, auth, users, admin, super_admin, colleges, cut
 async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
-    if get_db() is not None:
-        await admin.ensure_admin_account(get_db())
-        await admin.ensure_super_admin_account(get_db())
+    try:
+        database = get_db()
+        if database is not None:
+            await admin.ensure_admin_account(database)
+            await admin.ensure_super_admin_account(database)
+    except Exception as exc:
+        logging.warning("Startup DB bootstrap skipped: %s", exc)
     yield
     # Shutdown
     await close_mongo_connection()

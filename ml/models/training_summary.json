@@ -1,0 +1,49 @@
+{
+  "dataset_rows": 327867,
+  "important_columns": [
+    "exam",
+    "course_name",
+    "category",
+    "seat_type",
+    "status",
+    "cap_round",
+    "year",
+    "score",
+    "cutoff_rank"
+  ],
+  "feature_columns": [
+    "exam",
+    "course_name",
+    "category",
+    "seat_type",
+    "status",
+    "cap_round",
+    "year"
+  ],
+  "target_column": "percentile",
+  "target_type": "regression",
+  "reason": "The source data contains real cutoff percentile values across multiple exam files but no consistent binary admission flag. Regression on Percentile is the valid target for this dataset.",
+  "model_results": [
+    {
+      "model_name": "RandomForestRegressor",
+      "mae": 16.268038604742483,
+      "rmse": 20.65872959402273,
+      "r2": 0.42022161457733276
+    },
+    {
+      "model_name": "GradientBoostingRegressor",
+      "mae": 18.2171457547909,
+      "rmse": 22.18906882603792,
+      "r2": 0.3311434987168699
+    }
+  ],
+  "best_model": {
+    "model_name": "RandomForestRegressor",
+    "mae": 16.268038604742483,
+    "rmse": 20.65872959402273,
+    "r2": 0.42022161457733276
+  },
+  "processed_file": "D:\\e drive\\old data 1 E drive\\Fourise Project\\Cut_off_Guide\\ml\\dataset\\processed\\cutoff_training_data.csv",
+  "model_file": "D:\\e drive\\old data 1 E drive\\Fourise Project\\Cut_off_Guide\\ml\\models\\cutoff_model.pkl",
+  "preprocessor_file": "D:\\e drive\\old data 1 E drive\\Fourise Project\\Cut_off_Guide\\ml\\models\\preprocessor.pkl"
+}

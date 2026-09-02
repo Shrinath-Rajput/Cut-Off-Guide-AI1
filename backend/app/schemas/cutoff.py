@@ -1,7 +1,10 @@
-from typing import List, Optional
+from typing import Optional
 from pydantic import BaseModel
 
+
 class CutoffSearchRequest(BaseModel):
+    exam: Optional[str] = None
+    score: Optional[str] = None
     percentile: Optional[str] = None
     category: Optional[str] = None
     gender: Optional[str] = None
@@ -9,6 +12,7 @@ class CutoffSearchRequest(BaseModel):
     course: Optional[str] = None
     location: Optional[str] = None
     round: Optional[str] = None
+
 
 class CutoffResult(BaseModel):
     cutoff: str

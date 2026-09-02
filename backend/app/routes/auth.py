@@ -16,7 +16,7 @@ from app.routes.admin import track_analytics_event
 from bson import ObjectId
 
 router = APIRouter(prefix="/api/auth", tags=["Auth"])
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__) 
 
 class OtpRequest(BaseModel):
     name: str
@@ -237,17 +237,17 @@ async def verify_otp(request: OtpVerifyRequest, db=Depends(get_db)):
             email_passworded = [u for u in email_dup_matches if _has_password_hash(u)]
             phone_passworded = [u for u in phone_dup_matches if _has_password_hash(u)]
 
-            if email_passworded:
+            if email_dup_matches:
                 logger.warning(
-                    "VERIFY-OTP SIGNUP 409: Email already has passwordHash. email=%s existing_uid=%s",
-                    raw_email, email_passworded[0].get("uid")
+                    "VERIFY-OTP SIGNUP 409: Email already exists in users collection. email=%s existing_uid=%s",
+                    raw_email, email_dup_matches[0].get("uid")
                 )
                 raise HTTPException(status_code=409, detail="Email already registered. Please sign in instead.")
 
-            if phone_passworded:
+            if phone_dup_matches:
                 logger.warning(
-                    "VERIFY-OTP SIGNUP 409: Phone already has passwordHash. phone=%s existing_uid=%s",
-                    raw_phone, phone_passworded[0].get("uid")
+                    "VERIFY-OTP SIGNUP 409: Phone already exists in users collection. phone=%s existing_uid=%s",
+                    raw_phone, phone_dup_matches[0].get("uid")
                 )
                 raise HTTPException(status_code=409, detail="Phone number already registered. Please sign in instead.")
 
@@ -428,18 +428,18 @@ async def register(request: UserSignup, db=Depends(get_db)):
     chosen_user_to_update = None
     update_reason = None
 
-    if email_passworded:
-        eu = email_passworded[0]
+    if email_matches:
+        eu = email_matches[0]
         logger.warning(
-            "REGISTER 409: Email already registered AND HAS passwordHash. email=%s existing_uid=%s stored_email=%s",
+            "REGISTER 409: Email already exists in users collection. email=%s existing_uid=%s stored_email=%s",
             email, eu.get("uid"), repr(eu.get("email"))
         )
         raise HTTPException(status_code=409, detail="Email already registered")
 
-    if phone_passworded:
-        pu = phone_passworded[0]
+    if phone_matches:
+        pu = phone_matches[0]
         logger.warning(
-            "REGISTER 409: Phone already registered AND HAS passwordHash. phone=%s existing_uid=%s stored_phone=%s",
+            "REGISTER 409: Phone already exists in users collection. phone=%s existing_uid=%s stored_phone=%s",
             phone, pu.get("uid"), repr(pu.get("phone"))
         )
         raise HTTPException(status_code=409, detail="Phone number already registered")

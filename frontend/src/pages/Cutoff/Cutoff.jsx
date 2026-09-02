@@ -13,12 +13,14 @@ const Cutoff = () => {
 
   const handleChange = (event) => {
     const { name, value } = event.target;
-    
+
     if (name === 'exam') {
       setForm((prev) => ({ ...prev, exam: value, score: '', course: '' }));
       setError(null);
+      setResult(null);
     } else {
       setForm((prev) => ({ ...prev, [name]: value }));
+      setResult(null);
       if (name === 'score') {
         setError(null);
       }
@@ -34,13 +36,26 @@ const Cutoff = () => {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (error) return;
-    
+    const validationError = validateAcademicScore(form.exam, form.score);
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    const requiredFields = ['exam', 'score', 'category', 'gender', 'university', 'course', 'location', 'round'];
+    const missingRequiredField = requiredFields.find((field) => !String(form[field] ?? '').trim());
+    if (missingRequiredField) {
+      setError('Please complete all cutoff fields before predicting.');
+      return;
+    }
+
     try {
+      setError(null);
       const data = await searchCutoffs(form);
       setResult(data);
-    } catch (error) {
-      console.error('Failed to search cutoffs:', error);
+    } catch (requestError) {
+      console.error('Failed to search cutoffs:', requestError);
+      setError(requestError?.response?.data?.detail || 'Unable to predict cutoff. Please try again.');
     }
   };
 
@@ -136,7 +151,23 @@ const Cutoff = () => {
               </select>
             </label>
           </div>
-          <Button variant="primary" type="submit" disabled={!!error || !form.exam || !form.score}>Predict</Button>
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={
+              !!error ||
+              !form.exam ||
+              !form.score ||
+              !form.category ||
+              !form.gender ||
+              !form.university ||
+              !form.course ||
+              !form.location ||
+              !form.round
+            }
+          >
+            Predict
+          </Button>
         </form>
 
         <div className="cutoff-result">
