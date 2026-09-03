@@ -12,6 +12,7 @@ import {
 } from '../../services/api';
 import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
 import toast from 'react-hot-toast';
+import collegesHeroBg from '../../assets/images/colleges-hero-bg.jpg';
 
 const INDIAN_STATES = [
   'All India',
@@ -272,43 +273,80 @@ const Colleges = () => {
 
       {/* Main Content */}
       <main className="flex-grow pt-32 pb-24 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto w-full flex flex-col gap-stack-lg">
-        {/* Hero Section */}
-        <section className="flex flex-col items-center text-center gap-stack-md max-w-3xl mx-auto mb-8">
-          <h1 className="font-headline-lg-mobile md:font-display text-headline-lg-mobile md:text-display text-on-surface font-extrabold tracking-tight">
-            Find Your Dream College in India
-          </h1>
+        {/* Hero Section with Illustration Background & Overlapping Search */}
+        <section className="colleges-hero-banner">
+          <div className="colleges-hero-bg-wrapper">
+            <img
+              src={collegesHeroBg}
+              alt="Find Your Dream College in India - AI College Search"
+              className="colleges-hero-bg-img"
+            />
+            <div className="colleges-hero-overlay" />
+            <div className="colleges-hero-glow" />
+          </div>
 
-          <div className="w-full mt-stack-md relative">
-            <div className="flex items-center bg-surface-container-lowest border border-outline-variant rounded-full px-6 py-4 shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all w-full relative">
-              <span className="material-symbols-outlined text-outline mr-3">search</span>
-              <input
-                ref={searchInputRef}
-                className="bg-transparent border-none outline-none flex-grow font-body-md text-on-surface placeholder:text-outline-variant focus:ring-0 w-full"
-                placeholder="Search for colleges..."
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAiLookup(search);
-                }}
-              />
-              {search && (
+          <div className="colleges-hero-content">
+            <div className="colleges-hero-badge">
+              <span className="material-symbols-outlined">auto_awesome</span>
+              <span>AI-POWERED INSTITUTION DISCOVERY</span>
+            </div>
+
+            <h1 className="colleges-hero-title">
+              Find Your Dream College in India
+            </h1>
+
+            <p className="colleges-hero-subtitle">
+              Explore 250+ verified engineering, medical &amp; professional institutions with cutoffs, fees, placements &amp; live AI insights.
+            </p>
+
+            <div className="colleges-search-bar-wrap">
+              <div className="colleges-search-inner">
+                <span className="material-symbols-outlined search-leading-icon">search</span>
+                <input
+                  ref={searchInputRef}
+                  className="colleges-search-input"
+                  placeholder="Search by college name, city, or branch (e.g., COEP Pune, IIT Bombay, CSE)..."
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAiLookup(search);
+                  }}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    className="colleges-search-clear"
+                    onClick={() => setSearch('')}
+                    title="Clear search"
+                  >
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                )}
                 <button
                   type="button"
-                  className="text-outline hover:text-on-surface transition-colors mx-2 cursor-pointer"
-                  onClick={() => setSearch('')}
-                  title="Clear search"
+                  className="colleges-search-submit"
+                  onClick={() => handleAiLookup(search)}
                 >
-                  <span className="material-symbols-outlined text-lg">close</span>
+                  <span className="material-symbols-outlined">psychology</span>
+                  <span>AI Search</span>
                 </button>
-              )}
-              <button
-                type="button"
-                className="bg-primary-container text-white px-6 py-2.5 rounded-full font-label-md text-label-md flex items-center gap-2 hover:bg-primary transition-colors shadow-md ml-2 absolute right-2 top-2 bottom-2 my-auto h-auto cursor-pointer"
-                onClick={() => handleAiLookup(search)}
-              >
-                <span className="material-symbols-outlined text-sm">search</span> AI Search
-              </button>
+              </div>
+            </div>
+
+            <div className="colleges-hero-quick-tags">
+              <div className="quick-tag">
+                <span className="material-symbols-outlined">school</span>
+                <span>250+ Premier Institutes</span>
+              </div>
+              <div className="quick-tag">
+                <span className="material-symbols-outlined">trending_up</span>
+                <span>Cutoff Analytics</span>
+              </div>
+              <div className="quick-tag">
+                <span className="material-symbols-outlined">verified</span>
+                <span>NIRF &amp; Placement Data</span>
+              </div>
             </div>
           </div>
         </section>
