@@ -5,6 +5,7 @@ import './Saved.css';
 import { getSavedColleges, removeSavedCollege } from '../../services/api';
 import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
 import toast from 'react-hot-toast';
+import savedHeroImg from '../../assets/images/saved-colleges-hero.jpg';
 
 const sortOptions = [
   { value: 'recent', label: 'Recently Saved' },
@@ -29,15 +30,19 @@ const Saved = () => {
     const sorted = [...savedColleges];
 
     if (sortOption === 'name') {
-      sorted.sort((a, b) => a.name.localeCompare(b.name));
+      sorted.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
     }
 
     if (sortOption === 'rating') {
-      sorted.sort((a, b) => Number(b.rating) - Number(a.rating));
+      sorted.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
     }
 
     if (sortOption === 'cutoff') {
-      sorted.sort((a, b) => Number(b.cutoff.replace('%ile', '')) - Number(a.cutoff.replace('%ile', '')));
+      sorted.sort((a, b) => {
+        const valA = parseFloat(String(a.cutoff || '').replace(/[^0-9.]/g, '')) || 0;
+        const valB = parseFloat(String(b.cutoff || '').replace(/[^0-9.]/g, '')) || 0;
+        return valB - valA;
+      });
     }
 
     return sorted;
@@ -71,138 +76,197 @@ const Saved = () => {
   return (
     <MainLayout>
       <div className="saved-page">
-        <div className="saved-header">
-          <div className="saved-header-copy">
-            <span className="saved-eyebrow">MY SAVED COLLEGES</span>
-            <h1>My Saved Colleges</h1>
-            <p>Review and compare the institutions you've bookmarked for your academic journey.</p>
+        {/* HERO BANNER WITH BACKGROUND IMAGE AND OVERLAPPING TEXT */}
+        <section className="saved-hero-banner">
+          <div className="saved-hero-bg-wrapper">
+            <img
+              src={savedHeroImg}
+              alt="Different Roles, One Mission - Law, Medicine, Engineering"
+              className="saved-hero-bg-img"
+            />
+            <div className="saved-hero-overlay" />
+            <div className="saved-hero-glow" />
           </div>
 
-          <div className="saved-actions">
-            <div className="sort-dropdown">
-              <button
-                type="button"
-                className="sort-button"
-                onClick={() => setSortOpen((prev) => !prev)}
-              >
-                <span className="material-symbols-outlined">sort</span>
-                {sortOptions.find((option) => option.value === sortOption)?.label}
-                <span className="material-symbols-outlined chevron">expand_more</span>
-              </button>
-              {sortOpen && (
-                <div className="sort-menu">
-                  {sortOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      className={`sort-item ${sortOption === option.value ? 'active' : ''}`}
-                      onClick={() => {
-                        setSortOption(option.value);
-                        setSortOpen(false);
-                      }}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+          <div className="saved-hero-content">
+            <div className="saved-hero-top-row">
+              <div className="saved-pill-badge">
+                <span className="material-symbols-outlined star-icon">auto_awesome</span>
+                <span>DIFFERENT ROLES, ONE MISSION</span>
+              </div>
+              <div className="saved-stats-badge">
+                <span className="material-symbols-outlined">bookmarks</span>
+                <span>{savedColleges.length} {savedColleges.length === 1 ? 'College' : 'Colleges'} Saved</span>
+              </div>
             </div>
 
-            <button type="button" className="compare-all-button" onClick={handleCompareAll}>
-              <span className="material-symbols-outlined">compare_arrows</span>
-              Compare All
-            </button>
-          </div>
-        </div>
+            <div className="saved-hero-text-block">
+              <h1 className="saved-hero-title">
+                My Saved Colleges
+              </h1>
+              <p className="saved-hero-subtitle">
+                Building a Better Tomorrow — Review, organize, and compare the premier engineering, medical, and professional institutions you've shortlisted for your dream career.
+              </p>
+            </div>
 
-        {hasSavedColleges ? (
-          <div className="saved-grid">
-            {sortedColleges.map((college) => {
-              const cid = college.college_id || college.collegeId || college.id;
-              return (
-                <article key={cid} className="saved-card">
-                  <div className="saved-card-image-shell">
-                    <img src={collegeImage(college.image)} alt={college.name} className="saved-card-image" onError={handleCollegeImageError} />
-                    <button
-                      type="button"
-                      className="bookmark-button"
-                      onClick={() => handleRemoveSaved(cid, college.name)}
-                      title="Click to Unsave College"
-                      aria-label={`Remove ${college.name} from saved`}
-                    >
-                      <span className="material-symbols-outlined filled">bookmark</span>
-                    </button>
-                    {college.rank && <span className="rank-badge">Rank {college.rank}</span>}
-                    <span className="rating-badge">
-                      <span className="material-symbols-outlined">star</span>
-                      {college.rating || '4.5'}
-                    </span>
-                  </div>
+            <div className="saved-hero-bottom-bar">
+              <div className="saved-tags-row">
+                <span className="saved-role-tag">
+                  <span className="material-symbols-outlined">gavel</span> Law
+                </span>
+                <span className="saved-role-tag">
+                  <span className="material-symbols-outlined">medical_services</span> Medicine
+                </span>
+                <span className="saved-role-tag">
+                  <span className="material-symbols-outlined">engineering</span> Engineering
+                </span>
+              </div>
 
-                  <div className="saved-card-body">
-                    <h2>{college.name}</h2>
-                    <p className="saved-location">
-                      <span className="material-symbols-outlined">location_on</span>
-                      {college.location}
-                    </p>
-
-                    <div className="saved-details">
-                      {college.course && (
-                        <div className="saved-detail-row">
-                          <span className="detail-label">Target Course</span>
-                          <span className="detail-value">{college.course}</span>
-                        </div>
-                      )}
-                      {college.cutoff && (
-                        <div className="saved-detail-row">
-                          <span className="detail-label">Predicted Cutoff</span>
-                          <span className="detail-value primary">{college.cutoff}</span>
-                        </div>
-                      )}
-                      <div className="saved-detail-row">
-                        <span className="detail-label">Saved On</span>
-                        <span className="detail-value">{college.savedOn || 'Recent'}</span>
-                      </div>
+              <div className="saved-actions-toolbar">
+                <div className="sort-dropdown">
+                  <button
+                    type="button"
+                    className="sort-button glass-button"
+                    onClick={() => setSortOpen((prev) => !prev)}
+                    aria-label="Sort saved colleges"
+                  >
+                    <span className="material-symbols-outlined">sort</span>
+                    <span>{sortOptions.find((option) => option.value === sortOption)?.label}</span>
+                    <span className="material-symbols-outlined chevron">expand_more</span>
+                  </button>
+                  {sortOpen && (
+                    <div className="sort-menu">
+                      {sortOptions.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`sort-item ${sortOption === option.value ? 'active' : ''}`}
+                          onClick={() => {
+                            setSortOption(option.value);
+                            setSortOpen(false);
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
                     </div>
+                  )}
+                </div>
 
-                    <div className="saved-card-actions">
-                      <div className="saved-card-actions-row">
-                        <button type="button" className="primary-button" onClick={() => handleViewDetails(cid)}>
-                          View Details
-                        </button>
-                        <button type="button" className="secondary-button" onClick={() => handleCompare(college)}>
-                          Compare
-                        </button>
-                      </div>
+                <button type="button" className="compare-all-button" onClick={handleCompareAll}>
+                  <span className="material-symbols-outlined">compare_arrows</span>
+                  Compare All
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* MAIN BODY CONTENT */}
+        <div className="saved-main-container">
+          {hasSavedColleges ? (
+            <div className="saved-grid">
+              {sortedColleges.map((college) => {
+                const cid = college.college_id || college.collegeId || college.id;
+                return (
+                  <article key={cid} className="saved-card">
+                    <div className="saved-card-image-shell">
+                      <img
+                        src={collegeImage(college.image)}
+                        alt={college.name}
+                        className="saved-card-image"
+                        onError={handleCollegeImageError}
+                      />
                       <button
                         type="button"
-                        className="unsave-button"
+                        className="bookmark-button"
                         onClick={() => handleRemoveSaved(cid, college.name)}
-                        title="Remove college from your saved list"
+                        title="Click to Unsave College"
+                        aria-label={`Remove ${college.name} from saved`}
                       >
-                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                          bookmark_remove
-                        </span>
-                        Unsave College
+                        <span className="material-symbols-outlined filled">bookmark</span>
                       </button>
+                      {college.rank && <span className="rank-badge">Rank #{college.rank}</span>}
+                      <span className="rating-badge">
+                        <span className="material-symbols-outlined">star</span>
+                        {college.rating || '4.5'}
+                      </span>
                     </div>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="saved-empty-state">
-            <span className="material-symbols-outlined empty-icon">bookmark_border</span>
-            <h2>No saved colleges yet</h2>
-            <p>
-              Explore our comprehensive database of institutions and save your favourites here to compare cutoffs and track your admission chances.
-            </p>
-            <button type="button" className="explore-button" onClick={() => navigate('/colleges')}>
-              Explore Colleges
-            </button>
-          </div>
-        )}
+
+                    <div className="saved-card-body">
+                      <h2>{college.name}</h2>
+                      <p className="saved-location">
+                        <span className="material-symbols-outlined">location_on</span>
+                        {college.location || 'India'}
+                      </p>
+
+                      <div className="saved-details">
+                        {college.course && (
+                          <div className="saved-detail-row">
+                            <span className="detail-label">Target Course</span>
+                            <span className="detail-value">{college.course}</span>
+                          </div>
+                        )}
+                        {college.cutoff && (
+                          <div className="saved-detail-row">
+                            <span className="detail-label">Predicted Cutoff</span>
+                            <span className="detail-value primary">{college.cutoff}</span>
+                          </div>
+                        )}
+                        <div className="saved-detail-row">
+                          <span className="detail-label">Saved On</span>
+                          <span className="detail-value">{college.savedOn || 'Recent'}</span>
+                        </div>
+                      </div>
+
+                      <div className="saved-card-actions">
+                        <div className="saved-card-actions-row">
+                          <button type="button" className="primary-button" onClick={() => handleViewDetails(cid)}>
+                            View Details
+                          </button>
+                          <button type="button" className="secondary-button" onClick={() => handleCompare(college)}>
+                            Compare
+                          </button>
+                        </div>
+                        <button
+                          type="button"
+                          className="unsave-button"
+                          onClick={() => handleRemoveSaved(cid, college.name)}
+                          title="Remove college from your saved list"
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                            bookmark_remove
+                          </span>
+                          Unsave College
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="saved-empty-state">
+              <div className="empty-icon-wrapper">
+                <span className="material-symbols-outlined empty-icon">bookmark_border</span>
+              </div>
+              <h2>No Saved Colleges Yet</h2>
+              <p>
+                Explore our comprehensive database of engineering, medical, and professional institutions to save your favorites, track cutoffs, and compare admission probabilities.
+              </p>
+              <div className="empty-actions">
+                <button type="button" className="explore-button" onClick={() => navigate('/colleges')}>
+                  <span className="material-symbols-outlined">search</span>
+                  Explore Colleges
+                </button>
+                <button type="button" className="compare-empty-button" onClick={() => navigate('/compare')}>
+                  <span className="material-symbols-outlined">compare_arrows</span>
+                  Compare Tool
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </MainLayout>
   );
