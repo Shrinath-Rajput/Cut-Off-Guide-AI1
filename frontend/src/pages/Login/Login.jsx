@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { signInWithPopup } from 'firebase/auth';
 import { loginUser, sendLoginOtp, verifyLoginOtp } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { getFirebaseAuth, getGoogleProvider } from '../../services/firebase';
 import './Login.css';
 
 const getErrorMessage = (error, fallback) => {
@@ -43,6 +45,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [pendingLogin, setPendingLogin] = useState(null);
   const otpInputRefs = useRef([]);
@@ -59,6 +62,59 @@ const Login = () => {
     const interval = setInterval(() => setTimer((value) => value - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    setError('');
+    try {
+      const auth = getFirebaseAuth();
+      const provider = getGoogleProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const token = await user.getIdToken();
+      const userPayload = {
+        uid: user.uid,
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        phone: user.phoneNumber || '',
+        photoURL: user.photoURL || '',
+        provider: 'google',
+        role: 'USER',
+      };
+
+      login(userPayload, token);
+      toast.success('Signed in successfully');
+      navigate('/home', { replace: true });
+    } catch (googleError) {
+      if (
+        googleError?.code === 'auth/popup-closed-by-user' ||
+        googleError?.code === 'auth/cancelled-popup-request' ||
+        googleError?.code === 'auth/user-cancelled'
+      ) {
+        setError('Sign-in cancelled. Please try again.');
+      } else if (googleError?.code === 'auth/popup-blocked') {
+        setError('Popup was blocked by your browser. Please allow popups and try again.');
+      } else if (googleError?.code === 'auth/network-request-failed') {
+        setError('Network error during Google sign-in. Please check your connection.');
+      } else if (googleError?.code === 'auth/unauthorized-domain') {
+        setError('This domain is not authorized in Firebase Console. Please add localhost to Authorized Domains in Firebase.');
+      } else if (googleError?.code === 'auth/operation-not-allowed') {
+        setError('Google sign-in provider is not enabled in Firebase Console.');
+      } else if (
+        googleError?.code === 'auth/invalid-api-key' ||
+        googleError?.code === 'auth/configuration-not-found' ||
+        googleError?.code === 'auth/missing-api-key' ||
+        googleError?.code === 'app/no-options'
+      ) {
+        setError('Firebase authentication configuration error. Please check your setup.');
+      } else {
+        const errorMsg = googleError?.message;
+        setError(typeof errorMsg === 'string' && !errorMsg.includes('Firebase:') ? errorMsg : 'Failed to sign in with Google. Please try again.');
+      }
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
   const handleNext = async (event) => {
     event.preventDefault();
@@ -313,10 +369,15 @@ const Login = () => {
                 <span>or</span>
               </div>
 
-              <a href="http://localhost:5000/api/auth/google" className="cg-google-btn">
+              <button
+                type="button"
+                className="cg-google-btn"
+                onClick={handleGoogleLogin}
+                disabled={isLoading || isGoogleLoading}
+              >
                 <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="cg-google-icon" />
-                <span>Continue with Google</span>
-              </a>
+                <span>{isGoogleLoading ? 'Connecting...' : 'Continue with Google'}</span>
+              </button>
 
               <p className="cg-footnote">
                 Don&apos;t have an account?{' '}
