@@ -197,9 +197,8 @@
   .drawer-header {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 0 4px 24px;
+    justify-content: flex-start;
+    padding: 0 4px 22px;
     border-bottom: 1px solid rgba(148, 74, 0, 0.18);
   }
 
@@ -217,32 +216,10 @@
   }
 
   .drawer-brand span {
-    max-width: 205px;
+    max-width: 240px;
     color: var(--on-surface-variant);
     font-size: 0.72rem;
     line-height: 1.4;
-  }
-
-  .drawer-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    width: 38px;
-    height: 38px;
-    border: 1px solid rgba(148, 74, 0, 0.2);
-    border-radius: 11px;
-    color: var(--on-surface-variant);
-    background: rgba(255, 255, 255, 0.72);
-    cursor: pointer;
-    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-  }
-
-  .drawer-close:hover,
-  .drawer-close:focus-visible {
-    color: var(--primary);
-    background: rgba(148, 74, 0, 0.06);
-    border-color: rgba(148, 74, 0, 0.2);
   }
 
   .mobile-drawer .site-menu {

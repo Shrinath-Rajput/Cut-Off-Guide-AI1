@@ -94,9 +94,6 @@ const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', p
               <strong>Cutoff Guide AI</strong>
               <span>AI-Powered Admission Prediction</span>
             </Link>
-            <button type="button" className="drawer-close" aria-label="Close navigation menu" onClick={() => setMobileOpen(false)}>
-              <X size={22} />
-            </button>
           </div>
 
           <nav className="site-menu" aria-label="Mobile navigation">
