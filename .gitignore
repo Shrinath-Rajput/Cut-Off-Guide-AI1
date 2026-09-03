@@ -32,3 +32,11 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# MongoDB local data and logs
+_mongodata/
+mongo_data/
+*.lock
+*.log
+backend/*.log
+

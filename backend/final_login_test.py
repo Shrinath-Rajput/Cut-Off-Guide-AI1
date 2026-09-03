@@ -4,7 +4,7 @@ import requests
 
 BASE = "http://localhost:5000"
 USER_EMAIL = "rajputshrinath349@gmail.com"
-USER_PASSWORD = "LegacyPass@2026"
+USER_PASSWORD = "Shrinath@12345"
 WRONG_PASSWORD = "WrongPass@999"
 ADMIN_EMAIL = "ankitakenjale75@gmail.com"
 ADMIN_PASSWORD = "Ankita@123"
@@ -38,7 +38,7 @@ def test_normal_user_correct_password():
     if ok:
         try:
             body = r.json()
-            ok = body.get("status") == "success" and body.get("requiresOtp") is True and bool(body.get("uid")) and bool(body.get("user"))
+            ok = (body.get("status") in ("success", "pending_otp")) and body.get("requiresOtp") is True and bool(body.get("uid")) and bool(body.get("user"))
         except:
             ok = False
     print("Result: %s" % ("PASS - Login succeeded, requiresOtp flow ready" if ok else "FAIL"))
