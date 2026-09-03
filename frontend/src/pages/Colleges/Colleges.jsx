@@ -65,6 +65,22 @@ const formatCleanInsights = (rawText, collegeName = 'This institution') => {
 const Colleges = () => {
   const navigate = useNavigate();
   const searchInputRef = useRef(null);
+  const catalogRef = useRef(null);
+
+  // Responsive mobile view check (6 per page on mobile)
+  const [isMobile, setIsMobile] = useState(() => {
+    return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const pageSize = isMobile ? 6 : 12;
 
   // Search & Filters
   const [search, setSearch] = useState('');
@@ -104,7 +120,7 @@ const Colleges = () => {
     loadBookmarks();
   }, []);
 
-  // Fetch catalog colleges with state filter & search (minimum 10+ colleges per state)
+  // Fetch catalog colleges with state filter & search (6 per page on mobile, 12 on desktop)
   useEffect(() => {
     const fetchColleges = async () => {
       setLoading(true);
@@ -116,7 +132,7 @@ const Colleges = () => {
 
         const params = {
           page: currentPage,
-          limit: 50,
+          limit: pageSize,
           search: search.trim() || undefined,
           state: isAllIndia ? undefined : selectedState,
           states: isAllIndia ? undefined : [selectedState],
@@ -134,12 +150,68 @@ const Colleges = () => {
 
     const timeoutId = setTimeout(fetchColleges, 200);
     return () => clearTimeout(timeoutId);
-  }, [search, selectedState, currentPage]);
+  }, [search, selectedState, currentPage, pageSize]);
 
-  // Reset page when filters change
+  // Reset page when filters or pageSize change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedState]);
+  }, [search, selectedState, pageSize]);
+
+  // Helper for smart page numbering with ellipsis
+  const getPageNumbers = () => {
+    if (totalPages <= 1) return [];
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (isMobile) {
+      const pages = [];
+      const start = Math.max(1, currentPage - 1);
+      const end = Math.min(totalPages, currentPage + 1);
+
+      if (start > 1) {
+        pages.push(1);
+        if (start > 2) pages.push('...');
+      }
+      for (let i = start; i <= end; i++) {
+        if (!pages.includes(i)) pages.push(i);
+      }
+      if (end < totalPages) {
+        if (end < totalPages - 1) pages.push('...');
+        pages.push(totalPages);
+      }
+      return pages;
+    } else {
+      const pages = [];
+      if (currentPage <= 4) {
+        for (let i = 1; i <= Math.min(5, totalPages); i++) pages.push(i);
+        if (totalPages > 5) {
+          pages.push('...');
+          pages.push(totalPages);
+        }
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+      return pages;
+    }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
+    setCurrentPage(newPage);
+    if (catalogRef.current) {
+      catalogRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const toggleBookmark = async (college) => {
     const cid = college.id || college.college_id || college._id || (college.name ? college.name.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'unknown');
@@ -293,13 +365,20 @@ const Colleges = () => {
         </section>
 
         {/* Content Area */}
-        <section className="flex flex-col gap-stack-lg">
+        <section ref={catalogRef} className="flex flex-col gap-stack-lg scroll-mt-24">
           {/* Status Text */}
-          <div className="font-headline-md text-headline-md text-on-surface">
-            Showing <span className="text-primary-container font-bold">{totalCollegeCount}</span> Colleges{' '}
-            {selectedState !== 'All India' && selectedState !== 'All Over India' && selectedState !== 'IN All India'
-              ? `in ${selectedState}`
-              : 'Across All India'}
+          <div className="font-headline-md text-headline-md text-on-surface flex flex-wrap items-center justify-between gap-2">
+            <div>
+              Showing <span className="text-primary-container font-bold">{totalCollegeCount}</span> Colleges{' '}
+              {selectedState !== 'All India' && selectedState !== 'All Over India' && selectedState !== 'IN All India'
+                ? `in ${selectedState}`
+                : 'Across All India'}
+            </div>
+            {totalCollegeCount > 0 && (
+              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant">
+                Page {currentPage} of {totalPages} ({pageSize} per page)
+              </span>
+            )}
           </div>
 
           {/* Loading / Cards Grid / Empty State */}
@@ -349,107 +428,100 @@ const Colleges = () => {
                       />
                       <button
                         type="button"
-                        className={`absolute top-3 right-3 px-3 py-1.5 rounded-full backdrop-blur-sm border flex items-center gap-1.5 transition-all cursor-pointer shadow-sm text-xs font-bold ${
-                          isSaved
-                            ? 'bg-amber-600 text-white border-amber-700 shadow-md hover:bg-red-600 hover:border-red-700'
-                            : 'bg-white/95 text-on-surface hover:text-primary hover:bg-white border-outline-variant/70'
-                        }`}
                         onClick={() => toggleBookmark(college)}
-                        title={isSaved ? 'Click to Unsave College' : 'Click to Save College'}
+                        className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer ${
+                          isSaved
+                            ? 'bg-surface-tint text-white'
+                            : 'bg-surface-container-lowest/80 text-on-surface backdrop-blur-sm hover:bg-white'
+                        }`}
+                        title={isSaved ? 'Remove from saved' : 'Save this college'}
                       >
-                        <span className="material-symbols-outlined text-[16px]">
-                          {isSaved ? 'bookmark_remove' : 'bookmark_add'}
+                        <span className={`material-symbols-outlined text-[20px] ${isSaved ? 'fill-icon' : ''}`}>
+                          bookmark
                         </span>
-                        <span>{isSaved ? 'Unsave' : 'Save'}</span>
                       </button>
 
-                      {college.type && (
-                        <span className="absolute bottom-3 left-3 bg-inverse-surface/85 backdrop-blur-sm text-white font-label-sm text-[12px] px-2.5 py-1 rounded-md">
-                          {college.type}
-                        </span>
+                      {college.rating && (
+                        <div className="absolute bottom-3 left-3 bg-surface-container-lowest/90 backdrop-blur-sm px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm text-xs font-bold text-on-surface">
+                          <span className="material-symbols-outlined text-amber-500 text-[14px]">star</span>
+                          {college.rating}
+                        </div>
+                      )}
+
+                      {college.nirf_rank && (
+                        <div className="absolute bottom-3 right-3 bg-surface-tint text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm">
+                          NIRF #{college.nirf_rank}
+                        </div>
                       )}
                     </div>
 
-                    {/* Body */}
-                    <div className="p-5 flex flex-col flex-grow">
-                      {/* Meta badges */}
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <div className="inline-flex items-center gap-1 bg-[#fff9e6] border border-[#ffe082] rounded-md px-2 py-0.5 text-[12px] font-bold text-[#b78103]">
-                          <span className="material-symbols-outlined text-[14px] text-amber-500 fill">star</span>
-                          <span>{college.rating || 4.5}</span>
-                          <span className="text-[10px] text-[#8c7247]">/5</span>
-                        </div>
-                        {college.nirf_rank && (
-                          <div className="bg-[#e8f5e9] border border-[#c8e6c9] rounded-md px-2 py-0.5 text-[12px] font-bold text-[#2e7d32]">
-                            NIRF #{college.nirf_rank}
-                          </div>
+                    {/* Content */}
+                    <div className="p-5 flex-grow flex flex-col justify-between">
+                      <div>
+                        {college.type && (
+                          <span className="inline-block font-label-sm text-[11px] text-surface-tint font-bold uppercase tracking-wider mb-1">
+                            {college.type}
+                          </span>
                         )}
-                        {college.state && (
-                          <div className="bg-surface-container-low rounded-md px-2 py-0.5 text-[12px] font-medium text-on-surface-variant">
-                            {college.state}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Name & Location */}
-                      <h3 className="font-headline-md text-[17px] font-bold text-on-surface mb-1 line-clamp-2 leading-snug">
-                        {college.name}
-                      </h3>
-                      <p className="font-body-md text-[13px] text-on-surface-variant flex items-center gap-1 mb-3">
-                        <span className="material-symbols-outlined text-[15px]">location_on</span>
-                        {locationText}
-                      </p>
-
-                      {/* Highlights */}
-                      {college.highlights && (
-                        <p className="font-body-md text-[13px] text-on-surface-variant line-clamp-2 mb-4 leading-relaxed">
-                          {college.highlights}
+                        <h3 className="font-headline-md text-lg font-bold text-on-surface line-clamp-2 leading-tight mb-1">
+                          {college.name}
+                        </h3>
+                        <p className="font-body-md text-[13px] text-on-surface-variant flex items-center gap-1 mb-3">
+                          <span className="material-symbols-outlined text-[15px] text-surface-tint">location_on</span>
+                          {locationText}
                         </p>
-                      )}
 
-                      {/* Stats */}
-                      <div className="mt-auto pt-3 border-t border-outline-variant/40 flex flex-wrap gap-4 text-[12px]">
-                        {college.placement_avg && (
-                          <div>
-                            <span className="text-outline">Avg CTC: </span>
-                            <span className="text-green-700 font-bold">{college.placement_avg}</span>
-                          </div>
+                        {/* Highlights */}
+                        {college.highlights && (
+                          <p className="font-body-md text-[13px] text-on-surface-variant line-clamp-2 mb-4 leading-relaxed">
+                            {college.highlights}
+                          </p>
                         )}
-                        {college.fee_display && (
-                          <div>
-                            <span className="text-outline">Fees: </span>
-                            <span className="text-on-surface font-semibold">{college.fee_display}</span>
-                          </div>
-                        )}
-                      </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-1.5 mt-4">
-                        <Link
-                          to={`/colleges/${cid}`}
-                          className="flex-1 bg-surface-container-low hover:bg-primary hover:text-white border border-outline-variant text-on-surface font-label-md text-[12px] py-2 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors font-semibold text-center"
-                        >
-                          Details
-                          <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                        </Link>
-                        <button
-                          type="button"
-                          className="bg-surface-container-lowest hover:bg-surface-container-high text-primary border border-outline-variant font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
-                          onClick={() => navigate(`/compare?college1=${encodeURIComponent(college.name || cid)}`)}
-                          title="Compare this college with another"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">compare_arrows</span>
-                          Compare
-                        </button>
-                        <button
-                          type="button"
-                          className="bg-primary-fixed hover:bg-primary-container text-on-primary-fixed border border-primary-fixed font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
-                          onClick={() => handleAiLookup(college.name)}
-                          title="Ask AI Council about this college"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">psychology</span>
-                          AI Info
-                        </button>
+                        {/* Stats */}
+                        <div className="mt-auto pt-3 border-t border-outline-variant/40 flex flex-wrap gap-4 text-[12px]">
+                          {college.placement_avg && (
+                            <div>
+                              <span className="text-outline">Avg CTC: </span>
+                              <span className="text-green-700 font-bold">{college.placement_avg}</span>
+                            </div>
+                          )}
+                          {college.fee_display && (
+                            <div>
+                              <span className="text-outline">Fees: </span>
+                              <span className="text-on-surface font-semibold">{college.fee_display}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 mt-4">
+                          <Link
+                            to={`/colleges/${cid}`}
+                            className="flex-1 bg-surface-container-low hover:bg-primary hover:text-white border border-outline-variant text-on-surface font-label-md text-[12px] py-2 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors font-semibold text-center"
+                          >
+                            Details
+                            <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                          </Link>
+                          <button
+                            type="button"
+                            className="bg-surface-container-lowest hover:bg-surface-container-high text-primary border border-outline-variant font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
+                            onClick={() => navigate(`/compare?college1=${encodeURIComponent(college.name || cid)}`)}
+                            title="Compare this college with another"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">compare_arrows</span>
+                            Compare
+                          </button>
+                          <button
+                            type="button"
+                            className="bg-primary-fixed hover:bg-primary-container text-on-primary-fixed border border-primary-fixed font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
+                            onClick={() => handleAiLookup(college.name)}
+                            title="Ask AI Council about this college"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">psychology</span>
+                            AI Info
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -460,41 +532,62 @@ const Colleges = () => {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8">
-              <button
-                type="button"
-                className="bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 text-sm font-semibold text-on-surface flex items-center gap-1 disabled:opacity-40 cursor-pointer"
-                disabled={currentPage <= 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              >
-                <span className="material-symbols-outlined text-sm">chevron_left</span>
-                Prev
-              </button>
-              <div className="flex gap-1.5">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    className={`w-9 h-9 rounded-xl border text-sm font-semibold flex items-center justify-center cursor-pointer transition-colors ${
-                      currentPage === p
-                        ? 'bg-surface-tint text-white border-surface-tint shadow-sm'
-                        : 'bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary'
-                    }`}
-                    onClick={() => setCurrentPage(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-4 border-t border-outline-variant/40">
+              <div className="text-xs sm:text-sm font-medium text-on-surface-variant text-center sm:text-left">
+                Showing <span className="font-bold text-on-surface">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-bold text-on-surface">{Math.min(currentPage * pageSize, totalCollegeCount)}</span> of <span className="font-bold text-primary">{totalCollegeCount}</span> colleges
+                <span className="hidden sm:inline"> (Page {currentPage} of {totalPages})</span>
               </div>
-              <button
-                type="button"
-                className="bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 text-sm font-semibold text-on-surface flex items-center gap-1 disabled:opacity-40 cursor-pointer"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Next
-                <span className="material-symbols-outlined text-sm">chevron_right</span>
-              </button>
+
+              <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                <button
+                  type="button"
+                  className="bg-surface-container-lowest border border-outline-variant rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-on-surface flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:border-primary hover:text-primary transition-colors shadow-sm"
+                  disabled={currentPage <= 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  aria-label="Previous page"
+                >
+                  <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                  <span>Prev</span>
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {getPageNumbers().map((p, idx) => {
+                    if (p === '...') {
+                      return (
+                        <span key={`ellipsis-${idx}`} className="px-1.5 py-1 text-outline font-bold select-none text-xs">
+                          ...
+                        </span>
+                      );
+                    }
+                    return (
+                      <button
+                        key={`page-${p}`}
+                        type="button"
+                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border text-xs sm:text-sm font-semibold flex items-center justify-center cursor-pointer transition-all ${
+                          currentPage === p
+                            ? 'bg-surface-tint text-white border-surface-tint shadow-md font-bold scale-105'
+                            : 'bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary hover:text-primary'
+                        }`}
+                        onClick={() => handlePageChange(p)}
+                        aria-current={currentPage === p ? 'page' : undefined}
+                      >
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  className="bg-surface-container-lowest border border-outline-variant rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-on-surface flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:border-primary hover:text-primary transition-colors shadow-sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  aria-label="Next page"
+                >
+                  <span>Next</span>
+                  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                </button>
+              </div>
             </div>
           )}
         </section>

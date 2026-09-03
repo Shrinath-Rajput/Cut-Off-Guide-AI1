@@ -18,7 +18,21 @@ const Saved = () => {
   const [savedColleges, setSavedColleges] = useState([]);
   const [sortOption, setSortOption] = useState('recent');
   const [sortOpen, setSortOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const navigate = useNavigate();
+
+  // Responsive mobile check
+  const [isMobile, setIsMobile] = useState(() => {
+    return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const pageSize = isMobile ? 6 : 9;
 
   useEffect(() => {
     getSavedColleges()
@@ -48,7 +62,24 @@ const Saved = () => {
     return sorted;
   }, [savedColleges, sortOption]);
 
+  const totalPages = Math.ceil(sortedColleges.length / pageSize) || 1;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortOption, pageSize]);
+
+  const pagedColleges = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return sortedColleges.slice(start, start + pageSize);
+  }, [sortedColleges, currentPage, pageSize]);
+
   const hasSavedColleges = sortedColleges.length > 0;
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
+    setCurrentPage(newPage);
+    window.scrollTo({ top: 400, behavior: 'smooth' });
+  };
 
   const handleRemoveSaved = async (id, collegeName = 'College') => {
     try {
@@ -165,86 +196,147 @@ const Saved = () => {
         {/* MAIN BODY CONTENT */}
         <div className="saved-main-container">
           {hasSavedColleges ? (
-            <div className="saved-grid">
-              {sortedColleges.map((college) => {
-                const cid = college.college_id || college.collegeId || college.id;
-                return (
-                  <article key={cid} className="saved-card">
-                    <div className="saved-card-image-shell">
-                      <img
-                        src={collegeImage(college.image)}
-                        alt={college.name}
-                        className="saved-card-image"
-                        onError={handleCollegeImageError}
-                      />
-                      <button
-                        type="button"
-                        className="bookmark-button"
-                        onClick={() => handleRemoveSaved(cid, college.name)}
-                        title="Click to Unsave College"
-                        aria-label={`Remove ${college.name} from saved`}
-                      >
-                        <span className="material-symbols-outlined filled">bookmark</span>
-                      </button>
-                      {college.rank && <span className="rank-badge">Rank #{college.rank}</span>}
-                      <span className="rating-badge">
-                        <span className="material-symbols-outlined">star</span>
-                        {college.rating || '4.5'}
-                      </span>
-                    </div>
-
-                    <div className="saved-card-body">
-                      <h2>{college.name}</h2>
-                      <p className="saved-location">
-                        <span className="material-symbols-outlined">location_on</span>
-                        {college.location || 'India'}
-                      </p>
-
-                      <div className="saved-details">
-                        {college.course && (
-                          <div className="saved-detail-row">
-                            <span className="detail-label">Target Course</span>
-                            <span className="detail-value">{college.course}</span>
-                          </div>
-                        )}
-                        {college.cutoff && (
-                          <div className="saved-detail-row">
-                            <span className="detail-label">Predicted Cutoff</span>
-                            <span className="detail-value primary">{college.cutoff}</span>
-                          </div>
-                        )}
-                        <div className="saved-detail-row">
-                          <span className="detail-label">Saved On</span>
-                          <span className="detail-value">{college.savedOn || 'Recent'}</span>
-                        </div>
-                      </div>
-
-                      <div className="saved-card-actions">
-                        <div className="saved-card-actions-row">
-                          <button type="button" className="primary-button" onClick={() => handleViewDetails(cid)}>
-                            View Details
-                          </button>
-                          <button type="button" className="secondary-button" onClick={() => handleCompare(college)}>
-                            Compare
-                          </button>
-                        </div>
+            <>
+              <div className="saved-grid">
+                {pagedColleges.map((college) => {
+                  const cid = college.college_id || college.collegeId || college.id;
+                  return (
+                    <article key={cid} className="saved-card">
+                      <div className="saved-card-image-shell">
+                        <img
+                          src={collegeImage(college.image)}
+                          alt={college.name}
+                          className="saved-card-image"
+                          onError={handleCollegeImageError}
+                        />
                         <button
                           type="button"
-                          className="unsave-button"
+                          className="bookmark-button"
                           onClick={() => handleRemoveSaved(cid, college.name)}
-                          title="Remove college from your saved list"
+                          title="Click to Unsave College"
+                          aria-label={`Remove ${college.name} from saved`}
                         >
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
-                            bookmark_remove
-                          </span>
-                          Unsave College
+                          <span className="material-symbols-outlined filled">bookmark</span>
                         </button>
+                        {college.rank && <span className="rank-badge">Rank #{college.rank}</span>}
+                        <span className="rating-badge">
+                          <span className="material-symbols-outlined">star</span>
+                          {college.rating || '4.5'}
+                        </span>
                       </div>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
+
+                      <div className="saved-card-body">
+                        <h2>{college.name}</h2>
+                        <p className="saved-location">
+                          <span className="material-symbols-outlined">location_on</span>
+                          {college.location || 'India'}
+                        </p>
+
+                        <div className="saved-details">
+                          {college.course && (
+                            <div className="saved-detail-row">
+                              <span className="detail-label">Target Course</span>
+                              <span className="detail-value">{college.course}</span>
+                            </div>
+                          )}
+                          {college.cutoff && (
+                            <div className="saved-detail-row">
+                              <span className="detail-label">Predicted Cutoff</span>
+                              <span className="detail-value primary">{college.cutoff}</span>
+                            </div>
+                          )}
+                          <div className="saved-detail-row">
+                            <span className="detail-label">Saved On</span>
+                            <span className="detail-value">{college.savedOn || 'Recent'}</span>
+                          </div>
+                        </div>
+
+                        <div className="saved-card-actions">
+                          <div className="saved-card-actions-row">
+                            <button type="button" className="primary-button" onClick={() => handleViewDetails(cid)}>
+                              View Details
+                            </button>
+                            <button type="button" className="secondary-button" onClick={() => handleCompare(college)}>
+                              Compare
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            className="unsave-button"
+                            onClick={() => handleRemoveSaved(cid, college.name)}
+                            title="Remove college from your saved list"
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>
+                              bookmark_remove
+                            </span>
+                            Unsave College
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              {totalPages > 1 && (
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px', marginTop: '32px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '12px',
+                      border: '1px solid #e2bfb0',
+                      background: '#fff',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
+                      opacity: currentPage <= 1 ? 0.4 : 1,
+                    }}
+                    disabled={currentPage <= 1}
+                    onClick={() => handlePageChange(currentPage - 1)}
+                  >
+                    Prev
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      style={{
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '12px',
+                        border: currentPage === p ? '1px solid #a04100' : '1px solid #e2bfb0',
+                        background: currentPage === p ? '#a04100' : '#fff',
+                        color: currentPage === p ? '#fff' : '#564337',
+                        fontWeight: 700,
+                        fontSize: '0.88rem',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => handlePageChange(p)}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: '12px',
+                      border: '1px solid #e2bfb0',
+                      background: '#fff',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
+                      opacity: currentPage >= totalPages ? 0.4 : 1,
+                    }}
+                    disabled={currentPage >= totalPages}
+                    onClick={() => handlePageChange(currentPage + 1)}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="saved-empty-state">
               <div className="empty-icon-wrapper">
