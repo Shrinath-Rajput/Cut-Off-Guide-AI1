@@ -6,10 +6,26 @@ import { useAuth } from '../../context/AuthContext';
 import './Login.css';
 
 const getErrorMessage = (error, fallback) => {
+  // A thrown request with NO response means it never reached the backend
+  // (server not running, wrong port, blocked preflight/CORS, network down).
+  // This must NOT be reported as a credential error, otherwise a valid
+  // email/password looks like it was rejected when the request simply failed.
+  if (error && error.request && !error.response) {
+    return 'Cannot reach the server. Please make sure the backend is running on http://127.0.0.1:5000 and try again.';
+  }
+  const status = error?.response?.status;
+  if (status === 503) {
+    return 'Service is temporarily unavailable (database not connected). Please try again in a moment.';
+  }
   const detail = error?.response?.data?.detail || error?.response?.data?.message;
-  if (typeof detail !== 'string') return fallback;
+  if (typeof detail !== 'string') {
+    if (typeof status === 'number' && status >= 500) {
+      return 'The server encountered an error. Please try again shortly.';
+    }
+    return fallback;
+  }
   if (detail === 'Phone number is not registered for this account') return 'Phone number is not registered for this account.';
-  if (error?.response?.status === 404 || detail === 'Not Found' || detail === 'Internal Server Error') return fallback;
+  if (status === 404 || detail === 'Not Found' || detail === 'Internal Server Error') return fallback;
   return detail;
 };
 
