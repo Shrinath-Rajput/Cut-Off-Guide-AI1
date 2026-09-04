@@ -5,6 +5,7 @@ import { useOnboarding } from '../../context/OnboardingContext';
 import { useAuth } from '../../context/AuthContext';
 import { updateProfile, sendOtp, registerUser } from '../../services/api';
 import { SIGNUP_PENDING_KEY } from '../Signup/Signup';
+import WelcomeBackground from '../../components/WelcomeBackground/WelcomeBackground';
 import './Onboarding.css';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -739,6 +740,7 @@ const Onboarding = () => {
 
   return (
     <div className={`onboarding-wrapper ${activeStep === 4 ? 'onboarding-wrapper-step-four' : ''}`}>
+      <WelcomeBackground />
       {activeStep !== 4 && (
         <header className={`onboarding-brand-header ${activeStep === 4 ? 'onboarding-brand-header-summary' : ''}`}>
           <div className={`onboarding-brand-center ${activeStep === 4 ? 'onboarding-brand-center-summary' : ''}`}>

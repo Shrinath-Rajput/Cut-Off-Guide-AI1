@@ -5,6 +5,7 @@ import { signInWithPopup } from 'firebase/auth';
 import { loginUser, sendLoginOtp, verifyLoginOtp } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { getFirebaseAuth, getGoogleProvider } from '../../services/firebase';
+import WelcomeBackground from '../../components/WelcomeBackground/WelcomeBackground';
 import './Login.css';
 
 const getErrorMessage = (error, fallback) => {
@@ -293,10 +294,7 @@ const Login = () => {
 
   return (
     <div className="cg-auth-page">
-      <div className="cg-auth-bg" aria-hidden="true">
-        <div className="cg-auth-blob cg-auth-blob--top" />
-        <div className="cg-auth-blob cg-auth-blob--bottom" />
-      </div>
+      <WelcomeBackground />
       <main className="cg-auth-main">
         <div className="cg-auth-card">
           <div className="cg-auth-brand">

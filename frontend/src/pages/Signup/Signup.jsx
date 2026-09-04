@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { registerUser, sendOtp } from '../../services/api';
 import { useOnboarding } from '../../context/OnboardingContext';
+import WelcomeBackground from '../../components/WelcomeBackground/WelcomeBackground';
 import './Signup.css';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -167,6 +168,7 @@ const Signup = () => {
 
   return (
     <div className="cg-signup-page">
+      <WelcomeBackground />
       <div className="cg-signup-left">
         <div className="cg-signup-left-art" aria-hidden="true">
           <div className="cg-signup-blob cg-signup-blob--a" />

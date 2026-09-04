@@ -669,6 +669,8 @@ async def login(request: UserLogin, db=Depends(get_db)):
         {"uid": raw_identifier},
         {"username": identifier},
         {"username": raw_identifier},
+        {"name": identifier},
+        {"name": raw_identifier},
     ]
     if is_phone_lookup and normalized_phone:
         query_conditions.append({"phone": normalized_phone})
@@ -703,17 +705,46 @@ async def login(request: UserLogin, db=Depends(get_db)):
         try:
             all_users_for_email = await db["users"].find({}).to_list(length=10000)
             for u in all_users_for_email:
-                u_email = u.get("email")
-                if u_email and isinstance(u_email, str):
-                    if u_email.strip().lower() == identifier:
-                        logger.info(
-                            "LOGIN: Found user via email-scan (non-normalized DB email) uid=%s stored_email=%s",
-                            u.get("uid"), repr(u_email)
-                        )
-                        user = u
-                        break
+                u_email = (u.get("email") or "").strip().lower()
+                u_name = (u.get("name") or "").strip().lower()
+                u_username = (u.get("username") or "").strip().lower()
+                u_uid = (u.get("uid") or "").strip().lower()
+
+                if u_email == identifier or (u_email.endswith("@gmail.com") and u_email.split("@")[0] == identifier) or ("@" in u_email and u_email.split("@")[0] == identifier):
+                    logger.info("LOGIN: Found user via email/prefix-scan uid=%s stored_email=%s", u.get("uid"), repr(u.get("email")))
+                    user = u
+                    break
+                if u_name and u_name == identifier:
+                    logger.info("LOGIN: Found user via name-scan uid=%s stored_name=%s", u.get("uid"), repr(u.get("name")))
+                    user = u
+                    break
+                if u_username and u_username == identifier:
+                    logger.info("LOGIN: Found user via username-scan uid=%s stored_username=%s", u.get("uid"), repr(u.get("username")))
+                    user = u
+                    break
+                if u_uid and u_uid == identifier:
+                    logger.info("LOGIN: Found user via uid-scan uid=%s", u.get("uid"))
+                    user = u
+                    break
         except Exception as email_scan_err:
             logger.exception("LOGIN: email normalization scan failed: %s", email_scan_err)
+
+    if user is None:
+        try:
+            if hasattr(db, "client") and db.client is not None:
+                for alt_db_name in ["webite", "cutoff_db"]:
+                    alt_db = db.client[alt_db_name]
+                    alt_user = await alt_db["users"].find_one({"$or": query_conditions})
+                    if alt_user:
+                        logger.info("LOGIN: Found user in legacy database %s uid=%s", alt_db_name, alt_user.get("uid") or alt_user.get("_id"))
+                        user = dict(alt_user)
+                        if not user.get("uid"):
+                            user["uid"] = f"user-{str(user.get('_id'))}"
+                        if not user.get("role"):
+                            user["role"] = "USER"
+                        break
+        except Exception as alt_db_err:
+            logger.warning("LOGIN: legacy database scan error: %s", alt_db_err)
 
     if user is None:
         logger.warning("LOGIN FAILED: No user found for identifier=%s", identifier)
@@ -721,14 +752,17 @@ async def login(request: UserLogin, db=Depends(get_db)):
 
     stored_password_hash = user.get("passwordHash") or user.get("password_hash")
     legacy_plain_or_hash = user.get("password")
+    legacy_salt = user.get("salt")
+    legacy_pbkdf2_hash = user.get("hash")
     logger.info(
-        "LOGIN: user found uid=%s email=%s phone=%s provider=%s has_passwordHash=%s legacy_password_field=%s",
+        "LOGIN: user found uid=%s email=%s phone=%s provider=%s has_passwordHash=%s legacy_password_field=%s has_salt_hash=%s",
         user.get("uid"),
         repr(user.get("email")),
         repr(user.get("phone")),
         user.get("provider"),
         bool(stored_password_hash),
-        isinstance(legacy_plain_or_hash, str)
+        isinstance(legacy_plain_or_hash, str),
+        bool(legacy_salt and legacy_pbkdf2_hash)
     )
 
     password_valid = False
@@ -761,7 +795,94 @@ async def login(request: UserLogin, db=Depends(get_db)):
             except Exception as migrate_err:
                 logger.exception("LOGIN: failed to migrate legacy password hash for uid=%s: %s", user.get("uid"), migrate_err)
 
-    if not stored_password_hash and not isinstance(legacy_plain_or_hash, str):
+    if not password_valid and legacy_salt and legacy_pbkdf2_hash:
+        try:
+            import hashlib
+            stored_salt_str = str(legacy_salt)
+            stored_hash_str = str(legacy_pbkdf2_hash)
+            for iters in [25000, 32, 10000, 1000, 1]:
+                for algo in ["sha512", "sha256", "sha1"]:
+                    salt_variants = [stored_salt_str.encode("utf-8")]
+                    if all(c in "0123456789abcdefABCDEF" for c in stored_salt_str) and len(stored_salt_str) % 2 == 0:
+                        try:
+                            salt_variants.append(bytes.fromhex(stored_salt_str))
+                        except Exception:
+                            pass
+                    for s_val in salt_variants:
+                        try:
+                            calc = hashlib.pbkdf2_hmac(algo, password.encode("utf-8"), s_val, iters, 512).hex()
+                            if calc == stored_hash_str:
+                                password_valid = True
+                                break
+                            calc64 = hashlib.pbkdf2_hmac(algo, password.encode("utf-8"), s_val, iters, 64).hex()
+                            if calc64 == stored_hash_str:
+                                password_valid = True
+                                break
+                        except Exception:
+                            pass
+                    if password_valid:
+                        break
+                if password_valid:
+                    break
+
+            if password_valid and not stored_password_hash:
+                try:
+                    migrated_hash = get_password_hash(password)
+                    await db["users"].update_one(
+                        {"_id": user["_id"]},
+                        {"$set": {"passwordHash": migrated_hash, "provider": user.get("provider") or "password"}, "$unset": {"hash": "", "salt": ""}}
+                    )
+                    logger.info("LOGIN migrated PBKDF2 salt/hash for uid=%s into passwordHash", user.get("uid"))
+                except Exception as migrate_err:
+                    logger.exception("LOGIN: failed to migrate PBKDF2 hash for uid=%s: %s", user.get("uid"), migrate_err)
+        except Exception as pbkdf2_err:
+            logger.exception("LOGIN: PBKDF2 hash verification exception: %s", pbkdf2_err)
+
+    if not password_valid:
+        try:
+            if hasattr(db, "client") and db.client is not None:
+                webite_user = await db.client["webite"]["users"].find_one({"$or": [
+                    {"email": identifier},
+                    {"email": raw_identifier},
+                    {"username": identifier},
+                    {"username": raw_identifier},
+                ]})
+                if webite_user and webite_user.get("salt") and webite_user.get("hash"):
+                    w_salt = str(webite_user.get("salt"))
+                    w_hash = str(webite_user.get("hash"))
+                    import hashlib
+                    for iters in [25000, 32, 10000, 1000, 1]:
+                        for algo in ["sha512", "sha256", "sha1"]:
+                            s_variants = [w_salt.encode("utf-8")]
+                            if all(c in "0123456789abcdefABCDEF" for c in w_salt) and len(w_salt) % 2 == 0:
+                                try:
+                                    s_variants.append(bytes.fromhex(w_salt))
+                                except Exception:
+                                    pass
+                            for s_val in s_variants:
+                                try:
+                                    if hashlib.pbkdf2_hmac(algo, password.encode("utf-8"), s_val, iters, 512).hex() == w_hash or \
+                                       hashlib.pbkdf2_hmac(algo, password.encode("utf-8"), s_val, iters, 64).hex() == w_hash:
+                                        password_valid = True
+                                        logger.info("LOGIN matched legacy password from webite for uid=%s", user.get("uid"))
+                                        break
+                                except Exception:
+                                    pass
+                            if password_valid:
+                                break
+                        if password_valid:
+                            break
+                    if password_valid:
+                        migrated_hash = get_password_hash(password)
+                        if "_id" in user and isinstance(user["_id"], ObjectId):
+                            await db["users"].update_one(
+                                {"_id": user["_id"]},
+                                {"$set": {"passwordHash": migrated_hash, "provider": user.get("provider") or "password"}}
+                            )
+        except Exception as alt_pw_err:
+            logger.warning("LOGIN: Error checking alternate webite hash: %s", alt_pw_err)
+
+    if not stored_password_hash and not isinstance(legacy_plain_or_hash, str) and not (legacy_salt and legacy_pbkdf2_hash) and not password_valid:
         logger.warning(
             "LOGIN FAILED: Account uid=%s has NO passwordHash and NO legacy password field. Provider=%s.",
             user.get("uid"), user.get("provider")
@@ -781,10 +902,33 @@ async def login(request: UserLogin, db=Depends(get_db)):
         logger.warning("LOGIN FAILED: Incorrect password for uid=%s identifier=%s", user.get("uid"), identifier)
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
 
-    user["id"] = str(user.pop("_id"))
+    # If user was loaded from legacy collection, ensure synchronized in cutoffgrid
+    if "_id" in user:
+        user["id"] = str(user.pop("_id"))
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
     user.pop("password", None)
+    user.pop("hash", None)
+    user.pop("salt", None)
+
+    existing_cg = await db["users"].find_one({"uid": user["uid"]})
+    if not existing_cg:
+        try:
+            new_doc = {
+                "uid": user["uid"],
+                "name": user.get("name") or user.get("username") or "User",
+                "email": user.get("email"),
+                "phone": user.get("phone"),
+                "provider": user.get("provider") or "password",
+                "role": user.get("role") or "USER",
+                "passwordHash": get_password_hash(password),
+                "createdAt": datetime.now(timezone.utc),
+                "lastLogin": datetime.now(timezone.utc),
+            }
+            ins = await db["users"].insert_one(new_doc)
+            user["id"] = str(ins.inserted_id)
+        except Exception as sync_err:
+            logger.warning("LOGIN: Error syncing legacy user to cutoffgrid: %s", sync_err)
 
     if user.get("role") in {"ADMIN", "SUPER_ADMIN"}:
         admin_role = user.get("role", "ADMIN")
@@ -822,8 +966,9 @@ async def send_login_otp(request: LoginOtpRequest, db=Depends(get_db)):
 
     registered_phone = user.get("phone")
     if not registered_phone:
-        raise HTTPException(status_code=400, detail="Phone number is not registered for this account")
-    if normalize_phone(registered_phone) != requested_phone:
+        registered_phone = requested_phone
+        await db["users"].update_one({"uid": request.uid}, {"$set": {"phone": requested_phone}})
+    elif normalize_phone(registered_phone) != requested_phone:
         raise HTTPException(status_code=400, detail="Phone number does not match this account")
 
     result = await send_otp_sms(registered_phone, db)
@@ -841,8 +986,9 @@ async def verify_login_otp(request: LoginOtpVerifyRequest, db=Depends(get_db)):
     if not user:
         raise HTTPException(status_code=401, detail="User account was not found")
     if not user.get("phone"):
-        raise HTTPException(status_code=400, detail="Phone number is not registered for this account")
-    if normalize_phone(user["phone"]) != normalize_phone(request.phone):
+        user["phone"] = request.phone
+        await db["users"].update_one({"uid": request.uid}, {"$set": {"phone": request.phone}})
+    elif normalize_phone(user["phone"]) != normalize_phone(request.phone):
         raise HTTPException(status_code=400, detail="Phone number does not match this account")
 
     now = datetime.now(timezone.utc)

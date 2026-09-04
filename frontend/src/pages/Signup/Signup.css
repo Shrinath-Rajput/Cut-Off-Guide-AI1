@@ -23,7 +23,7 @@
   position: relative;
   min-height: 100vh;
   width: 100%;
-  background-color: var(--cg-bg);
+  background-color: transparent;
   color: var(--cg-text);
   font-family: 'Inter', 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -37,7 +37,7 @@
   display: none;
   position: relative;
   width: 50%;
-  background-color: var(--cg-surface-container-high);
+  background-color: transparent;
   align-items: center;
   justify-content: center;
   overflow: hidden;
@@ -50,10 +50,7 @@
 }
 
 .cg-signup-left-art {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  overflow: hidden;
+  display: none;
 }
 
 .cg-signup-blob {
@@ -91,11 +88,7 @@
 }
 
 .cg-signup-left-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(180deg, rgba(245, 229, 224, 0.2) 0%, rgba(250, 235, 229, 0.35) 100%);
-  backdrop-filter: blur(2px);
+  display: none;
 }
 
 .cg-signup-left-content {
@@ -118,7 +111,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 30px rgba(165, 54, 0, 0.08);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
 }
 
 .cg-signup-brand-badge .material-symbols-outlined {
@@ -133,7 +126,8 @@
   line-height: 56px;
   letter-spacing: -0.02em;
   font-weight: 700;
-  color: var(--cg-text);
+  color: #ffffff;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
   margin: 0;
 }
 
@@ -142,7 +136,8 @@
   font-size: 18px;
   line-height: 28px;
   font-weight: 400;
-  color: var(--cg-text-secondary);
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
   margin: 0;
 }
 
@@ -152,7 +147,7 @@
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  background-color: var(--cg-bg);
+  background-color: transparent;
   position: relative;
   z-index: 1;
   min-height: 100vh;
