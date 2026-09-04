@@ -253,8 +253,8 @@ const Saved = () => {
 
                         <div className="saved-card-actions">
                           <div className="saved-card-actions-row">
-                            <button type="button" className="primary-button" onClick={() => handleViewDetails(cid)}>
-                              View Details
+                            <button type="button" className="primary-button" onClick={() => navigate('/colleges')}>
+                              Explore College
                             </button>
                             <button type="button" className="secondary-button" onClick={() => handleCompare(college)}>
                               Compare

@@ -549,10 +549,10 @@ const Compare = () => {
                 </ul>
                 <div className="mt-6 pt-4 border-t border-outline-variant flex justify-between items-center">
                   <Link
-                    to={c1.id ? `/colleges/${c1.id}` : `/colleges`}
+                    to="/colleges"
                     className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
                   >
-                    View College Profile
+                    Explore Colleges
                     <span className="material-symbols-outlined text-xs">arrow_forward</span>
                   </Link>
                   <Link
@@ -579,10 +579,10 @@ const Compare = () => {
                 </ul>
                 <div className="mt-6 pt-4 border-t border-outline-variant flex justify-between items-center">
                   <Link
-                    to={c2.id ? `/colleges/${c2.id}` : `/colleges`}
+                    to="/colleges"
                     className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-1"
                   >
-                    View College Profile
+                    Explore Colleges
                     <span className="material-symbols-outlined text-xs">arrow_forward</span>
                   </Link>
                   <Link

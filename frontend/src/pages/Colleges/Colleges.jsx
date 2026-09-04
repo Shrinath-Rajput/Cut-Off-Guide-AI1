@@ -533,30 +533,23 @@ const Colleges = () => {
                         </div>
 
                         {/* Actions */}
-                        <div className="flex items-center gap-1.5 mt-4">
-                          <Link
-                            to={`/colleges/${cid}`}
-                            className="flex-1 bg-surface-container-low hover:bg-primary hover:text-white border border-outline-variant text-on-surface font-label-md text-[12px] py-2 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors font-semibold text-center"
-                          >
-                            Details
-                            <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                          </Link>
+                        <div className="flex items-center gap-2 mt-4">
                           <button
                             type="button"
-                            className="bg-surface-container-lowest hover:bg-surface-container-high text-primary border border-outline-variant font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
+                            className="flex-1 bg-surface-container-lowest hover:bg-surface-container-high text-primary border border-outline-variant font-label-md text-[13px] py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors font-semibold cursor-pointer"
                             onClick={() => navigate(`/compare?college1=${encodeURIComponent(college.name || cid)}`)}
                             title="Compare this college with another"
                           >
-                            <span className="material-symbols-outlined text-[15px]">compare_arrows</span>
+                            <span className="material-symbols-outlined text-[16px]">compare_arrows</span>
                             Compare
                           </button>
                           <button
                             type="button"
-                            className="bg-primary-fixed hover:bg-primary-container text-on-primary-fixed border border-primary-fixed font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
+                            className="flex-1 bg-primary-fixed hover:bg-primary-container text-on-primary-fixed border border-primary-fixed font-label-md text-[13px] py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors font-semibold cursor-pointer shadow-sm hover:shadow"
                             onClick={() => handleAiLookup(college.name)}
                             title="Ask AI Council about this college"
                           >
-                            <span className="material-symbols-outlined text-[15px]">psychology</span>
+                            <span className="material-symbols-outlined text-[16px]">psychology</span>
                             AI Info
                           </button>
                         </div>

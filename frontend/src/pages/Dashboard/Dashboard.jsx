@@ -171,7 +171,7 @@ const Dashboard = () => {
                   <p>{college.courses?.[0] || 'Courses available'}</p>
                   <div className="college-card-footer">
                     <div><span className="college-label">Rating</span><span className="college-value">{college.rating || 'N/A'}</span></div>
-                    <button type="button" className="details-button" onClick={() => navigate(`/college/${college.id}`)}>View Details</button>
+                    <button type="button" className="details-button" onClick={() => navigate('/colleges')}>Explore Colleges</button>
                   </div>
                 </div>
               </article>

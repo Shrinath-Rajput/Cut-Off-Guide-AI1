@@ -57,8 +57,8 @@ const AppRoutes = () => {
         <Route path="/privacy" element={<Terms />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/colleges" element={<Colleges />} />
-        <Route path="/college/:id" element={<CollegeDetails />} />
-        <Route path="/colleges/:id" element={<CollegeDetails />} />
+        <Route path="/college/:id" element={<Navigate to="/colleges" replace />} />
+        <Route path="/colleges/:id" element={<Navigate to="/colleges" replace />} />
         <Route path="/compare" element={<Compare />} />
         <Route path="/cutoff" element={<Cutoff />} />
         <Route path="/assistant" element={<Assistant />} />
