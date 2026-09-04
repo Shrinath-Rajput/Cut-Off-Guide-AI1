@@ -197,9 +197,8 @@
   .drawer-header {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 0 4px 24px;
+    justify-content: flex-start;
+    padding: 0 4px 22px;
     border-bottom: 1px solid rgba(148, 74, 0, 0.18);
   }
 
@@ -217,40 +216,19 @@
   }
 
   .drawer-brand span {
-    max-width: 205px;
+    max-width: 240px;
     color: var(--on-surface-variant);
     font-size: 0.72rem;
     line-height: 1.4;
   }
 
-  .drawer-close {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex: 0 0 auto;
-    width: 38px;
-    height: 38px;
-    border: 1px solid rgba(148, 74, 0, 0.2);
-    border-radius: 11px;
-    color: var(--on-surface-variant);
-    background: rgba(255, 255, 255, 0.72);
-    cursor: pointer;
-    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
-  }
-
-  .drawer-close:hover,
-  .drawer-close:focus-visible {
-    color: var(--primary);
-    background: rgba(148, 74, 0, 0.06);
-    border-color: rgba(148, 74, 0, 0.2);
-  }
-
   .mobile-drawer .site-menu {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     flex: 1 1 auto;
     gap: 4px;
     align-content: start;
-    margin: 22px 0;
+    margin: 20px 0;
     white-space: normal;
   }
 
@@ -261,46 +239,96 @@
     align-items: center;
     gap: 14px;
     width: 100%;
-    min-height: 46px;
-    padding: 11px 12px;
+    min-height: 48px;
+    padding: 6px 12px;
     border: 0;
-    border-radius: 10px;
+    border-radius: 12px;
     color: var(--on-surface-variant);
     background: transparent;
-    font-size: 0.82rem;
-    font-weight: 600;
     text-align: left;
     text-decoration: none;
     cursor: pointer;
     transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
   }
 
+  .nav-item-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+    border-radius: 10px;
+    background: rgba(148, 74, 0, 0.04);
+    color: var(--on-surface-variant);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+  }
+
+  .nav-item-icon svg {
+    display: block;
+  }
+
+  .nav-item-label {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2a170f;
+    line-height: 1.2;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .mobile-drawer .site-menu a:hover,
   .mobile-drawer .site-menu a:focus-visible,
-  .mobile-drawer .site-menu a.active,
   .drawer-actions button:hover,
   .drawer-actions button:focus-visible,
   .drawer-actions a:hover,
   .drawer-actions a:focus-visible {
     color: var(--primary);
-    background: rgba(148, 74, 0, 0.06);
+    background: #fff8f6;
     outline: none;
+  }
+
+  .mobile-drawer .site-menu a:hover .nav-item-icon,
+  .drawer-actions button:hover .nav-item-icon,
+  .drawer-actions a:hover .nav-item-icon {
+    background: #ffede7;
+    color: var(--primary);
+  }
+
+  .mobile-drawer .site-menu a:hover .nav-item-label,
+  .drawer-actions button:hover .nav-item-label,
+  .drawer-actions a:hover .nav-item-label {
+    color: var(--primary);
   }
 
   .mobile-drawer .site-menu a.active,
   .drawer-actions a.active {
+    color: var(--primary);
+    background: #ffede7;
     font-weight: 700;
   }
 
-  .mobile-drawer .site-menu a svg,
-  .drawer-actions svg {
-    flex: 0 0 19px;
+  .mobile-drawer .site-menu a.active .nav-item-icon,
+  .drawer-actions a.active .nav-item-icon {
+    background: #ffdcc5;
+    color: var(--primary);
+  }
+
+  .mobile-drawer .site-menu a.active .nav-item-label,
+  .drawer-actions a.active .nav-item-label {
+    color: var(--primary);
+    font-weight: 700;
   }
 
   .drawer-actions {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 4px;
-    padding-top: 18px;
+    padding-top: 16px;
     border-top: 1px solid rgba(148, 74, 0, 0.15);
   }
 

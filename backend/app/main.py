@@ -17,12 +17,12 @@ from app.routes import assistant, auth, users, admin, super_admin, colleges, cut
 async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
-    try:
-        if get_db() is not None:
+    if get_db() is not None:
+        try:
             await admin.ensure_admin_account(get_db())
             await admin.ensure_super_admin_account(get_db())
-    except Exception as e:
-        print("Admin account setup skipped (MongoDB offline):", e)
+        except Exception as e:
+            print("MongoDB not reachable yet, continuing without admin auto-init:", e)
     yield
     # Shutdown
     await close_mongo_connection()

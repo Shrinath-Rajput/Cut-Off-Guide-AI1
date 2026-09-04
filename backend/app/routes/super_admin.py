@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 from bson import ObjectId
@@ -86,56 +86,102 @@ async def get_super_admin_dashboard(current_user: dict = Depends(require_super_a
     if db is None:
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database unavailable")
 
+    now = datetime.now(timezone.utc)
+    start_of_today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_week = now - timedelta(days=6)
+    start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+    try:
+        users = await db["users"].find({}).to_list(length=5000)
+    except Exception:
+        users = []
+
+    admin_count = sum(1 for user in users if user.get("role") == "ADMIN")
+    super_admin_count = sum(1 for user in users if user.get("role") == "SUPER_ADMIN")
     total_colleges = await db["colleges"].count_documents({})
-    active_colleges = await db["colleges"].count_documents({"isActive": True})
-    inactive_colleges = await db["colleges"].count_documents({"isActive": False})
-
-    total_users = await db["users"].count_documents({})
-    new_today = await db["users"].count_documents({"createdAt": {"$gte": datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)}})
-    new_week = await db["users"].count_documents({"createdAt": {"$gte": datetime.now(timezone.utc).replace(day=datetime.now(timezone.utc).day - 6, hour=0, minute=0, second=0, microsecond=0)}})
-    new_month = await db["users"].count_documents({"createdAt": {"$gte": datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)}})
-
-    total_unique_students = await db["users"].count_documents({"role": {"$in": ["USER", "STUDENT", "SUPER_ADMIN"]}})
-    daily_active = await db["analytics_events"].count_documents({"eventType": "USER_LOGIN", "timestamp": {"$gte": datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)}})
-    weekly_active = await db["analytics_events"].count_documents({"eventType": "USER_LOGIN", "timestamp": {"$gte": datetime.now(timezone.utc).replace(day=datetime.now(timezone.utc).day - 6, hour=0, minute=0, second=0, microsecond=0)}})
-    monthly_active = await db["analytics_events"].count_documents({"eventType": "USER_LOGIN", "timestamp": {"$gte": datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)}})
+    total_users = len(users)
 
     total_searches = await db["analytics_events"].count_documents({"eventType": "COLLEGE_SEARCH"})
-    searches_today = await db["analytics_events"].count_documents({"eventType": "COLLEGE_SEARCH", "timestamp": {"$gte": datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)}})
-    searches_week = await db["analytics_events"].count_documents({"eventType": "COLLEGE_SEARCH", "timestamp": {"$gte": datetime.now(timezone.utc).replace(day=datetime.now(timezone.utc).day - 6, hour=0, minute=0, second=0, microsecond=0)}})
-    searches_month = await db["analytics_events"].count_documents({"eventType": "COLLEGE_SEARCH", "timestamp": {"$gte": datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)}})
-
     total_visits = await db["analytics_events"].count_documents({"eventType": "COLLEGE_VIEW"})
-    visits_today = await db["analytics_events"].count_documents({"eventType": "COLLEGE_VIEW", "timestamp": {"$gte": datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)}})
-    visits_week = await db["analytics_events"].count_documents({"eventType": "COLLEGE_VIEW", "timestamp": {"$gte": datetime.now(timezone.utc).replace(day=datetime.now(timezone.utc).day - 6, hour=0, minute=0, second=0, microsecond=0)}})
-    visits_month = await db["analytics_events"].count_documents({"eventType": "COLLEGE_VIEW", "timestamp": {"$gte": datetime.now(timezone.utc).replace(day=1, hour=0, minute=0, second=0, microsecond=0)}})
 
-    return {
+    recent_searches = await db["analytics_events"].find({"eventType": "COLLEGE_SEARCH"}).sort("timestamp", -1).limit(10).to_list(length=10)
+    recent_visits = await db["analytics_events"].find({"eventType": "COLLEGE_VIEW"}).sort("timestamp", -1).limit(10).to_list(length=10)
+    recent_activity = await db["analytics_events"].find({}).sort("timestamp", -1).limit(12).to_list(length=12)
+
+    most_searched = await db["analytics_events"].aggregate([
+        {"$match": {"eventType": "COLLEGE_SEARCH"}},
+        {"$group": {"_id": "$collegeId", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 5}
+    ]).to_list(length=5)
+    most_visited = await db["analytics_events"].aggregate([
+        {"$match": {"eventType": "COLLEGE_VIEW"}},
+        {"$group": {"_id": "$collegeId", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 5}
+    ]).to_list(length=5)
+
+    recent_users = sorted(
+        users,
+        key=lambda item: item.get("createdAt") or datetime.min.replace(tzinfo=timezone.utc),
+        reverse=True,
+    )[:5]
+
+    payload = {
         "status": "success",
         "data": {
             "summary": {
-                "totalColleges": total_colleges,
-                "activeColleges": active_colleges,
-                "inactiveColleges": inactive_colleges,
                 "totalUsers": total_users,
-                "newRegistrationsToday": new_today,
-                "newRegistrationsThisWeek": new_week,
-                "newRegistrationsThisMonth": new_month,
-                "totalUniqueStudentsReached": total_unique_students,
-                "dailyActiveUsers": daily_active,
-                "weeklyActiveUsers": weekly_active,
-                "monthlyActiveUsers": monthly_active,
+                "totalColleges": total_colleges,
                 "totalCollegeSearches": total_searches,
-                "searchesToday": searches_today,
-                "searchesThisWeek": searches_week,
-                "searchesThisMonth": searches_month,
                 "totalCollegeVisits": total_visits,
-                "visitsToday": visits_today,
-                "visitsThisWeek": visits_week,
-                "visitsThisMonth": visits_month,
-            }
-        }
+                "adminUsers": admin_count,
+                "superAdminUsers": super_admin_count,
+                "newRegistrationsToday": await db["users"].count_documents({"createdAt": {"$gte": start_of_today}}),
+                "newRegistrationsThisWeek": await db["users"].count_documents({"createdAt": {"$gte": start_of_week}}),
+                "newRegistrationsThisMonth": await db["users"].count_documents({"createdAt": {"$gte": start_of_month}}),
+                "dailyActiveUsers": await db["analytics_events"].count_documents({"eventType": "USER_LOGIN", "timestamp": {"$gte": start_of_today}}),
+                "weeklyActiveUsers": await db["analytics_events"].count_documents({"eventType": "USER_LOGIN", "timestamp": {"$gte": start_of_week}}),
+                "monthlyActiveUsers": await db["analytics_events"].count_documents({"eventType": "USER_LOGIN", "timestamp": {"$gte": start_of_month}}),
+                "searchesToday": await db["analytics_events"].count_documents({"eventType": "COLLEGE_SEARCH", "timestamp": {"$gte": start_of_today}}),
+                "searchesThisWeek": await db["analytics_events"].count_documents({"eventType": "COLLEGE_SEARCH", "timestamp": {"$gte": start_of_week}}),
+                "searchesThisMonth": await db["analytics_events"].count_documents({"eventType": "COLLEGE_SEARCH", "timestamp": {"$gte": start_of_month}}),
+                "visitsToday": await db["analytics_events"].count_documents({"eventType": "COLLEGE_VIEW", "timestamp": {"$gte": start_of_today}}),
+                "visitsThisWeek": await db["analytics_events"].count_documents({"eventType": "COLLEGE_VIEW", "timestamp": {"$gte": start_of_week}}),
+                "visitsThisMonth": await db["analytics_events"].count_documents({"eventType": "COLLEGE_VIEW", "timestamp": {"$gte": start_of_month}}),
+            },
+            "mostSearchedColleges": [
+                {**item, "_id": str(item.get("_id")) if item.get("_id") is not None else None}
+                for item in most_searched
+            ],
+            "mostVisitedColleges": [
+                {**item, "_id": str(item.get("_id")) if item.get("_id") is not None else None}
+                for item in most_visited
+            ],
+            "recentSearches": [
+                {**item, "_id": str(item.get("_id")) if item.get("_id") is not None else None}
+                for item in recent_searches
+            ],
+            "recentCollegeVisits": [
+                {**item, "_id": str(item.get("_id")) if item.get("_id") is not None else None}
+                for item in recent_visits
+            ],
+            "recentActivity": [
+                {**item, "_id": str(item.get("_id")) if item.get("_id") is not None else None}
+                for item in recent_activity
+            ],
+            "recentUsers": [
+                {
+                    **user,
+                    "id": str(user.get("_id")) if user.get("_id") is not None else user.get("id"),
+                    "_id": str(user.get("_id")) if user.get("_id") is not None else user.get("_id"),
+                }
+                for user in recent_users
+            ],
+        },
     }
+    return payload
 
 
 @router.get("/analytics")

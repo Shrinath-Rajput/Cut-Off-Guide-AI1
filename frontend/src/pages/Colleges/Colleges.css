@@ -50,110 +50,268 @@
 }
 
 /* ========================================================================
-   HERO SEARCH BOX
+   COLLEGES HERO BANNER (BACKGROUND IMAGE WITH OVERLAPPING TEXT & SEARCH)
    ======================================================================== */
-.colleges-hero-box {
+.colleges-hero-banner {
+  position: relative;
+  width: 100%;
+  min-height: 440px;
+  border-radius: 32px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 20px 60px rgba(17, 24, 39, 0.12), 0 4px 16px rgba(148, 74, 0, 0.08);
+  border: 1px solid rgba(226, 191, 176, 0.5);
+  margin-bottom: 24px;
+}
+
+.colleges-hero-bg-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.colleges-hero-bg-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+  transform: scale(1.02);
+  transition: transform 0.6s ease;
+}
+
+.colleges-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(22, 16, 12, 0.78) 0%,
+    rgba(35, 21, 15, 0.72) 40%,
+    rgba(20, 28, 48, 0.68) 100%
+  );
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+}
+
+.colleges-hero-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 40%,
+    rgba(230, 126, 34, 0.22) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+.colleges-hero-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 900px;
+  padding: 48px 24px 40px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  max-width: 800px;
-  margin: 0 auto;
-  width: 100%;
+}
+
+.colleges-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #ffdcc5;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+}
+
+.colleges-hero-badge .material-symbols-outlined {
+  font-size: 16px;
+  color: #ffb783;
 }
 
 .colleges-hero-title {
-  font-family: 'Manrope', sans-serif;
-  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-family: 'Manrope', 'Segoe UI', sans-serif;
+  font-size: clamp(2rem, 4.5vw, 3.25rem);
   font-weight: 800;
-  color: var(--c-text);
-  margin: 0 0 20px;
   line-height: 1.15;
   letter-spacing: -0.02em;
+  color: #ffffff;
+  margin: 0 0 12px;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.45);
 }
 
-.colleges-search-bar {
-  position: relative;
+.colleges-hero-subtitle {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: clamp(0.9rem, 1.8vw, 1.05rem);
+  color: #f5dfd4;
+  max-width: 680px;
+  margin: 0 0 28px;
+  line-height: 1.55;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.colleges-search-bar-wrap {
   width: 100%;
+  max-width: 760px;
+  margin-bottom: 24px;
+}
+
+.colleges-search-inner {
   display: flex;
   align-items: center;
-  background-color: var(--c-surface-white);
-  border: 1.5px solid var(--c-outline);
+  background: rgba(255, 255, 255, 0.94);
+  border: 2px solid rgba(255, 255, 255, 0.9);
   border-radius: 9999px;
   padding: 6px 8px 6px 20px;
-  box-shadow: 0 4px 20px rgba(42, 23, 15, 0.06);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   transition: all 0.25s ease;
-  box-sizing: border-box;
 }
 
-.colleges-search-bar:focus-within {
-  border-color: var(--c-primary);
-  box-shadow: 0 0 0 4px rgba(148, 74, 0, 0.12), 0 8px 24px rgba(42, 23, 15, 0.08);
+.colleges-search-inner:focus-within {
+  background: #ffffff;
+  border-color: #e67e22;
+  box-shadow: 0 16px 44px rgba(230, 126, 34, 0.25), 0 0 0 4px rgba(230, 126, 34, 0.2);
+  transform: translateY(-2px);
 }
 
-.colleges-search-icon {
-  color: var(--c-muted);
-  font-size: 22px;
+.search-leading-icon {
+  color: #7b5946;
+  font-size: 24px;
   margin-right: 12px;
   flex-shrink: 0;
 }
 
 .colleges-search-input {
-  flex: 1;
+  flex-grow: 1;
   border: none !important;
-  background: transparent !important;
   outline: none !important;
+  background: transparent !important;
+  color: #2a170f !important;
   font-family: 'Plus Jakarta Sans', sans-serif;
-  font-size: 1rem;
-  color: var(--c-text);
-  padding: 10px 0;
+  font-size: 0.95rem;
+  font-weight: 500;
+  width: 100%;
   min-width: 0;
+  padding: 8px 0;
 }
 
 .colleges-search-input::placeholder {
-  color: #897365;
+  color: #9d7b6c;
 }
 
-.colleges-clear-btn {
-  background: none;
+.colleges-search-clear {
+  background: transparent;
   border: none;
-  color: var(--c-muted);
+  color: #9d7b6c;
   cursor: pointer;
-  padding: 6px;
-  border-radius: 50%;
+  padding: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  transition: color 0.2s ease, background 0.2s ease;
 }
 
-.colleges-clear-btn:hover {
-  background-color: var(--c-surface-low);
-  color: var(--c-text);
+.colleges-search-clear:hover {
+  color: #2a170f;
+  background: rgba(0, 0, 0, 0.06);
 }
 
-.colleges-ai-btn {
-  background: linear-gradient(135deg, var(--c-primary), var(--c-primary-container));
+.colleges-search-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #e67e22 0%, #a04100 100%);
   color: #ffffff;
   border: none;
   border-radius: 9999px;
   padding: 10px 22px;
-  font-family: 'Manrope', sans-serif;
-  font-size: 0.9rem;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 0.88rem;
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 6px;
   cursor: pointer;
+  box-shadow: 0 4px 14px rgba(160, 65, 0, 0.35);
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(148, 74, 0, 0.2);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
-.colleges-ai-btn:hover {
+.colleges-search-submit:hover {
+  background: linear-gradient(135deg, #d35400 0%, #8a3700 100%);
+  box-shadow: 0 6px 18px rgba(160, 65, 0, 0.45);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(148, 74, 0, 0.3);
+}
+
+.colleges-hero-quick-tags {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.quick-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.quick-tag .material-symbols-outlined {
+  font-size: 16px;
+  color: #ffb783;
+}
+
+.quick-tag:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 640px) {
+  .colleges-hero-banner {
+    min-height: 380px;
+    border-radius: 24px;
+  }
+
+  .colleges-hero-content {
+    padding: 36px 16px 28px;
+  }
+
+  .colleges-search-inner {
+    padding: 4px 6px 4px 14px;
+  }
+
+  .colleges-search-submit {
+    padding: 8px 14px;
+    font-size: 0.82rem;
+  }
 }
 
 /* ========================================================================

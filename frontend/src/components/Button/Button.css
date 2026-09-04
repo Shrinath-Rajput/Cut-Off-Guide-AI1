@@ -29,24 +29,27 @@
 }
 
 .premium-button.primary {
-  background: var(--accent, #e67e22);
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
   color: #ffffff;
-  border: 1px solid rgba(230, 126, 34, 0.3);
+  border: 1px solid rgba(234, 88, 12, 0.3);
+  box-shadow: 0 10px 25px -5px rgba(249, 115, 22, 0.35);
+}
+
+.premium-button.primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #fb923c 0%, #f97316 100%);
+  box-shadow: 0 14px 30px -5px rgba(249, 115, 22, 0.45);
 }
 
 .premium-button:disabled {
-  opacity: 0.75;
+  opacity: 0.65;
   cursor: not-allowed;
-  background: #e67e22 !important;
-  color: #ffffff !important;
-  box-shadow: none !important;
   transform: none !important;
 }
 
 .premium-button.secondary {
-  background: var(--background-soft);
-  color: var(--text);
-  border: 1px solid rgba(249, 115, 22, 0.18);
+  background: var(--background-soft, #fff1ec);
+  color: var(--text, #2a170f);
+  border: 1px solid rgba(249, 115, 22, 0.25);
 }
 
 .premium-button.ghost {

@@ -12,6 +12,7 @@ import {
 } from '../../services/api';
 import { collegeImage, handleCollegeImageError } from '../../utils/collegeImage';
 import toast from 'react-hot-toast';
+import collegesHeroBg from '../../assets/images/colleges-hero-bg.jpg';
 
 const INDIAN_STATES = [
   'All India',
@@ -65,11 +66,26 @@ const formatCleanInsights = (rawText, collegeName = 'This institution') => {
 const Colleges = () => {
   const navigate = useNavigate();
   const searchInputRef = useRef(null);
+  const catalogRef = useRef(null);
+
+  // Responsive mobile view check (6 per page on mobile)
+  const [isMobile, setIsMobile] = useState(() => {
+    return typeof window !== 'undefined' ? window.innerWidth < 768 : false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const pageSize = isMobile ? 6 : 12;
 
   // Search & Filters
   const [search, setSearch] = useState('');
   const [selectedState, setSelectedState] = useState('Maharashtra');
-  const [sortOption, setSortOption] = useState('Top Rated (Stars)');
   const [currentPage, setCurrentPage] = useState(1);
   const [collegeItems, setCollegeItems] = useState([]);
   const [totalCollegeCount, setTotalCollegeCount] = useState(0);
@@ -88,38 +104,28 @@ const Colleges = () => {
   // Load user bookmarks on mount
   useEffect(() => {
     const loadBookmarks = async () => {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        try {
-          const saved = await getSavedColleges();
-          if (Array.isArray(saved)) {
-            const map = {};
-            saved.forEach((c) => {
-              const cid = c.college_id || c.collegeId || c.id || c._id;
-              if (cid) map[cid] = true;
-            });
-            setBookmarked(map);
-          }
-        } catch (err) {
-          // user offline
+      try {
+        const saved = await getSavedColleges();
+        if (Array.isArray(saved)) {
+          const map = {};
+          saved.forEach((c) => {
+            const cid = c.college_id || c.collegeId || c.id || c._id;
+            if (cid) map[cid] = true;
+          });
+          setBookmarked(map);
         }
+      } catch (err) {
+        // offline
       }
     };
     loadBookmarks();
   }, []);
 
-  // Fetch catalog colleges with state filter & search
+  // Fetch catalog colleges with state filter & search (6 per page on mobile, 12 on desktop)
   useEffect(() => {
     const fetchColleges = async () => {
       setLoading(true);
       try {
-        let sortParam = 'rating';
-        if (sortOption === 'Lowest Cutoff' || sortOption === 'NIRF Ranking') {
-          sortParam = 'ranking';
-        } else if (sortOption === 'Highest Placement' || sortOption === 'Fees') {
-          sortParam = 'fees';
-        }
-
         const isAllIndia =
           selectedState === 'All India' ||
           selectedState === 'All Over India' ||
@@ -127,11 +133,10 @@ const Colleges = () => {
 
         const params = {
           page: currentPage,
-          limit: 12,
+          limit: pageSize,
           search: search.trim() || undefined,
           state: isAllIndia ? undefined : selectedState,
           states: isAllIndia ? undefined : [selectedState],
-          sort: sortParam,
         };
         const data = await getColleges(params);
         setCollegeItems(data.data || []);
@@ -144,17 +149,73 @@ const Colleges = () => {
       }
     };
 
-    const timeoutId = setTimeout(fetchColleges, 250);
+    const timeoutId = setTimeout(fetchColleges, 200);
     return () => clearTimeout(timeoutId);
-  }, [search, selectedState, sortOption, currentPage]);
+  }, [search, selectedState, currentPage, pageSize]);
 
-  // Reset page when filters change
+  // Reset page when filters or pageSize change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedState, sortOption]);
+  }, [search, selectedState, pageSize]);
+
+  // Helper for smart page numbering with ellipsis
+  const getPageNumbers = () => {
+    if (totalPages <= 1) return [];
+    if (totalPages <= 5) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    if (isMobile) {
+      const pages = [];
+      const start = Math.max(1, currentPage - 1);
+      const end = Math.min(totalPages, currentPage + 1);
+
+      if (start > 1) {
+        pages.push(1);
+        if (start > 2) pages.push('...');
+      }
+      for (let i = start; i <= end; i++) {
+        if (!pages.includes(i)) pages.push(i);
+      }
+      if (end < totalPages) {
+        if (end < totalPages - 1) pages.push('...');
+        pages.push(totalPages);
+      }
+      return pages;
+    } else {
+      const pages = [];
+      if (currentPage <= 4) {
+        for (let i = 1; i <= Math.min(5, totalPages); i++) pages.push(i);
+        if (totalPages > 5) {
+          pages.push('...');
+          pages.push(totalPages);
+        }
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 4; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        pages.push(currentPage - 1);
+        pages.push(currentPage);
+        pages.push(currentPage + 1);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+      return pages;
+    }
+  };
+
+  const handlePageChange = (newPage) => {
+    if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
+    setCurrentPage(newPage);
+    if (catalogRef.current) {
+      catalogRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
 
   const toggleBookmark = async (college) => {
-    const cid = college.id || college._id;
+    const cid = college.id || college.college_id || college._id || (college.name ? college.name.toLowerCase().replace(/[^a-z0-9]/g, '-') : 'unknown');
     const isBookmarked = !!bookmarked[cid];
     const nextState = !isBookmarked;
     setBookmarked((prev) => ({ ...prev, [cid]: nextState }));
@@ -164,7 +225,8 @@ const Colleges = () => {
         await removeSavedCollege(cid);
       } else {
         await saveCollege({
-          college_id: String(cid),
+          college_id: cid,
+          collegeId: cid,
           name: college.name,
           location: college.location || `${college.city || ''}, ${college.state || ''}`,
           rating: String(college.rating || '4.5'),
@@ -173,13 +235,7 @@ const Colleges = () => {
       }
       toast.success(nextState ? 'Saved to your colleges list' : 'Removed from saved colleges');
     } catch (err) {
-      console.error('Failed to toggle bookmark:', err);
-      if (err.response) {
-        console.error('Response data:', err.response.data);
-      }
-      // Revert the optimistic update
-      setBookmarked((prev) => ({ ...prev, [cid]: isBookmarked }));
-      toast.error('Failed to update saved colleges. Please try again.');
+      toast.error('Could not update saved colleges');
     }
   };
 
@@ -217,43 +273,80 @@ const Colleges = () => {
 
       {/* Main Content */}
       <main className="flex-grow pt-32 pb-24 px-margin-mobile md:px-margin-desktop max-w-[1280px] mx-auto w-full flex flex-col gap-stack-lg">
-        {/* Hero Section */}
-        <section className="flex flex-col items-center text-center gap-stack-md max-w-3xl mx-auto mb-8">
-          <h1 className="font-headline-lg-mobile md:font-display text-headline-lg-mobile md:text-display text-on-surface font-extrabold tracking-tight">
-            Find Your Dream College in India
-          </h1>
+        {/* Hero Section with Illustration Background & Overlapping Search */}
+        <section className="colleges-hero-banner">
+          <div className="colleges-hero-bg-wrapper">
+            <img
+              src={collegesHeroBg}
+              alt="Find Your Dream College in India - AI College Search"
+              className="colleges-hero-bg-img"
+            />
+            <div className="colleges-hero-overlay" />
+            <div className="colleges-hero-glow" />
+          </div>
 
-          <div className="w-full mt-stack-md relative">
-            <div className="flex items-center bg-surface-container-lowest border border-outline-variant rounded-full px-6 py-4 shadow-sm focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all w-full relative">
-              <span className="material-symbols-outlined text-outline mr-3">search</span>
-              <input
-                ref={searchInputRef}
-                className="bg-transparent border-none outline-none flex-grow font-body-md text-on-surface placeholder:text-outline-variant focus:ring-0 w-full"
-                placeholder="Search for colleges..."
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAiLookup(search);
-                }}
-              />
-              {search && (
+          <div className="colleges-hero-content">
+            <div className="colleges-hero-badge">
+              <span className="material-symbols-outlined">auto_awesome</span>
+              <span>AI-POWERED INSTITUTION DISCOVERY</span>
+            </div>
+
+            <h1 className="colleges-hero-title">
+              Find Your Dream College in India
+            </h1>
+
+            <p className="colleges-hero-subtitle">
+              Explore 250+ verified engineering, medical &amp; professional institutions with cutoffs, fees, placements &amp; live AI insights.
+            </p>
+
+            <div className="colleges-search-bar-wrap">
+              <div className="colleges-search-inner">
+                <span className="material-symbols-outlined search-leading-icon">search</span>
+                <input
+                  ref={searchInputRef}
+                  className="colleges-search-input"
+                  placeholder="Search by college name, city, or branch (e.g., COEP Pune, IIT Bombay, CSE)..."
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAiLookup(search);
+                  }}
+                />
+                {search && (
+                  <button
+                    type="button"
+                    className="colleges-search-clear"
+                    onClick={() => setSearch('')}
+                    title="Clear search"
+                  >
+                    <span className="material-symbols-outlined">close</span>
+                  </button>
+                )}
                 <button
                   type="button"
-                  className="text-outline hover:text-on-surface transition-colors mx-2 cursor-pointer"
-                  onClick={() => setSearch('')}
-                  title="Clear search"
+                  className="colleges-search-submit"
+                  onClick={() => handleAiLookup(search)}
                 >
-                  <span className="material-symbols-outlined text-lg">close</span>
+                  <span className="material-symbols-outlined">psychology</span>
+                  <span>AI Search</span>
                 </button>
-              )}
-              <button
-                type="button"
-                className="bg-primary-container text-white px-6 py-2.5 rounded-full font-label-md text-label-md flex items-center gap-2 hover:bg-primary transition-colors shadow-md ml-2 absolute right-2 top-2 bottom-2 my-auto h-auto cursor-pointer"
-                onClick={() => handleAiLookup(search)}
-              >
-                <span className="material-symbols-outlined text-sm">search</span> AI Search
-              </button>
+              </div>
+            </div>
+
+            <div className="colleges-hero-quick-tags">
+              <div className="quick-tag">
+                <span className="material-symbols-outlined">school</span>
+                <span>250+ Premier Institutes</span>
+              </div>
+              <div className="quick-tag">
+                <span className="material-symbols-outlined">trending_up</span>
+                <span>Cutoff Analytics</span>
+              </div>
+              <div className="quick-tag">
+                <span className="material-symbols-outlined">verified</span>
+                <span>NIRF &amp; Placement Data</span>
+              </div>
             </div>
           </div>
         </section>
@@ -307,31 +400,23 @@ const Colleges = () => {
               )}
             </div>
           </div>
-
-          {/* Sort Row */}
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-outline">sort</span>
-            <span className="font-label-md text-label-md text-on-surface-variant">Sort:</span>
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="bg-surface-container-lowest border border-outline-variant text-on-surface font-body-md rounded-xl px-4 py-1.5 focus:ring-primary focus:border-primary shadow-sm cursor-pointer appearance-none text-sm shadow-md"
-            >
-              <option value="Top Rated (Stars)">Top Rated (Stars)</option>
-              <option value="Lowest Cutoff">Lowest Cutoff</option>
-              <option value="Highest Placement">Highest Placement</option>
-            </select>
-          </div>
         </section>
 
         {/* Content Area */}
-        <section className="flex flex-col gap-stack-lg">
+        <section ref={catalogRef} className="flex flex-col gap-stack-lg scroll-mt-24">
           {/* Status Text */}
-          <div className="font-headline-md text-headline-md text-on-surface">
-            Showing <span className="text-primary-container font-bold">{totalCollegeCount}</span> Colleges{' '}
-            {selectedState !== 'All India' && selectedState !== 'All Over India' && selectedState !== 'IN All India'
-              ? `in ${selectedState}`
-              : 'Across All India'}
+          <div className="font-headline-md text-headline-md text-on-surface flex flex-wrap items-center justify-between gap-2">
+            <div>
+              Showing <span className="text-primary-container font-bold">{totalCollegeCount}</span> Colleges{' '}
+              {selectedState !== 'All India' && selectedState !== 'All Over India' && selectedState !== 'IN All India'
+                ? `in ${selectedState}`
+                : 'Across All India'}
+            </div>
+            {totalCollegeCount > 0 && (
+              <span className="text-xs font-semibold px-3 py-1 rounded-full bg-surface-container border border-outline-variant text-on-surface-variant">
+                Page {currentPage} of {totalPages} ({pageSize} per page)
+              </span>
+            )}
           </div>
 
           {/* Loading / Cards Grid / Empty State */}
@@ -381,104 +466,100 @@ const Colleges = () => {
                       />
                       <button
                         type="button"
-                        className={`absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 backdrop-blur-sm border-none flex items-center justify-center text-outline hover:text-primary transition-colors cursor-pointer shadow-sm ${
-                          isSaved ? 'text-primary' : ''
-                        }`}
                         onClick={() => toggleBookmark(college)}
-                        title={isSaved ? 'Remove from Saved' : 'Save College'}
+                        className={`absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center shadow-md transition-all cursor-pointer ${
+                          isSaved
+                            ? 'bg-surface-tint text-white'
+                            : 'bg-surface-container-lowest/80 text-on-surface backdrop-blur-sm hover:bg-white'
+                        }`}
+                        title={isSaved ? 'Remove from saved' : 'Save this college'}
                       >
-                        <span className="material-symbols-outlined text-[20px]">
-                          {isSaved ? 'bookmark_added' : 'bookmark_border'}
+                        <span className={`material-symbols-outlined text-[20px] ${isSaved ? 'fill-icon' : ''}`}>
+                          bookmark
                         </span>
                       </button>
 
-                      {college.type && (
-                        <span className="absolute bottom-3 left-3 bg-inverse-surface/85 backdrop-blur-sm text-white font-label-sm text-[12px] px-2.5 py-1 rounded-md">
-                          {college.type}
-                        </span>
+                      {college.rating && (
+                        <div className="absolute bottom-3 left-3 bg-surface-container-lowest/90 backdrop-blur-sm px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-sm text-xs font-bold text-on-surface">
+                          <span className="material-symbols-outlined text-amber-500 text-[14px]">star</span>
+                          {college.rating}
+                        </div>
+                      )}
+
+                      {college.nirf_rank && (
+                        <div className="absolute bottom-3 right-3 bg-surface-tint text-white px-2 py-0.5 rounded-md text-[10px] font-bold shadow-sm">
+                          NIRF #{college.nirf_rank}
+                        </div>
                       )}
                     </div>
 
-                    {/* Body */}
-                    <div className="p-5 flex flex-col flex-grow">
-                      {/* Meta badges */}
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <div className="inline-flex items-center gap-1 bg-[#fff9e6] border border-[#ffe082] rounded-md px-2 py-0.5 text-[12px] font-bold text-[#b78103]">
-                          <span className="material-symbols-outlined text-[14px] text-amber-500 fill">star</span>
-                          <span>{college.rating || 4.5}</span>
-                          <span className="text-[10px] text-[#8c7247]">/5</span>
-                        </div>
-                        {college.nirf_rank && (
-                          <div className="bg-[#e8f5e9] border border-[#c8e6c9] rounded-md px-2 py-0.5 text-[12px] font-bold text-[#2e7d32]">
-                            NIRF #{college.nirf_rank}
-                          </div>
+                    {/* Content */}
+                    <div className="p-5 flex-grow flex flex-col justify-between">
+                      <div>
+                        {college.type && (
+                          <span className="inline-block font-label-sm text-[11px] text-surface-tint font-bold uppercase tracking-wider mb-1">
+                            {college.type}
+                          </span>
                         )}
-                        {college.state && (
-                          <div className="bg-surface-container-low rounded-md px-2 py-0.5 text-[12px] font-medium text-on-surface-variant">
-                            {college.state}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Name & Location */}
-                      <h3 className="font-headline-md text-[17px] font-bold text-on-surface mb-1 line-clamp-2 leading-snug">
-                        {college.name}
-                      </h3>
-                      <p className="font-body-md text-[13px] text-on-surface-variant flex items-center gap-1 mb-3">
-                        <span className="material-symbols-outlined text-[15px]">location_on</span>
-                        {locationText}
-                      </p>
-
-                      {/* Highlights */}
-                      {college.highlights && (
-                        <p className="font-body-md text-[13px] text-on-surface-variant line-clamp-2 mb-4 leading-relaxed">
-                          {college.highlights}
+                        <h3 className="font-headline-md text-lg font-bold text-on-surface line-clamp-2 leading-tight mb-1">
+                          {college.name}
+                        </h3>
+                        <p className="font-body-md text-[13px] text-on-surface-variant flex items-center gap-1 mb-3">
+                          <span className="material-symbols-outlined text-[15px] text-surface-tint">location_on</span>
+                          {locationText}
                         </p>
-                      )}
 
-                      {/* Stats */}
-                      <div className="mt-auto pt-3 border-t border-outline-variant/40 flex flex-wrap gap-4 text-[12px]">
-                        {college.placement_avg && (
-                          <div>
-                            <span className="text-outline">Avg CTC: </span>
-                            <span className="text-green-700 font-bold">{college.placement_avg}</span>
-                          </div>
+                        {/* Highlights */}
+                        {college.highlights && (
+                          <p className="font-body-md text-[13px] text-on-surface-variant line-clamp-2 mb-4 leading-relaxed">
+                            {college.highlights}
+                          </p>
                         )}
-                        {college.fee_display && (
-                          <div>
-                            <span className="text-outline">Fees: </span>
-                            <span className="text-on-surface font-semibold">{college.fee_display}</span>
-                          </div>
-                        )}
-                      </div>
 
-                      {/* Actions */}
-                      <div className="flex items-center gap-1.5 mt-4">
-                        <Link
-                          to={`/colleges/${cid}`}
-                          className="flex-1 bg-surface-container-low hover:bg-primary hover:text-white border border-outline-variant text-on-surface font-label-md text-[12px] py-2 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors font-semibold text-center"
-                        >
-                          Details
-                          <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                        </Link>
-                        <button
-                          type="button"
-                          className="bg-surface-container-lowest hover:bg-surface-container-high text-primary border border-outline-variant font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
-                          onClick={() => navigate(`/compare?college1=${encodeURIComponent(college.name || cid)}`)}
-                          title="Compare this college with another"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">compare_arrows</span>
-                          Compare
-                        </button>
-                        <button
-                          type="button"
-                          className="bg-primary-fixed hover:bg-primary-container text-on-primary-fixed border border-primary-fixed font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
-                          onClick={() => handleAiLookup(college.name)}
-                          title="Ask AI Council about this college"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">psychology</span>
-                          AI Info
-                        </button>
+                        {/* Stats */}
+                        <div className="mt-auto pt-3 border-t border-outline-variant/40 flex flex-wrap gap-4 text-[12px]">
+                          {college.placement_avg && (
+                            <div>
+                              <span className="text-outline">Avg CTC: </span>
+                              <span className="text-green-700 font-bold">{college.placement_avg}</span>
+                            </div>
+                          )}
+                          {college.fee_display && (
+                            <div>
+                              <span className="text-outline">Fees: </span>
+                              <span className="text-on-surface font-semibold">{college.fee_display}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-1.5 mt-4">
+                          <Link
+                            to={`/colleges/${cid}`}
+                            className="flex-1 bg-surface-container-low hover:bg-primary hover:text-white border border-outline-variant text-on-surface font-label-md text-[12px] py-2 px-2 rounded-xl flex items-center justify-center gap-1 transition-colors font-semibold text-center"
+                          >
+                            Details
+                            <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                          </Link>
+                          <button
+                            type="button"
+                            className="bg-surface-container-lowest hover:bg-surface-container-high text-primary border border-outline-variant font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
+                            onClick={() => navigate(`/compare?college1=${encodeURIComponent(college.name || cid)}`)}
+                            title="Compare this college with another"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">compare_arrows</span>
+                            Compare
+                          </button>
+                          <button
+                            type="button"
+                            className="bg-primary-fixed hover:bg-primary-container text-on-primary-fixed border border-primary-fixed font-label-md text-[12px] py-2 px-2.5 rounded-xl flex items-center gap-1 transition-colors font-semibold cursor-pointer shrink-0"
+                            onClick={() => handleAiLookup(college.name)}
+                            title="Ask AI Council about this college"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">psychology</span>
+                            AI Info
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -489,41 +570,62 @@ const Colleges = () => {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-8">
-              <button
-                type="button"
-                className="bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 text-sm font-semibold text-on-surface flex items-center gap-1 disabled:opacity-40 cursor-pointer"
-                disabled={currentPage <= 1}
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              >
-                <span className="material-symbols-outlined text-sm">chevron_left</span>
-                Prev
-              </button>
-              <div className="flex gap-1.5">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    className={`w-9 h-9 rounded-xl border text-sm font-semibold flex items-center justify-center cursor-pointer transition-colors ${
-                      currentPage === p
-                        ? 'bg-surface-tint text-white border-surface-tint shadow-sm'
-                        : 'bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary'
-                    }`}
-                    onClick={() => setCurrentPage(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-4 border-t border-outline-variant/40">
+              <div className="text-xs sm:text-sm font-medium text-on-surface-variant text-center sm:text-left">
+                Showing <span className="font-bold text-on-surface">{(currentPage - 1) * pageSize + 1}</span>–<span className="font-bold text-on-surface">{Math.min(currentPage * pageSize, totalCollegeCount)}</span> of <span className="font-bold text-primary">{totalCollegeCount}</span> colleges
+                <span className="hidden sm:inline"> (Page {currentPage} of {totalPages})</span>
               </div>
-              <button
-                type="button"
-                className="bg-surface-container-lowest border border-outline-variant rounded-xl px-4 py-2 text-sm font-semibold text-on-surface flex items-center gap-1 disabled:opacity-40 cursor-pointer"
-                disabled={currentPage >= totalPages}
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Next
-                <span className="material-symbols-outlined text-sm">chevron_right</span>
-              </button>
+
+              <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                <button
+                  type="button"
+                  className="bg-surface-container-lowest border border-outline-variant rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-on-surface flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:border-primary hover:text-primary transition-colors shadow-sm"
+                  disabled={currentPage <= 1}
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  aria-label="Previous page"
+                >
+                  <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+                  <span>Prev</span>
+                </button>
+
+                <div className="flex items-center gap-1">
+                  {getPageNumbers().map((p, idx) => {
+                    if (p === '...') {
+                      return (
+                        <span key={`ellipsis-${idx}`} className="px-1.5 py-1 text-outline font-bold select-none text-xs">
+                          ...
+                        </span>
+                      );
+                    }
+                    return (
+                      <button
+                        key={`page-${p}`}
+                        type="button"
+                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl border text-xs sm:text-sm font-semibold flex items-center justify-center cursor-pointer transition-all ${
+                          currentPage === p
+                            ? 'bg-surface-tint text-white border-surface-tint shadow-md font-bold scale-105'
+                            : 'bg-surface-container-lowest border-outline-variant text-on-surface hover:border-primary hover:text-primary'
+                        }`}
+                        onClick={() => handlePageChange(p)}
+                        aria-current={currentPage === p ? 'page' : undefined}
+                      >
+                        {p}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  className="bg-surface-container-lowest border border-outline-variant rounded-xl px-3 py-2 text-xs sm:text-sm font-semibold text-on-surface flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer hover:border-primary hover:text-primary transition-colors shadow-sm"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  aria-label="Next page"
+                >
+                  <span>Next</span>
+                  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+                </button>
+              </div>
             </div>
           )}
         </section>

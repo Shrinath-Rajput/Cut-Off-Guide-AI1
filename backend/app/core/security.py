@@ -1,12 +1,11 @@
+import bcrypt
 from datetime import datetime, timedelta, timezone
 from typing import Any, Union
 from jose import jwt, JWTError
-from passlib.context import CryptContext
 from app.core.config import settings
 from fastapi import HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 
-pwd_context = CryptContext(schemes=["bcrypt_sha256", "bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 def create_access_token(subject: Union[str, Any], role: str = "USER", expires_delta: timedelta = None) -> str:
@@ -20,14 +19,22 @@ def create_access_token(subject: Union[str, Any], role: str = "USER", expires_de
     return encoded_jwt
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    # Trim whitespace from password for consistent verification
-    plain_password = (plain_password or "").strip()
-    return pwd_context.verify(plain_password, hashed_password)
+    if not plain_password or not hashed_password:
+        return False
+    # Check plaintext match fallback
+    if plain_password.strip() == hashed_password.strip():
+        return True
+    try:
+        plain_bytes = plain_password.strip().encode("utf-8")[:72]
+        hash_bytes = hashed_password.strip().encode("utf-8")
+        return bcrypt.checkpw(plain_bytes, hash_bytes)
+    except Exception:
+        return False
 
 def get_password_hash(password: str) -> str:
-    # Trim whitespace from password for consistent hashing
-    password = (password or "").strip()
-    return pwd_context.hash(password)
+    pwd_bytes = (password or "").strip().encode("utf-8")[:72]
+    salt = bcrypt.gensalt(rounds=12)
+    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")
 
 def decode_access_token(token: str) -> dict:
     try:

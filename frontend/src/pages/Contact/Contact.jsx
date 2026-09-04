@@ -110,36 +110,58 @@ const Contact = () => {
               <h2>Contact Information</h2>
             </div>
 
-            <div className="contact-item">
-              <div className="contact-icon contact-icon-soft">
-                <span className="material-symbols-outlined">mail</span>
+            <div className="contact-item contact-item-with-action">
+              <div className="contact-item-main">
+                <div className="contact-icon contact-icon-soft">
+                  <span className="material-symbols-outlined">mail</span>
+                </div>
+                <div>
+                  <p className="contact-item-title">Email Us</p>
+                  <p className="contact-item-text">hr@fouriseindia.com</p>
+                </div>
               </div>
-              <div>
-                <p className="contact-item-title">Email Us</p>
-                <p className="contact-item-text">hr@fouriseindia.com</p>
+              <a
+                href="mailto:hr@fouriseindia.com?subject=Inquiry%20from%20CutoffGrid"
+                className="contact-action-btn"
+                title="Send an email to hr@fouriseindia.com"
+              >
+                <span>Send Email</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>send</span>
+              </a>
+            </div>
+
+            <div className="contact-item contact-item-with-action">
+              <div className="contact-item-main">
+                <div className="contact-icon contact-icon-soft">
+                  <span className="material-symbols-outlined">call</span>
+                </div>
+                <div>
+                  <p className="contact-item-title">Call Us</p>
+                  <p className="contact-item-text">9527605805</p>
+                  <p className="contact-item-subtext">Mon-Fri, 9am - 6pm IST</p>
+                </div>
               </div>
+              <a
+                href="tel:9527605805"
+                className="contact-action-btn contact-action-btn-secondary"
+                title="Call 9527605805"
+              >
+                <span>Call Now</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>phone_forwarded</span>
+              </a>
             </div>
 
             <div className="contact-item">
-              <div className="contact-icon contact-icon-soft">
-                <span className="material-symbols-outlined">call</span>
-              </div>
-              <div>
-                <p className="contact-item-title">Call Us</p>
-                <p className="contact-item-text">9527605805</p>
-                <p className="contact-item-subtext">Mon-Fri, 9am - 6pm IST</p>
-              </div>
-            </div>
-
-            <div className="contact-item">
-              <div className="contact-icon contact-icon-soft">
-                <span className="material-symbols-outlined">location_on</span>
-              </div>
-              <div>
-                <p className="contact-item-title">Headquarters</p>
-                <p className="contact-item-text">Office No: A-305, City Vista,</p>
-                <p className="contact-item-text">Downtown Road, Ashoka Nagar,</p>
-                <p className="contact-item-text">Kharadi</p>
+              <div className="contact-item-main">
+                <div className="contact-icon contact-icon-soft">
+                  <span className="material-symbols-outlined">location_on</span>
+                </div>
+                <div>
+                  <p className="contact-item-title">Headquarters</p>
+                  <p className="contact-item-text">Office No: A-305, City Vista,</p>
+                  <p className="contact-item-text">Downtown Road, Ashoka Nagar,</p>
+                  <p className="contact-item-text">Kharadi, Pune</p>
+                </div>
               </div>
             </div>
           </section>
@@ -211,10 +233,10 @@ const Contact = () => {
                 </div>
               )}
 
-              <Button variant="primary" type="submit" disabled={loading}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
-                  {loading ? 'Sending...' : 'Send Message'}
-                  <span className="material-symbols-outlined" style={{ fontSize: '1.2rem', transform: 'translateY(-1px)' }}>arrow_upward</span>
+              <Button variant="primary" type="submit" fullWidth disabled={loading} className="contact-submit-btn">
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', justifyContent: 'center' }}>
+                  <span className="material-symbols-outlined" style={{ fontSize: '1.25rem' }}>{loading ? 'hourglass_top' : 'send'}</span>
+                  {loading ? 'Sending Message...' : 'Send Message'}
                 </span>
               </Button>
             </form>

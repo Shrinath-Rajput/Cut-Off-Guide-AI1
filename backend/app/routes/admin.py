@@ -160,7 +160,15 @@ async def admin_login(request: AdminLoginRequest, db=Depends(get_db)):
     user = None
     role = None
 
-    if input_email == configured_email and configured_password:
+    db_user = await db["users"].find_one({"email": input_email})
+    if db_user and db_user.get("role") in {"ADMIN", "SUPER_ADMIN"}:
+        user = db_user
+        role = user.get("role") or "ADMIN"
+        stored_hash = user.get("passwordHash") or user.get("password_hash")
+        if not stored_hash or not verify_password(input_password, stored_hash):
+            raise HTTPException(status_code=401, detail="Invalid admin credentials")
+
+    if user is None and input_email == configured_email and configured_password:
         user = await db["users"].find_one({"email": configured_email})
         if user and user.get("role") not in {"ADMIN", "SUPER_ADMIN"}:
             user = None

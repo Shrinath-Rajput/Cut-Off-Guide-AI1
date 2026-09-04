@@ -94,45 +94,52 @@ const Navbar = ({ title, backTo = '/welcome', onSearch, bookmarkTo = '/saved', p
               <strong>Cutoff Guide AI</strong>
               <span>AI-Powered Admission Prediction</span>
             </Link>
-            <button type="button" className="drawer-close" aria-label="Close navigation menu" onClick={() => setMobileOpen(false)}>
-              <X size={22} />
-            </button>
           </div>
 
           <nav className="site-menu" aria-label="Mobile navigation">
             {navLinks.map(({ label, to, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) => (isActive ? 'active' : '')}
-              onClick={() => setMobileOpen(false)}
-              tabIndex={mobileOpen ? 0 : -1}
-            >
-              <Icon size={19} strokeWidth={1.9} aria-hidden="true" />
-              <span>{label}</span>
-            </NavLink>
-          ))}
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) => (isActive ? 'active' : '')}
+                onClick={() => setMobileOpen(false)}
+                tabIndex={mobileOpen ? 0 : -1}
+              >
+                <span className="nav-item-icon">
+                  <Icon size={20} strokeWidth={2} aria-hidden="true" />
+                </span>
+                <span className="nav-item-label">{label}</span>
+              </NavLink>
+            ))}
           </nav>
 
           <div className="drawer-actions">
             <button type="button" onClick={() => { setMobileOpen(false); handleSearch(); }}>
-              <Search size={19} strokeWidth={1.9} aria-hidden="true" />
-              <span>Search</span>
+              <span className="nav-item-icon">
+                <Search size={20} strokeWidth={2} aria-hidden="true" />
+              </span>
+              <span className="nav-item-label">Search</span>
             </button>
             <button type="button" onClick={() => { setMobileOpen(false); navigate(profileTo); }}>
-              <UserRound size={19} strokeWidth={1.9} aria-hidden="true" />
-              <span>My Profile</span>
+              <span className="nav-item-icon">
+                <UserRound size={20} strokeWidth={2} aria-hidden="true" />
+              </span>
+              <span className="nav-item-label">My Profile</span>
             </button>
             {currentUser?.role === 'ADMIN' && (
               <Link to="/admin/dashboard" onClick={() => setMobileOpen(false)} tabIndex={mobileOpen ? 0 : -1}>
-                <ShieldCheck size={19} strokeWidth={1.9} aria-hidden="true" />
-                <span>Admin Panel</span>
+                <span className="nav-item-icon">
+                  <ShieldCheck size={20} strokeWidth={2} aria-hidden="true" />
+                </span>
+                <span className="nav-item-label">Admin Panel</span>
               </Link>
             )}
             {currentUser && (
               <button type="button" onClick={handleLogout} tabIndex={mobileOpen ? 0 : -1}>
-                <LogOut size={19} strokeWidth={1.9} aria-hidden="true" />
-                <span>Logout</span>
+                <span className="nav-item-icon">
+                  <LogOut size={20} strokeWidth={2} aria-hidden="true" />
+                </span>
+                <span className="nav-item-label">Logout</span>
               </button>
             )}
           </div>

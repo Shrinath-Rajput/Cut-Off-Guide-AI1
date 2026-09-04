@@ -129,30 +129,19 @@ const Login = () => {
       const response = await loginUser({ username: identifier.trim(), password });
       if (response.user?.role === 'ADMIN' || response.user?.role === 'SUPER_ADMIN') {
         adminLogin(response.user, response.token);
+        toast.success(`Welcome back, ${response.user?.name || 'Admin'}!`);
         navigate(response.user?.role === 'SUPER_ADMIN' ? '/super-admin/dashboard' : '/admin/dashboard', { replace: true });
         return;
       }
-      if (response.requiresOtp || response.status === 'pending_otp') {
-        setPendingLogin({
-          uid: response.uid || response.user?.uid,
-          name: response.user?.name || '',
-          email: response.user?.email || '',
-        });
-        setPhone('');
-        setView('phone');
+      if (response.token && response.user) {
+        login(response.user, response.token);
+        toast.success(`Welcome back, ${response.user?.name || 'Student'}!`);
+        navigate('/home', { replace: true });
         return;
       }
-      // Safety fallback: if somehow a token was returned for a non-admin, enforce phone step
-      if (response.user?.role === 'USER') {
-        setPendingLogin({
-          uid: response.uid || response.user?.uid,
-          name: response.user?.name || '',
-          email: response.user?.email || '',
-        });
-        setPhone('');
-        setView('phone');
-        return;
-      }
+      setPendingLogin({ ...response.user, uid: response.uid || response.user.uid });
+      setPhone(response.otpPhone || response.user.phone || '');
+      setView('phone');
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'Invalid username/email or password.'));
     } finally {

@@ -1,10 +1,16 @@
+# Virtual Environment
+venv/
+backend/venv/
+.venv/
+env/
+ENV/
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-env/
 build/
 develop-eggs/
 dist/
@@ -16,27 +22,29 @@ lib64/
 parts/
 sdist/
 var/
+wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-.env
-venv/
-.venv/
 
-# Node
+# Node / Frontend
 node_modules/
-dist/
-build/
-.npm/
+frontend/node_modules/
+frontend/dist/
+.npm
+*.log
 
-# OS
+# Environment variables
+# .env files with secrets (keep .env.example)
+# .env
+
+# IDE / Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS / Temporary
 .DS_Store
 Thumbs.db
-
-# MongoDB local data and logs
-_mongodata/
-mongo_data/
-*.lock
-*.log
-backend/*.log
-
+*.tmp
