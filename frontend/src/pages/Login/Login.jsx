@@ -1,15 +1,34 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { signInWithPopup } from 'firebase/auth';
 import { loginUser, sendLoginOtp, verifyLoginOtp } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { getFirebaseAuth, getGoogleProvider } from '../../services/firebase';
+import WelcomeBackground from '../../components/WelcomeBackground/WelcomeBackground';
 import './Login.css';
 
 const getErrorMessage = (error, fallback) => {
+  // A thrown request with NO response means it never reached the backend
+  // (server not running, wrong port, blocked preflight/CORS, network down).
+  // This must NOT be reported as a credential error, otherwise a valid
+  // email/password looks like it was rejected when the request simply failed.
+  if (error && error.request && !error.response) {
+    return 'Cannot reach the server. Please make sure the backend is running on http://127.0.0.1:5000 and try again.';
+  }
+  const status = error?.response?.status;
+  if (status === 503) {
+    return 'Service is temporarily unavailable (database not connected). Please try again in a moment.';
+  }
   const detail = error?.response?.data?.detail || error?.response?.data?.message;
-  if (typeof detail !== 'string') return fallback;
+  if (typeof detail !== 'string') {
+    if (typeof status === 'number' && status >= 500) {
+      return 'The server encountered an error. Please try again shortly.';
+    }
+    return fallback;
+  }
   if (detail === 'Phone number is not registered for this account') return 'Phone number is not registered for this account.';
-  if (error?.response?.status === 404 || detail === 'Not Found' || detail === 'Internal Server Error') return fallback;
+  if (status === 404 || detail === 'Not Found' || detail === 'Internal Server Error') return fallback;
   return detail;
 };
 
@@ -27,6 +46,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [phoneError, setPhoneError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [timer, setTimer] = useState(0);
   const [pendingLogin, setPendingLogin] = useState(null);
   const otpInputRefs = useRef([]);
@@ -43,6 +63,59 @@ const Login = () => {
     const interval = setInterval(() => setTimer((value) => value - 1), 1000);
     return () => clearInterval(interval);
   }, [timer]);
+
+  const handleGoogleLogin = async () => {
+    setIsGoogleLoading(true);
+    setError('');
+    try {
+      const auth = getFirebaseAuth();
+      const provider = getGoogleProvider();
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      const token = await user.getIdToken();
+      const userPayload = {
+        uid: user.uid,
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email || '',
+        phone: user.phoneNumber || '',
+        photoURL: user.photoURL || '',
+        provider: 'google',
+        role: 'USER',
+      };
+
+      login(userPayload, token);
+      toast.success('Signed in successfully');
+      navigate('/home', { replace: true });
+    } catch (googleError) {
+      if (
+        googleError?.code === 'auth/popup-closed-by-user' ||
+        googleError?.code === 'auth/cancelled-popup-request' ||
+        googleError?.code === 'auth/user-cancelled'
+      ) {
+        setError('Sign-in cancelled. Please try again.');
+      } else if (googleError?.code === 'auth/popup-blocked') {
+        setError('Popup was blocked by your browser. Please allow popups and try again.');
+      } else if (googleError?.code === 'auth/network-request-failed') {
+        setError('Network error during Google sign-in. Please check your connection.');
+      } else if (googleError?.code === 'auth/unauthorized-domain') {
+        setError('This domain is not authorized in Firebase Console. Please add localhost to Authorized Domains in Firebase.');
+      } else if (googleError?.code === 'auth/operation-not-allowed') {
+        setError('Google sign-in provider is not enabled in Firebase Console.');
+      } else if (
+        googleError?.code === 'auth/invalid-api-key' ||
+        googleError?.code === 'auth/configuration-not-found' ||
+        googleError?.code === 'auth/missing-api-key' ||
+        googleError?.code === 'app/no-options'
+      ) {
+        setError('Firebase authentication configuration error. Please check your setup.');
+      } else {
+        const errorMsg = googleError?.message;
+        setError(typeof errorMsg === 'string' && !errorMsg.includes('Firebase:') ? errorMsg : 'Failed to sign in with Google. Please try again.');
+      }
+    } finally {
+      setIsGoogleLoading(false);
+    }
+  };
 
   const handleNext = async (event) => {
     event.preventDefault();
@@ -77,7 +150,7 @@ const Login = () => {
   };
 
   const handleSendOtp = async (event) => {
-    event.preventDefault();
+    if (event?.preventDefault) event.preventDefault();
     const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
     if (!/^\d{10}$/.test(normalizedPhone)) {
       setPhoneError('Enter a valid 10-digit phone number.');
@@ -94,7 +167,7 @@ const Login = () => {
       setTimer(30);
       setView('otp');
       toast.success('OTP sent successfully');
-      setTimeout(() => otpInputRefs.current[0]?.focus(), 0);
+      setTimeout(() => otpInputRefs.current[0]?.focus(), 50);
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'Unable to send OTP. Please try again.'));
     } finally {
@@ -103,7 +176,7 @@ const Login = () => {
   };
 
   const handleVerifyOtp = async (event) => {
-    event.preventDefault();
+    if (event?.preventDefault) event.preventDefault();
     const otpValue = otp.join('');
     if (otpValue.length !== 6) {
       setError('Enter the 6-digit OTP.');
@@ -116,12 +189,16 @@ const Login = () => {
         uid: pendingLogin.uid,
         phone,
         otp: otpValue,
-        sessionId: sessionStorage.getItem('auth_pending_otp_session_id'),
+        sessionId: sessionStorage.getItem('auth_pending_otp_session_id') || '',
       });
-      login(response.user, response.token);
-      sessionStorage.removeItem('auth_pending_otp_session_id');
-      toast.success('Signed in successfully');
-      navigate('/home', { replace: true });
+      if (response.token && response.user) {
+        login(response.user, response.token);
+        sessionStorage.removeItem('auth_pending_otp_session_id');
+        toast.success('Signed in successfully');
+        navigate('/home', { replace: true });
+      } else {
+        setError('Verification failed. Please try again.');
+      }
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'Invalid or expired OTP. Please try again.'));
     } finally {
@@ -206,10 +283,7 @@ const Login = () => {
 
   return (
     <div className="cg-auth-page">
-      <div className="cg-auth-bg" aria-hidden="true">
-        <div className="cg-auth-blob cg-auth-blob--top" />
-        <div className="cg-auth-blob cg-auth-blob--bottom" />
-      </div>
+      <WelcomeBackground />
       <main className="cg-auth-main">
         <div className="cg-auth-card">
           <div className="cg-auth-brand">
@@ -278,6 +352,20 @@ const Login = () => {
                 <span>{isLoading ? 'Checking...' : 'Next'}</span>
               </button>
 
+              <div className="cg-divider">
+                <span>or</span>
+              </div>
+
+              <button
+                type="button"
+                className="cg-google-btn"
+                onClick={handleGoogleLogin}
+                disabled={isLoading || isGoogleLoading}
+              >
+                <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="cg-google-icon" />
+                <span>{isGoogleLoading ? 'Connecting...' : 'Continue with Google'}</span>
+              </button>
+
               <p className="cg-footnote">
                 Don&apos;t have an account?{' '}
                 <button
@@ -302,10 +390,11 @@ const Login = () => {
                 <input
                   id="login-phone"
                   type="tel"
-                  className={`cg-input ${phoneError ? 'cg-input--error' : ''}`}
+                  className={`cg-input ${phoneError || error ? 'cg-input--error' : ''}`}
                   value={phone}
-                  onChange={(event) => { setPhone(event.target.value); setPhoneError(''); }}
-                  placeholder="+91 XXXXX XXXXX"
+                  onChange={(event) => { setPhone(event.target.value); setPhoneError(''); setError(''); }}
+                  placeholder="Enter 10-digit mobile number"
+                  maxLength={10}
                 />
                 {phoneError && <p className="cg-error-text" role="alert">{phoneError}</p>}
               </div>

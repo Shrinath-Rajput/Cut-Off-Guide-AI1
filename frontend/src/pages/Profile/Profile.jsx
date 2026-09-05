@@ -148,14 +148,7 @@ const Profile = () => {
   };
 
   const toggleCategory = (cat) => {
-    const currentCategories = profile.category ? profile.category.split(',').map(b => b.trim()) : [];
-    let newCategories;
-    if (currentCategories.includes(cat)) {
-      newCategories = currentCategories.filter(b => b !== cat);
-    } else {
-      newCategories = [...currentCategories, cat];
-    }
-    setProfile((prev) => ({ ...prev, category: newCategories.join(', ') }));
+    setProfile((prev) => ({ ...prev, category: cat }));
   };
 
   const toggleCollegeType = (ctype) => {
@@ -170,6 +163,17 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
+    const num = parseFloat(profile.examScore);
+    if (!isNaN(num) && num >= 0) {
+      if (profile.scoreType === 'Percentage' && num > 100) {
+        alert("Percentage cannot exceed 100");
+        return;
+      }
+      if (profile.scoreType === 'CGPA' && num > 10) {
+        alert("CGPA cannot exceed 10");
+        return;
+      }
+    }
     try {
       const updatedProfile = await updateProfile({
         ...profile,
@@ -371,12 +375,13 @@ const Profile = () => {
                   <label className="field-label-row">Student Category</label>
                   <div className="category-options-inline">
                     {['General', 'OBC', 'SC', 'ST', 'EWS', 'PWD', 'Defence/Ex-Servicemen', 'Minority', 'Kashmiri Migrant'].map((option) => {
-                      const isSelected = (profile.category || '').includes(option);
+                      const isSelected = (profile.category || '').trim() === option;
                       if (editing) {
                         return (
                           <label key={option} className="category-label-inline">
                             <input
-                              type="checkbox"
+                              type="radio"
+                              name="category"
                               value={option}
                               checked={isSelected}
                               onChange={() => toggleCategory(option)}
@@ -442,7 +447,24 @@ const Profile = () => {
                   )}
                 </div>
                 <div className="form-field">
-                  <label htmlFor="examScore">Exam Score / Rank / Percentile</label>
+                  <label htmlFor="scoreType">Score Type</label>
+                  {editing ? (
+                    <select
+                      id="scoreType"
+                      name="scoreType"
+                      value={profile.scoreType || 'Percentage'}
+                      onChange={handleChange}
+                      className="form-input"
+                    >
+                      <option value="Percentage">Percentage</option>
+                      <option value="CGPA">CGPA</option>
+                    </select>
+                  ) : (
+                    <div className="form-readonly">{displayValue(profile.scoreType || 'Percentage')}</div>
+                  )}
+                </div>
+                <div className="form-field">
+                  <label htmlFor="examScore">Academic Score</label>
                   {editing ? (
                     <input
                       id="examScore"

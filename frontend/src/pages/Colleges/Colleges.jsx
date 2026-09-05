@@ -242,8 +242,8 @@ const Colleges = () => {
           collegeId: cid,
           name: college.name,
           location: college.location || `${college.city || ''}, ${college.state || ''}`,
-          rating: college.rating || 4.5,
-          image: college.image,
+          rating: String(college.rating || '4.5'),
+          image: college.image || '',
         });
       }
       toast.success(nextState ? 'Saved to your colleges list' : 'Removed from saved colleges');

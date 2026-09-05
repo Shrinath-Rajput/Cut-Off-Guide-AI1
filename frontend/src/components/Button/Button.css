@@ -63,6 +63,13 @@
   width: 100%;
 }
 
+.premium-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
 .button-icon {
   display: inline-flex;
   align-items: center;

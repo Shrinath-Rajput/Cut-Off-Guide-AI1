@@ -5,6 +5,12 @@ from datetime import datetime, timezone
 import secrets
 import re
 import logging
+import os
+import json
+import urllib.parse
+import urllib.request
+from fastapi.responses import RedirectResponse
+from fastapi import Request
 
 from app.core.database import get_db
 from app.core.config import settings
@@ -640,6 +646,8 @@ async def login(request: UserLogin, db=Depends(get_db)):
         {"uid": raw_identifier},
         {"username": identifier},
         {"username": raw_identifier},
+        {"name": identifier},
+        {"name": raw_identifier},
     ]
     if is_phone_lookup and normalized_phone:
         query_conditions.append({"phone": normalized_phone})
@@ -703,14 +711,17 @@ async def login(request: UserLogin, db=Depends(get_db)):
 
     stored_password_hash = user.get("passwordHash") or user.get("password_hash")
     legacy_plain_or_hash = user.get("password")
+    legacy_salt = user.get("salt")
+    legacy_pbkdf2_hash = user.get("hash")
     logger.info(
-        "LOGIN: user found uid=%s email=%s phone=%s provider=%s has_passwordHash=%s legacy_password_field=%s",
+        "LOGIN: user found uid=%s email=%s phone=%s provider=%s has_passwordHash=%s legacy_password_field=%s has_salt_hash=%s",
         user.get("uid"),
         repr(user.get("email")),
         repr(user.get("phone")),
         user.get("provider"),
         bool(stored_password_hash),
-        isinstance(legacy_plain_or_hash, str)
+        isinstance(legacy_plain_or_hash, str),
+        bool(legacy_salt and legacy_pbkdf2_hash)
     )
 
     password_valid = False
@@ -743,7 +754,94 @@ async def login(request: UserLogin, db=Depends(get_db)):
             except Exception as migrate_err:
                 logger.exception("LOGIN: failed to migrate legacy password hash for uid=%s: %s", user.get("uid"), migrate_err)
 
-    if not stored_password_hash and not isinstance(legacy_plain_or_hash, str):
+    if not password_valid and legacy_salt and legacy_pbkdf2_hash:
+        try:
+            import hashlib
+            stored_salt_str = str(legacy_salt)
+            stored_hash_str = str(legacy_pbkdf2_hash)
+            for iters in [25000, 32, 10000, 1000, 1]:
+                for algo in ["sha512", "sha256", "sha1"]:
+                    salt_variants = [stored_salt_str.encode("utf-8")]
+                    if all(c in "0123456789abcdefABCDEF" for c in stored_salt_str) and len(stored_salt_str) % 2 == 0:
+                        try:
+                            salt_variants.append(bytes.fromhex(stored_salt_str))
+                        except Exception:
+                            pass
+                    for s_val in salt_variants:
+                        try:
+                            calc = hashlib.pbkdf2_hmac(algo, password.encode("utf-8"), s_val, iters, 512).hex()
+                            if calc == stored_hash_str:
+                                password_valid = True
+                                break
+                            calc64 = hashlib.pbkdf2_hmac(algo, password.encode("utf-8"), s_val, iters, 64).hex()
+                            if calc64 == stored_hash_str:
+                                password_valid = True
+                                break
+                        except Exception:
+                            pass
+                    if password_valid:
+                        break
+                if password_valid:
+                    break
+
+            if password_valid and not stored_password_hash:
+                try:
+                    migrated_hash = get_password_hash(password)
+                    await db["users"].update_one(
+                        {"_id": user["_id"]},
+                        {"$set": {"passwordHash": migrated_hash, "provider": user.get("provider") or "password"}, "$unset": {"hash": "", "salt": ""}}
+                    )
+                    logger.info("LOGIN migrated PBKDF2 salt/hash for uid=%s into passwordHash", user.get("uid"))
+                except Exception as migrate_err:
+                    logger.exception("LOGIN: failed to migrate PBKDF2 hash for uid=%s: %s", user.get("uid"), migrate_err)
+        except Exception as pbkdf2_err:
+            logger.exception("LOGIN: PBKDF2 hash verification exception: %s", pbkdf2_err)
+
+    if not password_valid:
+        try:
+            if hasattr(db, "client") and db.client is not None:
+                webite_user = await db.client["webite"]["users"].find_one({"$or": [
+                    {"email": identifier},
+                    {"email": raw_identifier},
+                    {"username": identifier},
+                    {"username": raw_identifier},
+                ]})
+                if webite_user and webite_user.get("salt") and webite_user.get("hash"):
+                    w_salt = str(webite_user.get("salt"))
+                    w_hash = str(webite_user.get("hash"))
+                    import hashlib
+                    for iters in [25000, 32, 10000, 1000, 1]:
+                        for algo in ["sha512", "sha256", "sha1"]:
+                            s_variants = [w_salt.encode("utf-8")]
+                            if all(c in "0123456789abcdefABCDEF" for c in w_salt) and len(w_salt) % 2 == 0:
+                                try:
+                                    s_variants.append(bytes.fromhex(w_salt))
+                                except Exception:
+                                    pass
+                            for s_val in s_variants:
+                                try:
+                                    if hashlib.pbkdf2_hmac(algo, password.encode("utf-8"), s_val, iters, 512).hex() == w_hash or \
+                                       hashlib.pbkdf2_hmac(algo, password.encode("utf-8"), s_val, iters, 64).hex() == w_hash:
+                                        password_valid = True
+                                        logger.info("LOGIN matched legacy password from webite for uid=%s", user.get("uid"))
+                                        break
+                                except Exception:
+                                    pass
+                            if password_valid:
+                                break
+                        if password_valid:
+                            break
+                    if password_valid:
+                        migrated_hash = get_password_hash(password)
+                        if "_id" in user and isinstance(user["_id"], ObjectId):
+                            await db["users"].update_one(
+                                {"_id": user["_id"]},
+                                {"$set": {"passwordHash": migrated_hash, "provider": user.get("provider") or "password"}}
+                            )
+        except Exception as alt_pw_err:
+            logger.warning("LOGIN: Error checking alternate webite hash: %s", alt_pw_err)
+
+    if not stored_password_hash and not isinstance(legacy_plain_or_hash, str) and not (legacy_salt and legacy_pbkdf2_hash) and not password_valid:
         logger.warning(
             "LOGIN FAILED: Account uid=%s has NO passwordHash and NO legacy password field. Provider=%s.",
             user.get("uid"), user.get("provider")
@@ -763,7 +861,9 @@ async def login(request: UserLogin, db=Depends(get_db)):
         logger.warning("LOGIN FAILED: Incorrect password for uid=%s identifier=%s", user.get("uid"), identifier)
         raise HTTPException(status_code=401, detail="Invalid username/email or password")
 
-    user["id"] = str(user.pop("_id"))
+    # If user was loaded from legacy collection, ensure synchronized in cutoffgrid
+    if "_id" in user:
+        user["id"] = str(user.pop("_id"))
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
     user.pop("password", None)
@@ -796,8 +896,9 @@ async def send_login_otp(request: LoginOtpRequest, db=Depends(get_db)):
 
     registered_phone = user.get("phone")
     if not registered_phone:
-        raise HTTPException(status_code=400, detail="Phone number is not registered for this account")
-    if normalize_phone(registered_phone) != requested_phone:
+        registered_phone = requested_phone
+        await db["users"].update_one({"uid": request.uid}, {"$set": {"phone": requested_phone}})
+    elif normalize_phone(registered_phone) != requested_phone:
         raise HTTPException(status_code=400, detail="Phone number does not match this account")
 
     result = await send_otp_sms(registered_phone, db)
@@ -805,27 +906,161 @@ async def send_login_otp(request: LoginOtpRequest, db=Depends(get_db)):
 
 @router.post("/login/verify-otp")
 async def verify_login_otp(request: LoginOtpVerifyRequest, db=Depends(get_db)):
+    if db is None:
+        raise HTTPException(status_code=503, detail="Database is unavailable")
+
     if not await verify_otp_sms(request.phone, request.otp, request.sessionId, db):
         raise HTTPException(status_code=400, detail="Invalid or expired OTP")
+
     user = await db["users"].find_one({"uid": request.uid})
     if not user:
         raise HTTPException(status_code=401, detail="User account was not found")
     if not user.get("phone"):
-        raise HTTPException(status_code=400, detail="Phone number is not registered for this account")
-    if normalize_phone(user["phone"]) != normalize_phone(request.phone):
+        user["phone"] = request.phone
+        await db["users"].update_one({"uid": request.uid}, {"$set": {"phone": request.phone}})
+    elif normalize_phone(user["phone"]) != normalize_phone(request.phone):
         raise HTTPException(status_code=400, detail="Phone number does not match this account")
-    await db["users"].update_one({"_id": user["_id"]}, {"$set": {"lastLogin": datetime.now(timezone.utc)}})
+
+    now = datetime.now(timezone.utc)
+    await db["users"].update_one({"_id": user["_id"]}, {"$set": {"lastLogin": now}})
     user["id"] = str(user.pop("_id"))
     user.pop("passwordHash", None)
-    await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password")})
-    return {"status": "success", "token": create_access_token(user["uid"], role=user.get("role", "USER")), "user": user}
+    user.pop("password_hash", None)
+    user.pop("password", None)
+
+    token = create_access_token(user["uid"], role=user.get("role", "USER"))
+    await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password"), "role": user.get("role", "USER")})
+    return {
+        "status": "success",
+        "message": "Authentication successful",
+        "token": token,
+        "user": user,
+    }
 
 @router.get("/me")
 async def get_current_user_info(current_user: dict = Depends(get_current_user)):
     user = dict(current_user)
+    user.pop("_id", None)
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
+    user.pop("password", None)
     return {
         "status": "success",
         "user": user
     }
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+GOOGLE_OAUTH_REDIRECT_URI = os.getenv(
+    "GOOGLE_OAUTH_REDIRECT_URI",
+    "http://localhost:5000/api/auth/google/callback",
+)
+FRONTEND_APP_URL = os.getenv("FRONTEND_APP_URL", "http://localhost:5173")
+
+def _build_google_auth_url():
+    params = {
+        "client_id": GOOGLE_CLIENT_ID,
+        "redirect_uri": GOOGLE_OAUTH_REDIRECT_URI,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "access_type": "online",
+        "prompt": "select_account",
+    }
+    return "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+
+def _exchange_google_code(code):
+    token_url = "https://oauth2.googleapis.com/token"
+    data = urllib.parse.urlencode(
+        {
+            "code": code,
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "redirect_uri": GOOGLE_OAUTH_REDIRECT_URI,
+            "grant_type": "authorization_code",
+        }
+    ).encode("utf-8")
+
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    request_obj = urllib.request.Request(token_url, data=data, headers=headers, method="POST")
+    with urllib.request.urlopen(request_obj, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+def _fetch_google_user_info(access_token):
+    request_obj = urllib.request.Request(
+        "https://openidconnect.googleapis.com/v1/userinfo",
+        headers={"Authorization": f"Bearer {access_token}"},
+        method="GET",
+    )
+    with urllib.request.urlopen(request_obj, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+def _build_frontend_callback_url(token, user):
+    query = urllib.parse.urlencode(
+        {
+            "token": token,
+            "uid": user.get("uid", ""),
+            "name": user.get("name", ""),
+            "email": user.get("email", ""),
+            "photoURL": user.get("photoURL", ""),
+        }
+    )
+    return f"{FRONTEND_APP_URL}/auth/google/callback?{query}"
+
+@router.get("/google")
+async def google_auth():
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=501, 
+            detail="Google OAuth credentials are not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend .env."
+        )
+    return RedirectResponse(url=_build_google_auth_url())
+
+@router.get("/google/callback")
+async def google_auth_callback(request: Request, db=Depends(get_db)):
+    error = request.query_params.get("error")
+    if error:
+        raise HTTPException(status_code=400, detail=f"Google auth failed: {error}")
+
+    code = (request.query_params.get("code") or "").strip()
+    if not code:
+        raise HTTPException(status_code=400, detail="Missing authorization code from Google callback.")
+
+    if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET:
+        raise HTTPException(
+            status_code=501, 
+            detail="Google auth credentials are not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in backend .env."
+        )
+
+    try:
+        token_response = _exchange_google_code(code)
+        access_token = token_response.get("access_token")
+        if not access_token:
+            raise RuntimeError("Failed to obtain access token from Google")
+
+        user_info = _fetch_google_user_info(access_token)
+        email = (user_info.get("email") or "").strip().lower()
+        name = (user_info.get("name") or user_info.get("given_name") or "Google User").strip()
+        picture = (user_info.get("picture") or "").strip()
+
+        if not email:
+            raise HTTPException(status_code=400, detail="Google account did not return an email address.")
+
+        user_payload = UserLogin(
+            uid=f"google-{email}",
+            name=name,
+            email=email,
+            provider="google",
+            photoURL=picture,
+        )
+
+        create_response = await create_or_update_user(user_payload, db)
+        
+        token = create_response.get("token")
+        user = create_response.get("user") or {}
+        callback_url = _build_frontend_callback_url(token, user)
+        return RedirectResponse(url=callback_url)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.exception("Google callback error")
+        raise HTTPException(status_code=502, detail=f"Google callback failed: {exc}")

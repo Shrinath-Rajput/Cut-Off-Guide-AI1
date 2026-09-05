@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { sendOtp, verifyOtp } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import WelcomeBackground from '../../components/WelcomeBackground/WelcomeBackground';
 import './OTP.css';
 
 const getErrorMessage = (error, fallback) => {
@@ -215,10 +216,7 @@ const OTP = () => {
 
   return (
     <div className="cg-otp-page">
-      <div className="cg-otp-bg" aria-hidden="true">
-        <div className="cg-otp-blob cg-otp-blob--top" />
-        <div className="cg-otp-blob cg-otp-blob--bottom" />
-      </div>
+      <WelcomeBackground />
 
       <main className="cg-otp-shell">
         <div className="cg-otp-brand">

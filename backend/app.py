@@ -1,6 +1,16 @@
+import sys
 import os
-import uvicorn
 from pathlib import Path
+
+# Force execution using Cut_off_Guide's dedicated virtual environment
+project_root = Path(__file__).resolve().parent.parent
+venv_python = project_root / ".venv" / "Scripts" / "python.exe"
+
+if venv_python.exists() and Path(sys.executable).resolve() != venv_python.resolve():
+    import subprocess
+    sys.exit(subprocess.call([str(venv_python)] + sys.argv, cwd=str(Path(__file__).resolve().parent)))
+
+import uvicorn
 from dotenv import load_dotenv
 
 load_dotenv(Path(__file__).resolve().parent / ".env")

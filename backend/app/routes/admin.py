@@ -492,6 +492,34 @@ async def delete_cutoff(cutoff_id: str, current_user: dict = Depends(require_adm
         raise HTTPException(status_code=404, detail="Cutoff record not found")
     return {"status": "success"}
 
+class BulkCutoffImportRequest(BaseModel):
+    year: int
+    data_type: str = "actual"
+    records: list[dict[str, Any]]
+
+@router.post("/cutoffs/bulk-import")
+async def bulk_import_cutoffs(payload: BulkCutoffImportRequest, current_user: dict = Depends(require_admin), db=Depends(get_db)):
+    """Import a batch of cutoff data marked as ACTUAL for a specific year, triggering immediate availability for 2027 prediction recalculations."""
+    now = datetime.now(timezone.utc)
+    documents = []
+    for r in payload.records:
+        r["year"] = payload.year
+        r["data_type"] = payload.data_type
+        r["createdAt"] = now
+        documents.append(r)
+        
+    if not documents:
+        raise HTTPException(status_code=400, detail="No records provided")
+        
+    result = await db["cutoffs"].insert_many(documents)
+    return {
+        "status": "success", 
+        "inserted_count": len(result.inserted_ids),
+        "year": payload.year,
+        "data_type": payload.data_type,
+        "message": f"Successfully imported {len(result.inserted_ids)} records as {payload.data_type} data for {payload.year}."
+    }
+
 
 @router.get("/enquiries")
 async def list_enquiries(search: Optional[str] = None, enquiry_status: Optional[str] = None, current_user: dict = Depends(require_admin), db=Depends(get_db)):

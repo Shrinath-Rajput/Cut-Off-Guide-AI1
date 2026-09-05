@@ -64,9 +64,63 @@ cutoffItems = [
         "university": "Mumbai University",
         "location": "Mumbai",
         "round": "Round 1",
+        "percentile": "98.5",
+        "rank": "170",
+        "college_name": "VJTI Mumbai",
+        "year": 2022,
+        "data_type": "actual"
+    },
+    {
+        "course": "Computer Engineering",
+        "category": "Open",
+        "gender": "Male",
+        "university": "Mumbai University",
+        "location": "Mumbai",
+        "round": "Round 1",
+        "percentile": "98.9",
+        "rank": "160",
+        "college_name": "VJTI Mumbai",
+        "year": 2023,
+        "data_type": "actual"
+    },
+    {
+        "course": "Computer Engineering",
+        "category": "Open",
+        "gender": "Male",
+        "university": "Mumbai University",
+        "location": "Mumbai",
+        "round": "Round 1",
+        "percentile": "99.1",
+        "rank": "155",
+        "college_name": "VJTI Mumbai",
+        "year": 2024,
+        "data_type": "actual"
+    },
+    {
+        "course": "Computer Engineering",
+        "category": "Open",
+        "gender": "Male",
+        "university": "Mumbai University",
+        "location": "Mumbai",
+        "round": "Round 1",
         "percentile": "99.5",
         "rank": "150",
-        "college_name": "VJTI Mumbai"
+        "college_name": "VJTI Mumbai",
+        "year": 2025,
+        "data_type": "actual"
+    },
+    {
+        "course": "Computer Engineering",
+        "category": "OBC",
+        "gender": "Female",
+        "university": "Pune University",
+        "location": "Pune",
+        "round": "Round 2",
+        "percentile": "97.5",
+        "rank": "500",
+        "college_name": "COEP Pune",
+        "year": 2023,
+        "data_type": "actual"
     },
     {
         "course": "Computer Engineering",
@@ -77,7 +131,9 @@ cutoffItems = [
         "round": "Round 2",
         "percentile": "98.2",
         "rank": "450",
-        "college_name": "COEP Pune"
+        "college_name": "COEP Pune",
+        "year": 2024,
+        "data_type": "actual"
     }
 ]
 
