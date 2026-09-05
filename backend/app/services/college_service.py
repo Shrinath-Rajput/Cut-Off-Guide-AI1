@@ -9632,6 +9632,15 @@ INDIAN_COLLEGES_SEED: List[Dict[str, Any]] = [
     }
 ]
 
+from app.services.colleges_seed_data import ADDITIONAL_MAHARASHTRA_COLLEGES
+
+# Incorporate verified Maharashtra colleges across 30% - 95% cutoffs
+_existing_seed_ids = {c["id"] for c in INDIAN_COLLEGES_SEED}
+for _add_col in ADDITIONAL_MAHARASHTRA_COLLEGES:
+    if _add_col["id"] not in _existing_seed_ids:
+        INDIAN_COLLEGES_SEED.append(_add_col)
+        _existing_seed_ids.add(_add_col["id"])
+
 
 def normalize_str(s: Optional[str]) -> str:
     if not s:
@@ -9672,6 +9681,7 @@ async def get_all_colleges(
             name_norm = normalize_str(c.get("name", ""))
             id_norm = normalize_str(c.get("id", ""))
             loc_norm = normalize_str(c.get("location", ""))
+            type_norm = normalize_str(c.get("type", ""))
             score = 0
             if q_norm == id_norm or q_norm == name_norm:
                 score = 1000
@@ -9681,6 +9691,10 @@ async def get_all_colleges(
                 score = 200
             elif any(t in name_norm for t in q_tokens):
                 score = 100
+            elif q_norm in type_norm:
+                score = 90
+            elif any(t in type_norm for t in q_tokens):
+                score = 70
             elif q_norm in loc_norm:
                 score = 50
             if score > 0:

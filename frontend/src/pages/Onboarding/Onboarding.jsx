@@ -20,7 +20,24 @@ const INDIAN_STATES = [
 import { EXAM_CONFIG, validateAcademicScore } from '../../utils/validation';
 
 const STANDARD_BRANCHES = [
-  'Computer Science', 'Information Technology', 'Electronics & Telecom', 'Mechanical', 'Civil', 'Electrical', 'Chemical'
+  'Computer Engineering (CSE)',
+  'Information Technology (IT)',
+  'Artificial Intelligence & Machine Learning',
+  'Artificial Intelligence & Data Science',
+  'Cyber Security',
+  'Data Science',
+  'Electronics & Telecommunication',
+  'Electronics & Communication',
+  'Electrical Engineering',
+  'Mechanical Engineering',
+  'Civil Engineering',
+  'Chemical Engineering',
+  'Robotics & Automation',
+  'Mechatronics',
+  'Biotechnology',
+  'Aerospace Engineering',
+  'Automobile Engineering',
+  'Others',
 ];
 
 const CAREER_OPTIONS = [

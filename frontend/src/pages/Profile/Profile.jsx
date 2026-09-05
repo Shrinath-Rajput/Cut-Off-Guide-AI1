@@ -21,6 +21,27 @@ const EXAM_OPTIONS = [
 
 const COLLEGE_TYPES = ['Government', 'Private', 'Deemed'];
 
+const PREFERRED_BRANCHES = [
+  'Computer Engineering (CSE)',
+  'Information Technology (IT)',
+  'Artificial Intelligence & Machine Learning',
+  'Artificial Intelligence & Data Science',
+  'Cyber Security',
+  'Data Science',
+  'Electronics & Telecommunication',
+  'Electronics & Communication',
+  'Electrical Engineering',
+  'Mechanical Engineering',
+  'Civil Engineering',
+  'Chemical Engineering',
+  'Robotics & Automation',
+  'Mechatronics',
+  'Biotechnology',
+  'Aerospace Engineering',
+  'Automobile Engineering',
+  'Others',
+];
+
 const initialProfile = {
   name: '',
   fullName: '',
@@ -453,14 +474,20 @@ const Profile = () => {
                 <div className="form-field">
                   <label htmlFor="preferredBranch">Preferred Branch</label>
                   {editing ? (
-                    <input
+                    <select
                       id="preferredBranch"
-                      type="text"
                       name="preferredBranch"
                       value={profile.preferredBranch || ''}
                       onChange={handleChange}
                       className="form-input"
-                    />
+                    >
+                      <option value="">Select Preferred Branch</option>
+                      {PREFERRED_BRANCHES.map((branch) => (
+                        <option key={branch} value={branch}>
+                          {branch}
+                        </option>
+                      ))}
+                    </select>
                   ) : (
                     <div className="form-readonly">{displayValue(profile.preferredBranch)}</div>
                   )}

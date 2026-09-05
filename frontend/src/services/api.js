@@ -67,6 +67,19 @@ export const searchCutoffs = async (payload) => {
   return response.data;
 };
 
+export const predictPercentileML = async ({ exam, marks }) => {
+  const response = await api.post('/api/cutoffs/predict-percentile', {
+    exam,
+    marks: parseFloat(marks),
+  });
+  return response.data;
+};
+
+export const predictCollegesLLM = async (payload) => {
+  const response = await api.post('/api/cutoffs/predict-colleges-llm', payload);
+  return response.data;
+};
+
 export const getCollegeById = async (id) => {
   const response = await api.get(`/api/colleges/${id}`);
   return response.data;

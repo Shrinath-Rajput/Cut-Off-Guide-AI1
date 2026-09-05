@@ -15,17 +15,17 @@
   width: min(100%, 1440px);
   margin: 0 auto;
   box-sizing: border-box;
-  padding: 0 18px;
-  height: 74px;
-  gap: 14px;
+  padding: 0 20px;
+  height: 82px;
+  gap: 16px;
 }
 
 .brand-link {
   flex: 0 0 auto;
   color: var(--primary);
   font-family: 'Manrope', 'Segoe UI', sans-serif;
-  font-size: 1.15rem;
-  font-weight: 800;
+  font-size: 1.45rem;
+  font-weight: 900;
   letter-spacing: -0.02em;
   white-space: nowrap;
   text-decoration: none;
@@ -37,7 +37,7 @@
   justify-content: center;
   flex: 1 1 auto;
   min-width: 0;
-  gap: clamp(8px, 0.65vw, 16px);
+  gap: clamp(10px, 1.2vw, 24px);
   margin: 0;
 }
 
@@ -47,30 +47,40 @@
   justify-content: flex-start;
   flex: 1 1 auto;
   min-width: 0;
-  gap: clamp(8px, 0.65vw, 16px);
+  gap: clamp(10px, 1.2vw, 24px);
   margin: 0;
   white-space: nowrap;
 }
 
-.site-menu a {
+.site-menu a,
+.desktop-menu a {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: rgba(42, 23, 15, 0.82);
+  color: #26140b;
   text-decoration: none;
-  font-size: 0.83rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  padding: 8px 8px 10px;
-  border-bottom: 2px solid transparent;
-  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+  font-size: clamp(1.2rem, 1.05vw + 0.25rem, 1.4rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  padding: 8px 10px 10px;
+  border-bottom: 4px solid transparent;
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.18s ease;
+}
+
+.site-menu a:hover,
+.desktop-menu a:hover {
+  color: var(--primary);
+  border-color: rgba(148, 74, 0, 0.45);
+  transform: translateY(-1px);
 }
 
 .site-menu a.active,
-.site-menu a:hover {
+.desktop-menu a.active {
   color: var(--primary);
-  border-color: var(--primary);
+  font-weight: 900;
+  border-bottom: 4px solid var(--primary);
+  border-radius: 2px;
 }
 
 .navbar-actions {
@@ -109,13 +119,13 @@
   border: 1px solid rgba(148, 74, 0, 0.2);
   background: rgba(255, 255, 255, 0.4);
   color: var(--on-surface-variant);
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border-radius: 50%;
   transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
@@ -271,8 +281,8 @@
 
   .nav-item-label {
     font-family: 'Plus Jakarta Sans', sans-serif;
-    font-size: 0.95rem;
-    font-weight: 600;
+    font-size: 1.18rem;
+    font-weight: 800;
     color: #2a170f;
     line-height: 1.2;
     flex: 1;
@@ -383,17 +393,19 @@
 
 @media (min-width: 1200px) and (max-width: 1599px) {
   .navbar-inner {
-    gap: 12px;
-    padding: 0 18px;
+    gap: 14px;
+    padding: 0 20px;
   }
 
   .site-menu {
-    gap: 8px;
+    gap: clamp(10px, 1.1vw, 20px);
   }
 
-  .site-menu a {
-    font-size: 0.72rem;
-    padding-inline: 6px;
+  .site-menu a,
+  .desktop-menu.site-menu a {
+    font-size: clamp(1.15rem, 1vw + 0.2rem, 1.35rem);
+    padding-inline: 10px;
+    font-weight: 800;
   }
 
   .profile-name {

@@ -41,7 +41,11 @@ class Settings(BaseSettings):
         val = (os.getenv("TAVILY_API_KEY") or "").strip()
         return val if val else _DEFAULT_TAVILY_KEY
 
-    HUGGINGFACE_API_TOKEN: str = os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_TOKEN") or _DEFAULT_HF_TOKEN
+    @property
+    def HUGGINGFACE_API_TOKEN(self) -> str:
+        val = (os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_TOKEN") or "").strip()
+        return val if val else _DEFAULT_HF_TOKEN
+
     HUGGINGFACE_MODEL: str = os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
 
     IMAGE_STORAGE_PROVIDER: str = (os.getenv("IMAGE_STORAGE_PROVIDER", "local") or "local").strip().lower()
@@ -66,10 +70,6 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         extra = "ignore"
-
-    def model_post_init(self, __context: object) -> None:
-        if not (self.HUGGINGFACE_API_TOKEN or "").strip():
-            self.HUGGINGFACE_API_TOKEN = _DEFAULT_HF_TOKEN
 
 
 settings = Settings()

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar/Navbar';
 import Footer from '../../components/Footer/Footer';
 import './Colleges.css';
@@ -84,9 +84,22 @@ const Colleges = () => {
   const pageSize = isMobile ? 6 : 12;
 
   // Search & Filters
-  const [search, setSearch] = useState('');
-  const [selectedState, setSelectedState] = useState('Maharashtra');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialSearch = searchParams.get('search') || '';
+  const [search, setSearch] = useState(initialSearch);
+  const [selectedState, setSelectedState] = useState(searchParams.get('search') ? 'All India' : 'Maharashtra');
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Sync search state if URL query param changes
+  useEffect(() => {
+    const q = searchParams.get('search');
+    if (q !== null && q !== undefined) {
+      setSearch(q);
+      if (q.toLowerCase() === 'private') {
+        setSelectedState('All India');
+      }
+    }
+  }, [searchParams]);
   const [collegeItems, setCollegeItems] = useState([]);
   const [totalCollegeCount, setTotalCollegeCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -286,11 +299,6 @@ const Colleges = () => {
           </div>
 
           <div className="colleges-hero-content">
-            <div className="colleges-hero-badge">
-              <span className="material-symbols-outlined">auto_awesome</span>
-              <span>AI-POWERED INSTITUTION DISCOVERY</span>
-            </div>
-
             <h1 className="colleges-hero-title">
               Find Your Dream College in India
             </h1>
@@ -335,6 +343,19 @@ const Colleges = () => {
             </div>
 
             <div className="colleges-hero-quick-tags">
+              <button
+                type="button"
+                className={`quick-tag cursor-pointer hover:border-primary transition-all ${search.toLowerCase() === 'private' ? 'bg-primary/20 border-primary text-primary font-bold' : ''}`}
+                onClick={() => {
+                  setSearch('private');
+                  setSelectedState('All India');
+                  setSearchParams({ search: 'private' });
+                }}
+                title="Filter by Private Colleges & Universities"
+              >
+                <span className="material-symbols-outlined text-primary">domain</span>
+                <span>Private Colleges</span>
+              </button>
               <div className="quick-tag">
                 <span className="material-symbols-outlined">school</span>
                 <span>250+ Premier Institutes</span>
