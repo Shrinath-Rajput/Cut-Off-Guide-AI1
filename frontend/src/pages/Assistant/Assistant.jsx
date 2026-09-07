@@ -11,12 +11,14 @@ const DEFAULT_SUGGESTIONS = [
   'What are the cutoffs for Tier 1 NITs?',
 ];
 
-const INITIAL_MESSAGE = {
+const DEFAULT_WELCOME_MESSAGE = {
   id: 'initial-1',
   from: 'assistant',
   text: "Hello! I'm your CutoffGuide AI Council. I can help you analyze admission chances, compare colleges, check cutoffs, and navigate the counseling process. How can I assist you today?",
   timestamp: Date.now(),
 };
+
+const INITIAL_MESSAGE = DEFAULT_WELCOME_MESSAGE;
 
 const STORAGE_KEY = 'cutoffguide_ai_chats';
 
@@ -69,10 +71,18 @@ const loadSavedChats = () => {
 };
 
 const Assistant = () => {
-  const [chats, setChats] = useState(loadSavedChats);
+  const [chats, setChats] = useState(() => loadSavedChats());
   const [activeChatId, setActiveChatId] = useState(() => {
-    const loaded = loadSavedChats();
-    return loaded[0]?.id || `chat-${Date.now()}`;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0]?.id) {
+          return parsed[0].id;
+        }
+      }
+    } catch (_) {}
+    return null;
   });
   const [query, setQuery] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -80,6 +90,13 @@ const Assistant = () => {
 
   const chatHistoryRef = useRef(null);
   const textareaRef = useRef(null);
+
+  // Synchronize activeChatId if not set
+  useEffect(() => {
+    if (!activeChatId && chats.length > 0) {
+      setActiveChatId(chats[0].id);
+    }
+  }, [chats, activeChatId]);
 
   // Save chats to localStorage whenever chats state changes
   useEffect(() => {
@@ -118,8 +135,9 @@ const Assistant = () => {
       createdAt: Date.now(),
       messages: [
         {
-          ...DEFAULT_WELCOME_MESSAGE,
           id: `welcome-${Date.now()}`,
+          from: 'assistant',
+          text: DEFAULT_WELCOME_MESSAGE.text,
           timestamp: Date.now(),
         },
       ],
@@ -127,8 +145,11 @@ const Assistant = () => {
 
     setChats((prev) => [newChat, ...prev]);
     setActiveChatId(newChatId);
+    setQuery('');
     setSidebarOpen(false);
-    if (textareaRef.current) textareaRef.current.focus();
+    setTimeout(() => {
+      if (textareaRef.current) textareaRef.current.focus();
+    }, 50);
   };
 
   const handleSelectChat = (chatId) => {
@@ -145,7 +166,14 @@ const Assistant = () => {
           id: `chat-${Date.now()}`,
           title: 'New Conversation',
           createdAt: Date.now(),
-          messages: [{ ...DEFAULT_WELCOME_MESSAGE, id: `welcome-${Date.now()}`, timestamp: Date.now() }],
+          messages: [
+            {
+              id: `welcome-${Date.now()}`,
+              from: 'assistant',
+              text: DEFAULT_WELCOME_MESSAGE.text,
+              timestamp: Date.now(),
+            },
+          ],
         };
         setActiveChatId(fresh.id);
         return [fresh];
