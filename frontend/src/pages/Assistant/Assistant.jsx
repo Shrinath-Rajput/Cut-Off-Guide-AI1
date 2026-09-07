@@ -11,8 +11,8 @@ const DEFAULT_SUGGESTIONS = [
   'What are the cutoffs for Tier 1 NITs?',
 ];
 
-const DEFAULT_WELCOME_MESSAGE = {
-  id: 'welcome-msg',
+const INITIAL_MESSAGE = {
+  id: 'initial-1',
   from: 'assistant',
   text: "Hello! I'm your CutoffGuide AI Council. I can help you analyze admission chances, compare colleges, check cutoffs, and navigate the counseling process. How can I assist you today?",
   timestamp: Date.now(),
@@ -246,7 +246,9 @@ const Assistant = () => {
       const errorMessage = {
         id: `assistant-error-${Date.now()}`,
         from: 'assistant',
-        text: 'Sorry, we encountered an issue communicating with the AI service. Please check that the server and Hugging Face configuration are active.',
+        text:
+          error?.response?.data?.message ||
+          'Sorry, we encountered an issue communicating with the AI service. Please ensure the backend server is running and try again.',
         error: true,
         timestamp: Date.now(),
       };
@@ -454,9 +456,6 @@ const Assistant = () => {
 
                 {/* Input Box */}
                 <div className="input-glass-box">
-                  <button type="button" className="input-action-btn" aria-label="Attachment">
-                    <span className="material-symbols-outlined">attach_file</span>
-                  </button>
                   <textarea
                     ref={textareaRef}
                     value={query}

@@ -48,3 +48,5 @@ frontend/dist/
 .DS_Store
 Thumbs.db
 *.tmp
+catboost_info/
+backend/catboost_info/

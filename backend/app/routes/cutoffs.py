@@ -20,15 +20,48 @@ async def search_cutoffs_endpoint(request: CutoffSearchRequest, db=Depends(get_d
     return result
 
 
+from datetime import datetime
+
 @router.post("/predict-percentile", response_model=PercentilePredictResponse)
-async def predict_percentile_endpoint(request: PercentilePredictRequest):
+async def predict_percentile_endpoint(request: PercentilePredictRequest, db=Depends(get_db)):
     """
-    ML-Powered Percentile Predictor.
-    Predicts monotonic percentile, confidence interval, and estimated rank
-    for MHT-CET (max 200), JEE Main (max 300), or JEE Advanced (max 360).
+    ML-Powered Multi-Exam Percentile Predictor.
+    Predicts monotonic percentile, confidence score, rank, performance category,
+    and categorized Dream/Likely/Safe college recommendations.
+    Supports MHT-CET PCM, MHT-CET PCB, JEE Main, and JEE Advanced.
     """
     try:
-        prediction = predict_percentile(exam=request.exam, marks=request.marks)
+        prediction = predict_percentile(
+            exam=request.exam,
+            marks=request.marks,
+            shift=request.shift or "Morning",
+            session=request.session or 1,
+            difficulty_level=request.difficulty_level or "Medium",
+            category=request.category or "General",
+            year=request.year or 2026,
+        )
+
+        # Async logging to MongoDB predictions collection
+        if db is not None:
+            try:
+                await db["predictions"].insert_one({
+                    "user_id": request.user_id or "anonymous",
+                    "exam": prediction["exam"],
+                    "marks": prediction["marks"],
+                    "predicted_percentile": prediction["predicted_percentile"],
+                    "predicted_rank": prediction.get("predicted_rank"),
+                    "predicted_air": prediction.get("predicted_air"),
+                    "confidence": prediction.get("confidence"),
+                    "confidence_level": prediction.get("confidence_level"),
+                    "performance_category": prediction.get("performance_category"),
+                    "shift": request.shift,
+                    "session": request.session,
+                    "difficulty_level": request.difficulty_level,
+                    "timestamp": datetime.utcnow().isoformat(),
+                })
+            except Exception as db_err:
+                print(f"[CutoffsRoute] Warning: MongoDB prediction logging error: {db_err}")
+
         return PercentilePredictResponse(**prediction)
     except ValueError as val_err:
         raise HTTPException(

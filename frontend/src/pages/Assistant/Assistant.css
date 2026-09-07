@@ -596,7 +596,7 @@
   background-color: var(--ai-surface-container-lowest);
   border: 1px solid var(--ai-outline-variant);
   border-radius: 18px;
-  padding: 8px 10px;
+  padding: 8px 10px 8px 16px;
   box-shadow: 0 8px 30px rgba(42, 23, 15, 0.07);
   transition: all 0.2s ease;
 }

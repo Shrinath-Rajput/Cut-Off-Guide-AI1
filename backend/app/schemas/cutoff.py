@@ -20,17 +20,30 @@ class CutoffResult(BaseModel):
 
 # ML Percentile Prediction Schemas
 class PercentilePredictRequest(BaseModel):
-    exam: str = Field(..., description="Exam name: 'MHT-CET', 'JEE Main', or 'JEE Advanced'")
+    exam: str = Field(..., description="Exam name: 'MHT-CET PCM', 'MHT-CET PCB', 'JEE Main', or 'JEE Advanced'")
     marks: float = Field(..., description="Expected marks obtained in the exam")
+    shift: Optional[str] = Field("Morning", description="Exam shift: 'Morning', 'Afternoon', etc.")
+    session: Optional[int] = Field(1, description="Session number (e.g., 1 for Jan, 2 for April)")
+    difficulty_level: Optional[str] = Field("Medium", description="Subjective paper difficulty: Easy, Medium, Hard")
+    category: Optional[str] = Field("General", description="Candidate category: General, OBC, SC, ST, EWS")
+    year: Optional[int] = Field(2026, description="Exam year")
+    user_id: Optional[str] = Field(None, description="Optional user ID for prediction history tracking")
 
 class PercentilePredictResponse(BaseModel):
     exam: str
     marks: float
     max_marks: int
     predicted_percentile: float
+    predicted_percentile_precise: Optional[float] = None
     percentile_range: str
     estimated_rank: str
-    performance_tier: str
+    predicted_rank: Optional[int] = None
+    predicted_air: Optional[int] = None
+    confidence: Optional[float] = 95.0
+    confidence_level: Optional[str] = "High Confidence"
+    performance_category: Optional[str] = "Good"
+    performance_tier: Optional[str] = None
+    college_recommendations: Optional[Dict[str, List[Dict[str, Any]]]] = None
     advisory_message: Optional[str] = None
 
 

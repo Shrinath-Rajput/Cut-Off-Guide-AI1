@@ -67,10 +67,25 @@ export const searchCutoffs = async (payload) => {
   return response.data;
 };
 
-export const predictPercentileML = async ({ exam, marks }) => {
+export const predictPercentileML = async ({
+  exam,
+  marks,
+  shift,
+  session,
+  difficulty_level,
+  category,
+  year,
+  user_id,
+}) => {
   const response = await api.post('/api/cutoffs/predict-percentile', {
     exam,
     marks: parseFloat(marks),
+    shift: shift || 'Morning',
+    session: session || 1,
+    difficulty_level: difficulty_level || 'Medium',
+    category: category || 'General',
+    year: year || 2026,
+    user_id,
   });
   return response.data;
 };

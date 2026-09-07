@@ -71,6 +71,13 @@ app.include_router(assistant.router)
 app.include_router(contact.router)
 app.include_router(prediction.router)
 
+from fastapi import Depends
+from app.schemas.cutoff import PercentilePredictRequest, PercentilePredictResponse
+
+@app.post("/predict-percentile", response_model=PercentilePredictResponse, tags=["Percentile Prediction"])
+async def root_predict_percentile(request: PercentilePredictRequest, db=Depends(get_db)):
+    return await cutoffs.predict_percentile_endpoint(request, db)
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc: Exception):
     import traceback

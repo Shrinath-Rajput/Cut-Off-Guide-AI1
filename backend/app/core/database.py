@@ -16,7 +16,14 @@ def get_db():
 
 async def connect_to_mongo():
     try:
-        db.client = AsyncIOMotorClient(settings.MONGODB_URI, serverSelectionTimeoutMS=5000)
+        kwargs = {"serverSelectionTimeoutMS": 5000}
+        try:
+            import certifi
+            kwargs["tlsCAFile"] = certifi.where()
+        except Exception:
+            pass
+
+        db.client = AsyncIOMotorClient(settings.MONGODB_URI, **kwargs)
         db.db = db.client[settings.MONGODB_DATABASE]
         await db.db["analytics_events"].create_index([("eventType", 1)])
         await db.db["analytics_events"].create_index([("userId", 1)])

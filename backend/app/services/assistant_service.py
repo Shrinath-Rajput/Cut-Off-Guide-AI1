@@ -37,19 +37,75 @@ def _clean_reply(text: str) -> str:
     return cleaned.strip()
 
 
+def _fetch_tavily_search(query: str) -> Optional[str]:
+    api_key = settings.TAVILY_API_KEY
+    if not api_key:
+        return None
+
+    q = (query or "").strip().lower()
+    # Skip web search for brief pleasantries or very short messages
+    if len(q) < 5 or q in ("hi", "hello", "hey", "hola", "namaste", "good morning", "good evening"):
+        return None
+
+    search_q = query.strip()
+    if not any(k in q for k in ["cutoff", "cut-off", "percentile", "admission", "college", "fees", "placement", "exam", "rank", "jee", "cet", "neet", "iit", "nit"]):
+        search_q = f"{search_q} India college cutoffs admission"
+
+    payload = {
+        "api_key": api_key,
+        "query": search_q,
+        "search_depth": "basic",
+        "include_answer": True,
+        "max_results": 4,
+    }
+
+    req = urllib_request.Request(
+        "https://api.tavily.com/search",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": USER_AGENT,
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib_request.urlopen(req, timeout=5.0) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            context_items = []
+            answer = data.get("answer")
+            if answer:
+                context_items.append(f"Tavily Quick Answer: {answer.strip()}")
+            for r in data.get("results", []):
+                snippet = r.get("content", "").strip()
+                title = r.get("title", "").strip()
+                if snippet:
+                    context_items.append(f"• {title}: {snippet[:280]}")
+            if context_items:
+                return "\n".join(context_items[:4])
+    except Exception as exc:
+        logging.warning("Tavily Search API failed in assistant: %s", exc)
+    return None
+
+
 def _call_groq(messages: list) -> Optional[str]:
     api_key = settings.GROQ_API_KEY
     if not api_key:
         return None
 
     url = settings.GROQ_API_URL or "https://api.groq.com/openai/v1/chat/completions"
-    model = settings.GROQ_MODEL or "qwen/qwen3.8-27b"
+    raw_model = (settings.GROQ_MODEL or "qwen/qwen3.8-27b").strip()
+    # Map Qwen 3 / Qwen 32B configurations to Groq's active high-performance Qwen 3 model
+    if "32b" in raw_model.lower() or "qwen3" in raw_model.lower() or "qwen 3" in raw_model.lower():
+        model = "qwen/qwen3.8-27b"
+    else:
+        model = raw_model or "qwen/qwen3.8-27b"
 
     payload = {
         "model": model,
         "messages": messages,
-        "max_tokens": 500,
-        "temperature": 0.4,
+        "max_tokens": 550,
+        "temperature": 0.3,
     }
     req = urllib_request.Request(
         url,
@@ -110,18 +166,60 @@ def _call_huggingface(messages: list) -> Optional[str]:
     return None
 
 
-def generate_assistant_reply(message: str, history: list = None) -> str:
+def generate_assistant_reply(message: str, history: list = None, db=None) -> str:
+    # 0. Guardrail: Medical and health advice requests
+    q_clean = (message or "").strip()
+    q_lower = q_clean.lower()
+
+    academic_keywords = [
+        "neet", "mbbs", "bds", "bams", "bhms", "aiims", "medical college",
+        "cutoff", "cut-off", "percentile", "rank", "admission", "counseling",
+        "counselling", "seat", "fees", "fee", "quota", "college", "exam",
+        "engineering", "iit", "nit", "cet"
+    ]
+    is_academic = any(k in q_lower for k in academic_keywords)
+
+    if not is_academic:
+        if "fever" in q_lower:
+            return (
+                "I am an academic admissions counselor for CutoffGuide and cannot provide medical advice. "
+                "Please consult a doctor or healthcare professional for fever treatment and dietary recommendations."
+            )
+        medical_keywords = [
+            "headache", "cough", "cold", "pain", "stomach", "vomit", "nausea",
+            "medicine", "tablet", "pill", "paracetamol", "dolo", "antibiotic",
+            "infection", "disease", "sick", "illness", "doctor", "health",
+            "treatment", "cure", "prescribe", "prescription", "symptom"
+        ]
+        if any(re.search(rf"\b{re.escape(k)}\b", q_lower) for k in medical_keywords):
+            return (
+                "I am an academic admissions counselor for CutoffGuide and cannot provide medical advice. "
+                "Please consult a doctor or healthcare professional for medical treatment and health recommendations."
+            )
+
+    # 1. Pipeline Stage 1: Tavily Search (Latest Real-Time Verified Data)
+    tavily_context = _fetch_tavily_search(q_clean)
+
+    # 2. Pipeline Stage 2: Grounded Qwen 3 Prompting
+    system_prompt_text = (
+        "You are AI Council, an intelligent, authoritative academic admissions counselor for CutoffGuide (India), powered by real-time Tavily Web Search and Qwen 3.\n"
+        "You assist students exclusively with college admissions, entrance exams (JEE Main/Advanced, MHT-CET, NEET, GATE, CAT, etc.), official closing cutoffs, percentiles, branch counseling, fee structures, and placement statistics across India.\n\n"
+        "STRICT GUIDELINES:\n"
+        "- When latest verified web context is provided below, treat it as the authoritative ground truth for cutoffs, dates, and ranks.\n"
+        "- Answer the user's specific question directly and accurately.\n"
+        "- NEVER assume or invent unmentioned scores or target colleges (e.g. do not assume 'if you have 98 percentile' unless the user provided that score).\n"
+        "- OUT-OF-SCOPE / OFF-TOPIC QUERIES: If the user asks for medical, health, clinical, legal, or non-educational advice, provide ONLY a polite 1-2 sentence refusal stating that you are an academic admissions counselor for CutoffGuide and cannot provide medical or legal advice, and recommend consulting a qualified professional. NEVER append unrequested college cutoffs, percentiles, or admissions advice to off-topic questions.\n"
+        "- Never output markdown bold asterisks (do NOT use '**' or '***'). Output clean, natural text.\n"
+        "- Use clean bullet points (•) where helpful for readability.\n"
+        "- Keep responses direct, relevant, and concise (120-180 words). Never add unsolicited filler."
+    )
+
+    if tavily_context:
+        system_prompt_text += f"\n\nLATEST REAL-TIME VERIFIED DATA FROM TAVILY SEARCH:\n{tavily_context}"
+
     system_prompt = {
         "role": "system",
-        "content": (
-            "You are AI Council, an intelligent, helpful academic admissions counselor for CutoffGuide (India).\n"
-            "You assist students with engineering, management, medical, and university admissions across India.\n"
-            "STRICT RULES:\n"
-            "- Always answer the user's specific question directly and accurately with relevant college names, cutoff percentiles, exam details, fees, or placement statistics.\n"
-            "- Never output markdown bold asterisks (do NOT use '**' or '***'). Output clean, natural text.\n"
-            "- Use clean bullet points (•) where helpful for readability.\n"
-            "- Keep responses comprehensive yet concise (120-220 words)."
-        ),
+        "content": system_prompt_text,
     }
 
     messages = [system_prompt]
@@ -134,7 +232,7 @@ def generate_assistant_reply(message: str, history: list = None) -> str:
                 if content:
                     messages.append({"role": role, "content": content})
 
-    messages.append({"role": "user", "content": message.strip()})
+    messages.append({"role": "user", "content": q_clean})
 
     # 1. Try Groq LLM (High-speed Qwen/Llama)
     reply = _call_groq(messages)
