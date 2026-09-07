@@ -31,7 +31,7 @@ try:
         if name == "app" and app is None:
             return create_app()
         raise AttributeError(name)
-except ModuleNotFoundError:
+except (ModuleNotFoundError, ImportError, Exception):
     def create_app():  # type: ignore[misc]
         raise RuntimeError("Flask is not installed; legacy Flask tests cannot run. Use the FastAPI entry point in app.main instead.")
 

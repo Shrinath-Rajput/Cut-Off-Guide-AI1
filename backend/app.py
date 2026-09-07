@@ -2,13 +2,20 @@ import sys
 import os
 from pathlib import Path
 
-# Force execution using Cut_off_Guide's dedicated virtual environment
-project_root = Path(__file__).resolve().parent.parent
-venv_python = project_root / ".venv" / "Scripts" / "python.exe"
+# Force execution using the dedicated virtual environment
+backend_dir = Path(__file__).resolve().parent
+project_root = backend_dir.parent
 
-if venv_python.exists() and Path(sys.executable).resolve() != venv_python.resolve():
+venv_candidates = [
+    backend_dir / "venv" / "Scripts" / "python.exe",
+    project_root / ".venv" / "Scripts" / "python.exe",
+    project_root / "venv" / "Scripts" / "python.exe",
+]
+venv_python = next((p for p in venv_candidates if p.exists()), None)
+
+if venv_python and Path(sys.executable).resolve() != venv_python.resolve():
     import subprocess
-    sys.exit(subprocess.call([str(venv_python)] + sys.argv, cwd=str(Path(__file__).resolve().parent)))
+    sys.exit(subprocess.call([str(venv_python)] + sys.argv, cwd=str(backend_dir)))
 
 import uvicorn
 from dotenv import load_dotenv
