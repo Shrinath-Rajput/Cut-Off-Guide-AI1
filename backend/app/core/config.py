@@ -49,7 +49,7 @@ class Settings(BaseSettings):
     HUGGINGFACE_MODEL: str = os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
 
     IMAGE_STORAGE_PROVIDER: str = (os.getenv("IMAGE_STORAGE_PROVIDER", "local") or "local").strip().lower()
-    API_PUBLIC_URL: str = (os.getenv("API_PUBLIC_URL", "http://127.0.0.1:8000") or "http://127.0.0.1:8000").rstrip("/")
+    API_PUBLIC_URL: str = (os.getenv("API_PUBLIC_URL", "http://127.0.0.1:5000") or "http://127.0.0.1:5000").rstrip("/")
     UPLOAD_DIR: str = os.getenv("UPLOAD_DIR", str(Path(__file__).resolve().parents[2] / "uploads"))
     CLOUDINARY_CLOUD_NAME: str = os.getenv("CLOUDINARY_CLOUD_NAME", "")
     CLOUDINARY_API_KEY: str = os.getenv("CLOUDINARY_API_KEY", "")

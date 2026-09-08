@@ -84,9 +84,14 @@ async def global_exception_handler(request, exc: Exception):
     traceback.print_exc()
     origin = request.headers.get("origin") or "*"
     from fastapi.responses import JSONResponse
+    msg = str(exc)
+    if any(k in msg for k in ["SSL handshake", "ServerSelectionTimeoutError", "AutoReconnect", "TopologyDescription", "WinError 10061", "Connection refused"]):
+        user_message = "Database connection error. Please ensure the database service is running."
+    else:
+        user_message = msg
     return JSONResponse(
         status_code=500,
-        content={"status": "error", "message": str(exc)},
+        content={"status": "error", "message": user_message},
         headers={
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Credentials": "true",

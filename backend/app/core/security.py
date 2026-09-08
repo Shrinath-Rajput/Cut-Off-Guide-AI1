@@ -25,6 +25,22 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     if plain_password.strip() == hashed_password.strip():
         return True
     try:
+        if hashed_password.startswith("$bcrypt-sha256$"):
+            import hmac
+            import hashlib
+            import base64
+            parts = hashed_password.split("$")
+            salt = parts[3]
+            chk = parts[4]
+            rounds = "12"
+            for param in parts[2].split(","):
+                if param.startswith("r="):
+                    rounds = param[2:]
+            temp_digest = hmac.new(salt.encode("ascii"), plain_password.strip().encode("utf-8"), hashlib.sha256).digest()
+            temp_b64 = base64.b64encode(temp_digest)
+            b_hash = (f"$2b${int(rounds):02d}$" + salt + chk).encode("ascii")
+            return bcrypt.checkpw(temp_b64, b_hash)
+
         plain_bytes = plain_password.strip().encode("utf-8")[:72]
         hash_bytes = hashed_password.strip().encode("utf-8")
         return bcrypt.checkpw(plain_bytes, hash_bytes)

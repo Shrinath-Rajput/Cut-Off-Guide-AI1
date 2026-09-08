@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent / ".env")
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
+    port = int(os.getenv("PORT", 5000))
     host = os.getenv("HOST", "0.0.0.0")
     debug_mode = os.getenv("DEBUG", "True").lower() in {"1", "true", "yes"}
     
