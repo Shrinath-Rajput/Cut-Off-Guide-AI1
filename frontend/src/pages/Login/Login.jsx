@@ -133,15 +133,30 @@ const Login = () => {
         navigate(response.user?.role === 'SUPER_ADMIN' ? '/super-admin/dashboard' : '/admin/dashboard', { replace: true });
         return;
       }
-      if (response.token && response.user) {
-        login(response.user, response.token);
-        toast.success(`Welcome back, ${response.user?.name || 'Student'}!`);
-        navigate('/home', { replace: true });
+      if (response.requiresOtp || response.status === 'pending_otp') {
+        sessionStorage.removeItem('signup_from_onboarding');
+        sessionStorage.removeItem('signup_complete_payload');
+        sessionStorage.removeItem('signup_pending_credentials');
+        sessionStorage.setItem('auth_pending_user', JSON.stringify({
+          uid: response.user?.uid || response.uid,
+          name: response.user?.name || '',
+          email: response.user?.email || '',
+        }));
+        sessionStorage.setItem('auth_pending_phone', response.phone || response.otpPhone || response.user?.phone || '');
+        if (response.sessionId) {
+          sessionStorage.setItem('auth_pending_otp_session_id', response.sessionId);
+        }
+        if (response.dev_otp) {
+          toast.success(`OTP sent. Dev OTP: ${response.dev_otp}`);
+        } else if (response.sms_sent === false || response.smsSent === false) {
+          toast.error(response.message || 'SMS delivery failed. Please enter your OTP or contact support.');
+        } else {
+          toast.success('OTP sent to your registered mobile number');
+        }
+        navigate('/otp');
         return;
       }
-      setPendingLogin({ ...response.user, uid: response.uid || response.user.uid });
-      setPhone(response.otpPhone || response.user.phone || '');
-      setView('phone');
+      setError('Unable to proceed to OTP verification. Please try again.');
     } catch (requestError) {
       setError(getErrorMessage(requestError, 'Invalid username/email or password.'));
     } finally {

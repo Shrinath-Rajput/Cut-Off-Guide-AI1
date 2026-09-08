@@ -124,15 +124,18 @@ async def _consume_otp_session(session_id: str, phone: str, otp: str, db) -> boo
 
 
 def _build_fast2sms_request(phone: str, message: str, otp: int = None):
-    # Convert 10-digit Indian phone to E.164 format with country code
-    # Input: "9657260504" -> Output: "919657260504"
-    phone_with_country_code = f"91{phone}" if len(phone) == 10 else phone
+    # Fast2SMS bulkV2 expects 10-digit Indian mobile number in "numbers" parameter
+    clean_phone = "".join(c for c in str(phone) if c.isdigit())
+    if clean_phone.startswith("91") and len(clean_phone) == 12:
+        clean_phone = clean_phone[2:]
+    elif clean_phone.startswith("0") and len(clean_phone) == 11:
+        clean_phone = clean_phone[1:]
     
     if settings.SMS_ROUTE.lower() == "otp":
         params = {
             "route": "otp",
             "variables_values": str(otp) if otp is not None else "",
-            "numbers": phone_with_country_code,
+            "numbers": clean_phone,
             "flash": int(settings.SMS_FLASH) if str(settings.SMS_FLASH).isdigit() else 0,
         }
         if settings.SMS_TEMPLATE_ID:
@@ -142,7 +145,7 @@ def _build_fast2sms_request(phone: str, message: str, otp: int = None):
         return params
 
     params = {
-        "numbers": phone_with_country_code,
+        "numbers": clean_phone,
         "message": message,
         "sender_id": settings.SMS_SENDER_ID,
         "route": settings.SMS_ROUTE,
@@ -193,10 +196,10 @@ async def send_otp_sms(phone: str, db) -> dict:
 
     logging.info("[AUTH] OTP MODE = PRODUCTION. Will send real SMS via Fast2SMS API.")
     
-    api_key = settings.FAST_TO_SMS_API_KEY
+    api_key = (settings.FAST_TO_SMS_API_KEY or "").strip()
     if not api_key:
         logging.error("[AUTH] OTP send failed: FAST_TO_SMS_API_KEY is not configured.")
-        raise HTTPException(status_code=500, detail="SMS provider configuration is missing (FAST_TO_SMS_API_KEY)")
+        raise HTTPException(status_code=502, detail="SMS provider configuration is missing. Please contact support.")
 
     message = f"Your verification OTP is {otp}. It is valid for 5 minutes."
     request_params = _build_fast2sms_request(normalized_phone, message, otp=otp)
@@ -239,12 +242,12 @@ async def send_otp_sms(phone: str, db) -> dict:
                 
             if status_code != 200:
                 logging.error("[AUTH] SMS provider returned non-200 HTTP status. OTP not stored.")
-                raise HTTPException(status_code=500, detail="Failed to send SMS via provider (HTTP error)")
+                raise HTTPException(status_code=502, detail="Failed to send SMS via provider (HTTP error)")
                 
             if not is_success:
                 error_msg = _extract_fast2sms_error(response_json)
                 logging.error("[AUTH] SMS provider REJECTED request: %s. OTP not stored.", error_msg)
-                raise HTTPException(status_code=400, detail=f"SMS API Error: {error_msg}")
+                raise HTTPException(status_code=502, detail=f"SMS API Error: {error_msg}")
 
             session_id = await _store_otp(normalized_phone, otp, db)
             return_data = {"session_id": session_id}
@@ -271,18 +274,29 @@ async def send_otp_sms(phone: str, db) -> dict:
             logging.error("[AUTH] SMS provider error response (safe keys only): %s", safe_err)
             err_msg = _extract_fast2sms_error(err_json)
         except Exception:
-            err_msg = f"SMS provider error: {exc.code}"
+            err_msg = f"SMS provider error: HTTP {exc.code}"
             logging.error("[AUTH] SMS provider error body: %s", error_body[:500])
 
-        logging.error("[AUTH] Final send-otp decision: FAILED")
-        raise HTTPException(status_code=exc.code if exc.code in (400, 401, 403, 404) else 500, detail=err_msg) from exc
+        logging.error("[AUTH] Final send-otp decision: FAILED - SMS provider rejected delivery: %s", err_msg)
+        
+        if exc.code in (401, 403):
+            detail = "SMS gateway authorization failed. Please contact support."
+        elif exc.code == 400:
+            detail = "SMS provider rejected destination number. Please check your registered mobile number."
+        else:
+            detail = "Failed to deliver OTP SMS via provider. Please try again shortly."
+
+        raise HTTPException(status_code=502, detail=detail) from exc
 
     except HTTPException:
         raise
     except Exception as exc:
         logging.exception("[AUTH] SMS provider request exception: %s: %s", type(exc).__name__, str(exc))
-        logging.error("[AUTH] Final send-otp decision: FAILED (Unexpected)")
-        raise HTTPException(status_code=500, detail="Internal error during SMS delivery") from exc
+        logging.error("[AUTH] Final send-otp decision: FAILED (Provider unreachable)")
+        raise HTTPException(
+            status_code=502,
+            detail="Unable to reach SMS gateway to send OTP. Please try again shortly."
+        ) from exc
 
 
 async def verify_otp_sms(phone: str, otp: str, session_id: str, db) -> bool:

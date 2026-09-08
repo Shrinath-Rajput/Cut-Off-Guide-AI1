@@ -3,6 +3,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, Dict, Any
 from datetime import datetime, timezone
 import secrets
+import random
 import re
 import logging
 import os
@@ -17,7 +18,7 @@ from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash, verify_password
 from app.core.deps import get_current_user
 from app.schemas.user import UserLogin, UserSignup, UserResponse, LoginOtpRequest, LoginOtpVerifyRequest
-from app.services.auth_service import normalize_phone, send_otp_sms, verify_otp_sms
+from app.services.auth_service import normalize_phone, send_otp_sms, verify_otp_sms, _store_otp
 from app.routes.admin import track_analytics_event
 from bson import ObjectId
 
@@ -33,6 +34,7 @@ class OtpVerifyRequest(OtpRequest):
     otp: str
     sessionId: str
     registerPayload: Optional[dict] = None
+    uid: Optional[str] = None
 
 _in_memory_users = {}
 
@@ -184,6 +186,8 @@ async def verify_otp(request: OtpVerifyRequest, db=Depends(get_db)):
             query_conditions.append({"email": normalized_email})
         if normalized_phone:
             query_conditions.append({"phone": normalized_phone})
+        if getattr(request, "uid", None):
+            query_conditions.append({"uid": request.uid})
 
         user = None
         if query_conditions:
@@ -326,9 +330,15 @@ async def verify_otp(request: OtpVerifyRequest, db=Depends(get_db)):
         if not user:
             raise HTTPException(status_code=401, detail="Account not found. Please sign up first.")
         token = create_access_token(subject=user["uid"], role=user.get("role", "USER"))
-        user["id"] = str(user.pop("_id"))
+        if "_id" in user:
+            user["id"] = str(user.pop("_id"))
         user.pop("passwordHash", None)
         user.pop("password_hash", None)
+        user.pop("password", None)
+        user.pop("hash", None)
+        user.pop("salt", None)
+        now = datetime.now(timezone.utc)
+        await db["users"].update_one({"uid": user["uid"]}, {"$set": {"lastLogin": now}})
         await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password")})
         return {"status": "success", "message": "Authentication successful", "token": token, "user": user}
     except HTTPException as e:
@@ -867,22 +877,81 @@ async def login(request: UserLogin, db=Depends(get_db)):
     user.pop("passwordHash", None)
     user.pop("password_hash", None)
     user.pop("password", None)
-    token = create_access_token(user["uid"], role=user.get("role", "USER"))
-    await track_analytics_event(
-        db,
-        "USER_LOGIN",
-        user_id=user.get("uid"),
-        metadata={"provider": user.get("provider", "password"), "role": user.get("role", "USER")},
-    )
-    logger.info("LOGIN SUCCESS: uid=%s authenticated", user.get("uid"))
-    return {
-        "status": "success",
-        "message": "Login successful",
-        "token": token,
-        "user": user,
-        "otpPhone": user.get("phone"),
+    user.pop("hash", None)
+    user.pop("salt", None)
+
+    if user.get("role") in {"ADMIN", "SUPER_ADMIN"}:
+        admin_role = user.get("role", "ADMIN")
+        token = create_access_token(user["uid"], role=admin_role)
+        await track_analytics_event(db, "USER_LOGIN", user_id=user.get("uid"), metadata={"provider": user.get("provider", "password"), "role": admin_role})
+        logger.info("ADMIN LOGIN SUCCESS: uid=%s role=%s authenticated", user.get("uid"), admin_role)
+        return {
+            "status": "success",
+            "message": "Admin authenticated",
+            "token": token,
+            "user": user,
+        }
+
+    registered_phone = user.get("phone")
+    if not registered_phone:
+        logger.warning("LOGIN OTP: User uid=%s has no registered phone number", user.get("uid"))
+        raise HTTPException(
+            status_code=400,
+            detail="No mobile number is registered for this account. Please contact support."
+        )
+
+    try:
+        normalized_phone = normalize_phone(registered_phone)
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400, detail="Registered phone number is invalid")
+
+    logger.info("LOGIN STEP 1 SUCCESS: uid=%s. Password valid. Preparing OTP session for registered phone.", user.get("uid"))
+    otp = random.randint(100000, 999999)
+    session_id = await _store_otp(normalized_phone, otp, db)
+    dev_otp = None
+    sms_sent = True
+    sms_error = None
+
+    try:
+        otp_result = await send_otp_sms(normalized_phone, db)
+        if otp_result.get("session_id"):
+            session_id = otp_result["session_id"]
+        if otp_result.get("dev_otp"):
+            dev_otp = otp_result["dev_otp"]
+    except HTTPException as sms_err:
+        logger.warning("LOGIN: SMS gateway error during OTP dispatch for uid=%s: %s", user.get("uid"), sms_err.detail)
+        sms_sent = False
+        sms_error = sms_err.detail
+    except Exception as sms_err:
+        logger.warning("LOGIN: SMS gateway exception during OTP dispatch for uid=%s: %s", user.get("uid"), sms_err)
+        sms_sent = False
+        sms_error = "SMS delivery failed via provider"
+
+    response_data = {
+        "status": "pending_otp",
+        "requiresOtp": True,
+        "message": "OTP sent successfully to registered mobile number" if sms_sent else (sms_error or "SMS gateway authorization failed. Please enter your OTP."),
+        "sessionId": session_id,
+        "phone": normalized_phone,
         "uid": user["uid"],
+        "user": {
+            "uid": user["uid"],
+            "name": user.get("name") or "User",
+            "email": user.get("email") or "",
+            "role": "USER",
+        },
+        "sms_sent": sms_sent,
     }
+    if not sms_sent:
+        response_data["delivery_status"] = "failed"
+        response_data["sms_error"] = sms_error
+
+    if dev_otp:
+        response_data["dev_otp"] = dev_otp
+
+    return response_data
 
 @router.post("/login/send-otp")
 async def send_login_otp(request: LoginOtpRequest, db=Depends(get_db)):

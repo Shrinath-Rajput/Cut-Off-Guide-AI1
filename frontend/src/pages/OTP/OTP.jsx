@@ -144,6 +144,7 @@ const OTP = () => {
         name: parsedUser?.name || '',
         email: parsedUser?.email || '',
         sessionId: pendingOtpSessionId,
+        uid: parsedUser?.uid || '',
       };
 
       if (isSignupFlow && completePayload) {

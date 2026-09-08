@@ -1,6 +1,10 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
+
+_env_path = Path(__file__).resolve().parents[2] / ".env"
+load_dotenv(_env_path, override=True)
 
 _DEFAULT_HF_TOKEN = "".join(["hf_", "QeblFUi", "GSOAQJw", "IxLEpq", "LeFZZY", "wejwiPQZ"])
 
@@ -15,7 +19,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 
-    FAST_TO_SMS_API_KEY: str = os.getenv("FAST_TO_SMS_API_KEY", "")
+    FAST_TO_SMS_API_KEY: str = os.getenv("FAST_TO_SMS_API_KEY") or os.getenv("FAST2SMS_API_KEY") or ""
     OTP_MODE: str = os.getenv("OTP_MODE", "development")
 
     SMS_PROVIDER: str = (os.getenv("SMS_PROVIDER", "fast2sms") or "fast2sms").strip().lower()
