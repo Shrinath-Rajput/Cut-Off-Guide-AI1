@@ -36,7 +36,7 @@ frontend/dist/
 
 # Environment variables
 # .env files with secrets (keep .env.example)
-# .env
+.env
 
 # IDE / Editor
 .vscode/

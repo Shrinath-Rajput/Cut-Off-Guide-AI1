@@ -18,8 +18,9 @@ async def connect_to_mongo():
     try:
         kwargs = {"serverSelectionTimeoutMS": 5000}
         try:
-            import certifi
-            kwargs["tlsCAFile"] = certifi.where()
+            if "+srv" in settings.MONGODB_URI or "tls=true" in settings.MONGODB_URI.lower():
+                import certifi
+                kwargs["tlsCAFile"] = certifi.where()
         except Exception:
             pass
 
