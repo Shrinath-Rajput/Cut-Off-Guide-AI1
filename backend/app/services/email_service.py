@@ -75,3 +75,4 @@ def send_contact_email(name: str, user_email: str, subject: str, message_body: s
         except Exception as mx_err:
             logger.error(f"Delivery to {receiver_email} failed: {mx_err}")
             raise HTTPException(status_code=500, detail="Failed to send email via mail service. Please try again later.")
+
