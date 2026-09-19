@@ -50,3 +50,4 @@ Thumbs.db
 *.tmp
 catboost_info/
 backend/catboost_info/
+backend/.env
