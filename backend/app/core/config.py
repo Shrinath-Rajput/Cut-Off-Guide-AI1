@@ -6,10 +6,7 @@ from pydantic_settings import BaseSettings
 _env_path = Path(__file__).resolve().parents[2] / ".env"
 load_dotenv(_env_path, override=True)
 
-_DEFAULT_HF_TOKEN = "".join(["hf_", "QeblFUi", "GSOAQJw", "IxLEpq", "LeFZZY", "wejwiPQZ"])
 
-_DEFAULT_GROQ_KEY = "".join(["gsk_", "9gbTWnJUTWQtntTIU7ShWG", "dyb3FYCDkxjuQx85o0kZ3p0wG9eByb"])
-_DEFAULT_TAVILY_KEY = "".join(["tvly-dev-", "2T9Etu-TtcK8O3GfrX1BDLP", "7duaolF135urVFPNOMy2nK2XBR"])
 
 class Settings(BaseSettings):
     MONGODB_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
@@ -35,7 +32,9 @@ class Settings(BaseSettings):
     @property
     def GROQ_API_KEY(self) -> str:
         val = (os.getenv("GROQ_API_KEY") or "").strip()
-        return val if val else _DEFAULT_GROQ_KEY
+        if not val:
+            raise ValueError("GROQ_API_KEY environment variable is missing. This is required for production.")
+        return val
 
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
     GROQ_API_URL: str = os.getenv("GROQ_API_URL", "https://api.groq.com/openai/v1/chat/completions")
@@ -43,12 +42,16 @@ class Settings(BaseSettings):
     @property
     def TAVILY_API_KEY(self) -> str:
         val = (os.getenv("TAVILY_API_KEY") or "").strip()
-        return val if val else _DEFAULT_TAVILY_KEY
+        if not val:
+            raise ValueError("TAVILY_API_KEY environment variable is missing. This is required for production.")
+        return val
 
     @property
     def HUGGINGFACE_API_TOKEN(self) -> str:
         val = (os.getenv("HUGGINGFACE_API_TOKEN") or os.getenv("HF_TOKEN") or "").strip()
-        return val if val else _DEFAULT_HF_TOKEN
+        if not val:
+            raise ValueError("HUGGINGFACE_API_TOKEN environment variable is missing. This is required for production.")
+        return val
 
     HUGGINGFACE_MODEL: str = os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
 
@@ -64,12 +67,10 @@ class Settings(BaseSettings):
     SUPER_ADMIN_PHONE: str = os.getenv("SUPER_ADMIN_PHONE", "9699510445")
     SUPER_ADMIN_PASSWORD: str = os.getenv("SUPER_ADMIN_PASSWORD", "")
 
-    CORS_ORIGINS: list[str] = [
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "http://localhost:3000",
-        "http://127.0.0.1:5173"
-    ]
+    CORS_ORIGINS: str = os.getenv(
+        "CORS_ORIGINS", 
+        "http://localhost:5173,http://localhost:5174,http://localhost:3000,http://127.0.0.1:5173"
+    )
 
     class Config:
         env_file = ".env"

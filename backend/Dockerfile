@@ -21,5 +21,5 @@ COPY . .
 # Expose port (default 5000)
 EXPOSE 5000
 
-# Run uvicorn server
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000"]
+# Run the application through app.py to parse environment variables correctly
+CMD ["python", "app.py"]

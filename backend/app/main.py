@@ -38,7 +38,8 @@ Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=settings.UPLOAD_DIR), name="uploads")
 
 # CORS configuration
-allowed_origins = list(dict.fromkeys((settings.CORS_ORIGINS or []) + [
+env_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
+allowed_origins = list(dict.fromkeys(env_origins + [
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175",
