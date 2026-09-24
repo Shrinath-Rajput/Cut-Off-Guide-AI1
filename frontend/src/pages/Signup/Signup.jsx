@@ -352,7 +352,7 @@ const Signup = () => {
                 <span>or</span>
               </div>
 
-              <a href="http://localhost:5000/api/auth/google" className="cg-google-btn">
+              <a href={`${(import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')}/api/auth/google`} className="cg-google-btn">
                 <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google logo" className="cg-google-icon" />
                 <span>Continue with Google</span>
               </a>

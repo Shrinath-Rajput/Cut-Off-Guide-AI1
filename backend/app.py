@@ -8,8 +8,12 @@ project_root = backend_dir.parent
 
 venv_candidates = [
     backend_dir / "venv" / "Scripts" / "python.exe",
+    backend_dir / "venv" / "bin" / "python",
+    backend_dir / ".venv" / "bin" / "python",
     project_root / ".venv" / "Scripts" / "python.exe",
     project_root / "venv" / "Scripts" / "python.exe",
+    project_root / ".venv" / "bin" / "python",
+    project_root / "venv" / "bin" / "python",
 ]
 venv_python = next((p for p in venv_candidates if p.exists()), None)
 
