@@ -17,12 +17,13 @@ def get_db():
 async def connect_to_mongo():
     try:
         kwargs = {"serverSelectionTimeoutMS": 5000}
-        try:
-            if "+srv" in settings.MONGODB_URI or "tls=true" in settings.MONGODB_URI.lower():
+        if "+srv" in settings.MONGODB_URI or "tls=true" in settings.MONGODB_URI.lower():
+            try:
                 import certifi
+                kwargs["tls"] = True
                 kwargs["tlsCAFile"] = certifi.where()
-        except Exception:
-            pass
+            except Exception:
+                pass
 
         db.client = AsyncIOMotorClient(settings.MONGODB_URI, **kwargs)
         db.db = db.client[settings.MONGODB_DATABASE]
@@ -32,8 +33,10 @@ async def connect_to_mongo():
         await db.db["analytics_events"].create_index([("timestamp", -1)])
         await db.db["users"].create_index([("role", 1)])
         await db.db["users"].create_index([("email", 1)], unique=False)
-        await db.db["users"].create_index([("phone", 1)], unique=False)
-        logger.info("Initialized MongoDB client at %s", settings.MONGODB_URI)
+        masked_uri = settings.MONGODB_URI
+        if "@" in masked_uri:
+            masked_uri = "mongodb+srv://****@" + masked_uri.split("@", 1)[1]
+        logger.info("Initialized MongoDB client at %s (database: %s)", masked_uri, settings.MONGODB_DATABASE)
     except Exception as e:
         logger.warning("MongoDB initialization warning: %s", e)
 

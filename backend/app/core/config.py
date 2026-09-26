@@ -10,7 +10,7 @@ load_dotenv(_env_path, override=True)
 
 class Settings(BaseSettings):
     MONGODB_URI: str = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-    MONGODB_DATABASE: str = os.getenv("MONGO_DATABASE", "cutoffgrid")
+    MONGODB_DATABASE: str = os.getenv("MONGO_DATABASE") or os.getenv("MONGO_DB_NAME") or "cutoff_db"
     
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "supersecretkey_please_change_in_production")
     JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
